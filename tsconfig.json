@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "lib": ["es5", "es6", "dom"],
+        "rootDir": "./src/",
+        "outDir": "./out",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "sourceMap": true,
+        "allowJs": true,
+        "target": "es5",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true
+    },
+    "include": ["./src/**/*"],
+    "exclude": ["node_modules", "**/*.spec.ts"],
+}

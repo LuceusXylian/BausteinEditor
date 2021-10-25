@@ -1,0 +1,29 @@
+{
+  "name": "bausteineditor",
+  "version": "1.0.0",
+  "description": "Editor in Blocks: Import, Edit, Move, Delete, Add, Export",
+  "main": "baustein_editor.js",
+  "scripts": {
+    "test": "npx tsc -p tsconfig.json\nnode ./out/baustein_editor.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/XylianZeref/BausteinEditor.git"
+  },
+  "keywords": [
+    "editor"
+  ],
+  "author": "Xylian",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/XylianZeref/BausteinEditor/issues"
+  },
+  "homepage": "https://github.com/XylianZeref/BausteinEditor#readme",
+  "devDependencies": {
+    "typescript": "^4.4.4"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.15.4",
+    "fast-sort": "^3.0.3"
+  }
+}
