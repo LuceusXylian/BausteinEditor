@@ -77,7 +77,7 @@ class BausteinEditor {
     createElement(type: string, id: string, _class: string): HTMLElement {
         var element = document.createElement(type);
         if(id !== "") element.id = id;
-        if(id !== "") element.className = _class;
+        if(_class !== "") element.className = _class;
         return element;
     }
 
@@ -256,8 +256,9 @@ class BausteinEditor {
 
         for (var i = 0; i < this.data.page.style.length; i++) {
             const element = this.data.page.style[i];
-            this.dom.sidebar_header_col__site.appendChild(
-                this.formcontroll("page", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options)
+            this.dom.sidebar_content__site.appendChild(
+                this.formcontrol("page", element.property.type, element.property.name, element.property.title, 
+                    element.value, element.property.suffix, element.property.options)
             );
         }
 
@@ -801,12 +802,12 @@ class BausteinEditor {
         }        
     }
 
-    formcontroll(domArk: string, type: string, name: string, title: string, value: string, suffix: string, options: any) {
+    formcontrol(domArk: string, type: string, name: string, title: string, value: string, suffix: string, options: any) {
+        const self = this;
         var fc_dom_id = (this.dom_id+'_'+domArk+'_content_row_'+name);
 
         var be_sidebar_content_row = this.createElement("div", "", "be_sidebar_content_row");
 
-        var content = '';
         var label: HTMLLabelElement = <HTMLLabelElement> be_sidebar_content_row.appendChild(
             this.createElement("label", "", "")
         );
@@ -820,14 +821,15 @@ class BausteinEditor {
             form_controll_container.classList.add("number");
         }
 
+        var form_controll: any;
         if (type === "select") {
-            var form_controll_select: HTMLSelectElement = <HTMLSelectElement> be_sidebar_content_row.appendChild(
+            form_controll = <HTMLSelectElement> be_sidebar_content_row.appendChild(
                 this.createElement("select", fc_dom_id, "form-controll")
             );
-            form_controll_select.name = name;
+            form_controll.name = name;
             
             for (var i = 0; i < options.length; i++) {
-                var option_element: HTMLOptionElement = <HTMLOptionElement> form_controll_select.appendChild(
+                var option_element: HTMLOptionElement = <HTMLOptionElement> form_controll.appendChild(
                     this.createElement("option", "", "")
                 );
                 option_element.value = options[i].value;
@@ -838,7 +840,7 @@ class BausteinEditor {
                 }
             }
         } else {
-            var form_controll: HTMLInputElement = <HTMLInputElement> be_sidebar_content_row.appendChild(
+            form_controll = <HTMLInputElement> be_sidebar_content_row.appendChild(
                 this.createElement("input", fc_dom_id, "form-controll")
             );
             form_controll.name = name;
@@ -857,13 +859,59 @@ class BausteinEditor {
                     this.createElement("div", "", "form-controll-container_down")
                 );
                 form_controll_container_down.innerHTML = '⮟';
+
+                const suffix_const = suffix;
+                
+                const formcontroll_number = function (add: number) {
+                    var num = parseFloat( form_controll.value.replace(suffix_const, "") );
+                    if (!num) {
+                        num = 0;
+                    }
+                    
+                    var countDecimals = num % 1? num.toString().split(".")[1].length : 0;
+                    if (countDecimals === 0) {
+                        num = num + add;
+                    } else {
+                        var mltp = Math.pow(10, countDecimals);
+                        num = Math.floor((num*mltp) + (add*mltp))/mltp;
+                    }
+                    
+                    form_controll.value = num.toString() + suffix_const;
+                }
+    
+                form_controll.addEventListener("change", function() { formcontroll_number(0); self.apply_styles(); });
+                form_controll.addEventListener("keydown", function(e: any) { 
+                    var steps = e.shiftKey? 10 : (e.ctrlKey? 0.1 : 1)
+    
+                    const keyCode = e.which | e.keyCode;
+                    if (keyCode === 38) {
+                        formcontroll_number(steps);
+                        self.apply_styles();
+                        return false;
+                    } else if(keyCode === 40) {
+                        formcontroll_number(-steps);
+                        self.apply_styles();
+                        return false;
+                    }
+                });
+                form_controll_container_up.addEventListener("click", function() { formcontroll_number(+1); self.apply_styles(); });
+                form_controll_container_down.addEventListener("click", function() { formcontroll_number(-1); self.apply_styles(); });
             }
+        }
+
+        // Events
+        if (type !== "number") form_controll.addEventListener("change", function() { self.apply_styles(); });
+        
+        if (type === "number") {
+        } else {
+            form_controll.addEventListener("change", function() { self.apply_styles(); });
         }
 
         return be_sidebar_content_row;
     }
 
     formcontroll_events() {
+        /*
         const self = this;
         var dom_objects = this.dom.sidebar.querySelectorAll(".form-controll-container:not(.event)");
         for (var i = 0; i < dom_objects.length; i++) {
@@ -880,7 +928,7 @@ class BausteinEditor {
                     const suffix = input_element.dataset.suffix;
                     
                     const formcontroll_number = function (add: number) {
-                        var num = parseFloat( input_element.val().replace(suffix, "") );
+                        var num = parseFloat( input_element.value.replace(suffix, "") );
                         if (!num) {
                             num = 0;
                         }
@@ -918,6 +966,7 @@ class BausteinEditor {
                 }
             }
         }
+        */
     }
     
     open_baustein_attributes(position: Position) {
@@ -927,27 +976,38 @@ class BausteinEditor {
 
         for (var i = 0; i < this.data.bausteine[position_const.row][position_const.depth][position_const.item].style.length; i++) {
             const element = this.data.bausteine[position_const.row][position_const.depth][position_const.item].style[i];
-            sidebar_content += this.formcontroll("baustein", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options);
+            this.dom.sidebar_content__baustein.appendChild(
+                this.formcontrol("baustein", element.property.type, element.property.name, element.property.title
+                    , element.value, element.property.suffix, element.property.options)
+            );
         }
         
-        sidebar_content += this.formcontroll(
-            "baustein_class", "text", "class"
-            , 'CSS Klasse <div style="font-size: 11px; margin-bottom: 2px;">(für Fortgeschrittene Nutzer)</div>'
-            , this.data.bausteine[position_const.row][position_const.depth][position_const.item].class, "", []
+        var baustein_class_row = this.dom.sidebar_content__baustein.appendChild(
+            this.formcontrol(
+                "baustein_class", "text", "class"
+                , 'CSS Klasse <div style="font-size: 11px; margin-bottom: 2px;">(für Fortgeschrittene Nutzer)</div>'
+                , this.data.bausteine[position_const.row][position_const.depth][position_const.item].class, "", []
+            )
         );
+
+        console.log("baustein_class_row", baustein_class_row)
         
-        sidebar_content += '<button id="'+this.dom_id+'_deleteBaustein" class="form-controll bautstein-delete" type="button">Baustein löschen</button>';
+        var baustein_delete_button: HTMLButtonElement = <HTMLButtonElement> this.dom.sidebar_content__baustein.appendChild(
+            this.createElement("button", this.dom_id+'_deleteBaustein', "form-controll bautstein-delete")
+        )
+        baustein_delete_button.innerHTML = "Baustein löschen";
+        baustein_delete_button.type = "button";
 
         const self = this;
         this.dom.sidebar_content__baustein.innerHTML = sidebar_content;
         this.formcontroll_events();
 
-        const baustein_class_content_row_class: HTMLFormElement = <HTMLFormElement> document.getElementById(this.dom_id+'_baustein_class_content_row_class');
-        baustein_class_content_row_class.addEventListener("change", function() {
+        const baustein_class_form_controll: HTMLFormElement = <HTMLFormElement> baustein_class_row.getElementsByClassName('form-controll')[0];
+        baustein_class_form_controll.addEventListener("change", function() {
             self.data.bausteine[position_const.row][position_const.depth][position_const.item].class = this.value;
         });
 
-        document.getElementById(this.dom_id+'_deleteBaustein')?.addEventListener("click", function() {
+        baustein_delete_button.addEventListener("click", function() {
             self.close_baustein_attributes();
             console.log(self.data.bausteine);
             self.deleteBaustein(position_const);
