@@ -32,7 +32,6 @@ var Baustein = (function () {
             depth: -1,
             item: -1,
         };
-        this.childCount = 0;
     }
     return Baustein;
 }());
@@ -46,7 +45,6 @@ var BausteinStyle = (function () {
 var BausteinEditor = (function () {
     function BausteinEditor(dom_id) {
         this.dom_id = dom_id;
-        this.dom = {};
         this.styleProperties = {
             font_family: { name: "font-family", title: "Schriftart", type: "string", suffix: "" },
             font_size: { name: "font-size", title: "Schriftgröße", type: "number", suffix: "rem" },
@@ -168,30 +166,24 @@ var BausteinEditor = (function () {
             { type: 0, baustein: this.types.table },
             { type: 1, title: "Sonstiges", icon: '<i class="fas fa-cubes"></i>', items: [this.types.html, this.types.script, this.types.shortcode] }
         ];
-        var content = '<style id="' + dom_id + '_page_styles"></style>'
-            + '<div id="' + dom_id + '_main" class="be_main"> <div id="' + dom_id + '_underlay" class="be_underlay"></div> <div id="' + dom_id + '_content" class="be_content"></div> </div>';
-        content += '<div id="' + dom_id + '_sidebar" class="be_sidebar">';
-        content += '<div id="' + dom_id + '_sidebar_header" class="be_sidebar_header">';
-        content += '<div id="' + dom_id + '_sidebar_header_col__site" class="be_sidebar_header_col active">Seite</div>';
-        content += '<div id="' + dom_id + '_sidebar_header_col__baustein" class="be_sidebar_header_col disabled">Baustein</div>';
-        content += '</div>';
-        content += '<div id="' + dom_id + '_sidebar_content__site" class="be_sidebar_content">';
+        this.dom = {};
+        this.dom.be = document.getElementById(this.dom_id);
+        this.dom.page_styles = this.dom.be.appendChild(this.createElement("style", this.dom_id + '_page_styles', ""));
+        this.dom.main = this.dom.be.appendChild(this.createElement("div", this.dom_id + "_main", "be_main"));
+        this.dom.sidebar = this.dom.be.appendChild(this.createElement("div", this.dom_id + "_sidebar", "be_sidebar"));
+        this.dom.underlay = this.dom.main.appendChild(this.createElement("div", this.dom_id + "_underlay", "be_underlay"));
+        this.dom.content = this.dom.main.appendChild(this.createElement("div", this.dom_id + "_content", "be_content"));
+        this.dom.sidebar_header = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_header", "be_sidebar_header"));
+        this.dom.sidebar_content__site = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__site", "be_sidebar_content"));
+        this.dom.sidebar_content__baustein = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__baustein", "be_sidebar_content"));
+        this.dom.sidebar_header_col__site = this.dom.sidebar_header.appendChild(this.createElement("div", this.dom_id + "_sidebar_header_col__site", "be_sidebar_header_col active"));
+        this.dom.sidebar_header_col__site.innerHTML = "Artikel";
+        this.dom.sidebar_header_col__baustein = this.dom.sidebar_header.appendChild(this.createElement("div", this.dom_id + "_sidebar_header_col__baustein", "be_sidebar_header_col disabled"));
+        this.dom.sidebar_header_col__baustein.innerHTML = "Baustein";
         for (var i = 0; i < this.data.page.style.length; i++) {
             var element = this.data.page.style[i];
-            content += this.formcontroll("page", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options);
+            this.dom.sidebar_header_col__site.appendChild(this.formcontroll("page", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options));
         }
-        content += '</div>';
-        content += '<div id="' + dom_id + '_sidebar_content__baustein" class="be_sidebar_content" style="display: none;"></div>';
-        content += '</div>';
-        this.dom.be = document.getElementById(dom_id);
-        this.dom.be.innerHTML = content;
-        this.dom.be_content = document.getElementById(dom_id + "_content");
-        this.dom.sidebar = document.getElementById(this.dom_id + '_sidebar');
-        this.dom.sidebar_header_col__site = document.getElementById(dom_id + '_sidebar_header_col__site');
-        this.dom.sidebar_header_col__baustein = document.getElementById(this.dom_id + '_sidebar_header_col__baustein');
-        this.dom.sidebar_content__site = document.getElementById(this.dom_id + '_sidebar_content__site');
-        this.dom.sidebar_content__baustein = document.getElementById(this.dom_id + '_sidebar_content__baustein');
-        this.dom.page_styles = document.getElementById(this.dom_id + '_page_styles');
         this.be_bausteinSelector_isOpen = false;
         this.apply_styles();
         var self = this;
@@ -216,6 +208,12 @@ var BausteinEditor = (function () {
         this.dom.sidebar_header_col__baustein.addEventListener("click", function () { be_sidebar_header_col_function(false); });
         this.render();
     }
+    BausteinEditor.prototype.createElement = function (type, id, _class) {
+        var element = document.createElement(type);
+        element.id = id;
+        element.className = _class;
+        return element;
+    };
     BausteinEditor.prototype.addBausteinSelector = function (position, hide) {
         var row_const = position.row;
         var depth_const = position.depth;
@@ -314,17 +312,33 @@ var BausteinEditor = (function () {
         console.log("addBaustein() position", position);
         if (type !== "") {
             var baustein_entry = new Baustein(this.types[type].id, this.types[type].title, this.types[type].icon, this.types[type].tag, this.types[type].hasEndtag, this.types[type].renderType, this.types[type].style);
-            var row_max = this.data.bausteine.length;
-            baustein_entry.position = position;
-            this.data.bausteine[row_max] = [];
-            this.data.bausteine[row_max][0] = [];
-            this.data.bausteine[row_max][0][0] = baustein_entry;
-            this.selected_baustein_position = position;
-            console.log("addBaustein() this.data.bausteine", this.data.bausteine);
-            var to = this.data.bausteine.length - 1;
-            for (var i = 0; i < to; i++) {
-                if (this.data.bausteine[i][0][0].position.row >= position.row) {
-                    this.data.bausteine[i][0][0].position.row++;
+            if (position.depth === 0) {
+                var row_max = this.data.bausteine.length;
+                baustein_entry.position = position;
+                this.data.bausteine[row_max] = [[baustein_entry]];
+                this.selected_baustein_position = position;
+                console.log("addBaustein() this.data.bausteine", this.data.bausteine);
+                var to = this.data.bausteine.length - 1;
+                for (var i = 0; i < to; i++) {
+                    if (this.data.bausteine[i][0][0].position.row >= position.row) {
+                        this.data.bausteine[i][0][0].position.row++;
+                    }
+                }
+            }
+            else {
+                if (this.data.bausteine[position.row].length - 1 < position.depth) {
+                    this.data.bausteine[position.row][position.depth] = [];
+                }
+                var item_max = this.data.bausteine[position.row][position.depth].length;
+                baustein_entry.position = position;
+                this.data.bausteine[position.row][position.depth][item_max] = baustein_entry;
+                this.selected_baustein_position = position;
+                console.log("addBaustein() this.data.bausteine", this.data.bausteine);
+                var to = this.data.bausteine.length - 1;
+                for (var i = 0; i < to; i++) {
+                    if (this.data.bausteine[i][0][0].position.row >= position.row) {
+                        this.data.bausteine[i][0][0].position.row++;
+                    }
                 }
             }
             this.render();
@@ -498,15 +512,12 @@ var BausteinEditor = (function () {
         });
     };
     BausteinEditor.prototype.render = function () {
-        this.dom.be_content.innerHTML = "";
+        this.dom.content.innerHTML = "";
         this.data.bausteine = this.getBausteine();
-        var depth = 0, item = 0;
         for (var row = 0; row < this.data.bausteine.length; row++) {
-            var const_row = row;
-            var const_depth = depth;
-            var const_item = item;
-            var baustein_entry = this.data.bausteine[const_row][const_depth][const_item];
-            this.dom.be_content.insertAdjacentHTML('beforeend', this.addBausteinSelector({ row: row, depth: depth, item: item }, true));
+            var depth = 0, item = 0;
+            var baustein_entry = this.data.bausteine[row][depth][item];
+            this.dom.content.insertAdjacentHTML('beforeend', this.addBausteinSelector({ row: row, depth: depth, item: item }, true));
             this.addBausteinSelectorEvents({ row: row, depth: depth, item: item });
             if (baustein_entry.renderType === BausteinRenderType.layout) {
                 var baustein_id = this.dom_id + '_be_baustein_item' + row + '_' + depth + '_' + item;
@@ -523,21 +534,27 @@ var BausteinEditor = (function () {
                 }
                 content += '" data-type="' + baustein_entry.id + '" draggable="true" style="' + baustein_entry_style + '">';
                 content += '<label for="' + baustein_id + '" class="baustein_indicator">' + baustein_entry.title + '</label>';
-                depth += 1;
+                depth = 1;
+                if (this.data.bausteine[row].length > 1) {
+                    for (var item = 0; item < this.data.bausteine[row][depth].length; item++) {
+                        var baustein_item = this.data.bausteine[row][depth][item];
+                        content += this.renderBaustein(baustein_item, { row: row, depth: depth, item: item });
+                    }
+                }
                 content += this.addBausteinSelector({ row: row, depth: depth, item: item }, false);
                 content += '</div>';
-                this.dom.be_content.insertAdjacentHTML('beforeend', content);
+                this.dom.content.insertAdjacentHTML('beforeend', content);
                 this.addBausteinSelectorEvents({ row: row, depth: depth, item: item });
             }
             else {
                 var content = this.renderBaustein(baustein_entry, { row: row, depth: depth, item: item });
-                this.dom.be_content.insertAdjacentHTML('beforeend', content);
+                this.dom.content.insertAdjacentHTML('beforeend', content);
                 this.renderBausteinEvents(baustein_entry, { row: row, depth: depth, item: item });
             }
         }
         var row = this.data.bausteine.length;
-        this.dom.be_content.insertAdjacentHTML('beforeend', this.addBausteinSelector({ row: row, depth: depth, item: item }, false));
-        this.addBausteinSelectorEvents({ row: row, depth: depth, item: item });
+        this.dom.content.insertAdjacentHTML('beforeend', this.addBausteinSelector({ row: row, depth: 0, item: 0 }, false));
+        this.addBausteinSelectorEvents({ row: row, depth: 0, item: 0 });
     };
     BausteinEditor.prototype.bausteinSelector_open = function (be_bausteinSelector, be_bausteinSelector_layer, be_bausteinSelector_layer_item_container1, be_bausteinSelector_layer_item_container2) {
         be_bausteinSelector.style.display = "none";
@@ -580,6 +597,7 @@ var BausteinEditor = (function () {
     };
     BausteinEditor.prototype.formcontroll = function (domArk, type, name, title, value, suffix, options) {
         var fc_dom_id = (this.dom_id + '_' + domArk + '_content_row_' + name);
+        var be_sidebar_content_row = this.createElement("div", "", "be_sidebar_content_row");
         var content = '<div class="be_sidebar_content_row">';
         content += '<label for="' + fc_dom_id + '">' + title + '</label>';
         content += '<div class="form-controll-container';
@@ -611,7 +629,7 @@ var BausteinEditor = (function () {
         }
         content += '</div>';
         content += '</div>';
-        return content;
+        return be_sidebar_content_row;
     };
     BausteinEditor.prototype.formcontroll_events = function () {
         var self = this;

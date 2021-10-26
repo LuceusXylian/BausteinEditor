@@ -30,7 +30,6 @@ class Baustein {
 	public content: any;
 	public class: any;
 	public position: any;
-	public childCount: any;
 
     constructor(id: string, title: string, icon: string, tag: string, hasEndtag: boolean, renderType: number, style: any) {
         this.id = id;
@@ -51,7 +50,6 @@ class Baustein {
             depth: -1,
             item: -1,
         };
-        this.childCount = 0;
     }
 }
 
@@ -76,9 +74,16 @@ class BausteinEditor {
 	public be_bausteinSelector_isOpen: any;
 	public selected_baustein_position: any;
 
+    createElement(type: string, id: string, _class: string): HTMLElement {
+        var element = document.createElement(type);
+        if(id !== "") element.id = id;
+        if(id !== "") element.className = _class;
+        return element;
+    }
+
     constructor(dom_id: string) {
         this.dom_id = dom_id;
-        this.dom = {};
+        
         this.styleProperties = {
             font_family: { name: "font-family", title: "Schriftart", type: "string", suffix: "" },
             font_size: { name: "font-size", title: "Schriftgröße", type: "number", suffix: "rem" },
@@ -209,45 +214,58 @@ class BausteinEditor {
         ];
 
 
-        // Main Content
-        var content = '<style id="'+dom_id+'_page_styles"></style>'
-            +'<div id="'+dom_id+'_main" class="be_main"> <div id="'+dom_id+'_underlay" class="be_underlay"></div> <div id="'+dom_id+'_content" class="be_content"></div> </div>';
-        
-        // Sidebar Content
-        content += '<div id="'+dom_id+'_sidebar" class="be_sidebar">';
-        
-        content += '<div id="'+dom_id+'_sidebar_header" class="be_sidebar_header">';
-        content += '<div id="'+dom_id+'_sidebar_header_col__site" class="be_sidebar_header_col active">Seite</div>';
-        content += '<div id="'+dom_id+'_sidebar_header_col__baustein" class="be_sidebar_header_col disabled">Baustein</div>';
-        content += '</div>';
+        // DOM
+        this.dom = {};
+        this.dom.be = document.getElementById(this.dom_id);
 
-        content += '<div id="'+dom_id+'_sidebar_content__site" class="be_sidebar_content">';
+        this.dom.page_styles = this.dom.be.appendChild(
+            this.createElement("style", this.dom_id+'_page_styles', "")
+        );
+        this.dom.main = this.dom.be.appendChild(
+            this.createElement("div", this.dom_id+"_main", "be_main")
+        );
+        this.dom.sidebar = this.dom.be.appendChild(
+            this.createElement("div", this.dom_id+"_sidebar", "be_sidebar")
+        );
+
+        this.dom.underlay = this.dom.main.appendChild(
+            this.createElement("div", this.dom_id+"_underlay", "be_underlay")
+        );
+        this.dom.content = this.dom.main.appendChild(
+            this.createElement("div", this.dom_id+"_content", "be_content")
+        );
+
+        this.dom.sidebar_header = this.dom.sidebar.appendChild(
+            this.createElement("div", this.dom_id+"_sidebar_header", "be_sidebar_header")
+        );
+        this.dom.sidebar_content__site = this.dom.sidebar.appendChild(
+            this.createElement("div", this.dom_id+"_sidebar_content__site", "be_sidebar_content")
+        );
+        this.dom.sidebar_content__baustein = this.dom.sidebar.appendChild(
+            this.createElement("div", this.dom_id+"_sidebar_content__baustein", "be_sidebar_content")
+        );
+        
+        this.dom.sidebar_header_col__site = this.dom.sidebar_header.appendChild(
+            this.createElement("div", this.dom_id+"_sidebar_header_col__site", "be_sidebar_header_col active")
+        );
+        this.dom.sidebar_header_col__site.innerHTML = "Artikel";
+        this.dom.sidebar_header_col__baustein = this.dom.sidebar_header.appendChild(
+            this.createElement("div", this.dom_id+"_sidebar_header_col__baustein", "be_sidebar_header_col disabled")
+        );
+        this.dom.sidebar_header_col__baustein.innerHTML = "Baustein";
 
         for (var i = 0; i < this.data.page.style.length; i++) {
             const element = this.data.page.style[i];
-            content += this.formcontroll("page", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options);
+            this.dom.sidebar_header_col__site.appendChild(
+                this.formcontroll("page", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options)
+            );
         }
 
-        content += '</div>';
 
-        content += '<div id="'+dom_id+'_sidebar_content__baustein" class="be_sidebar_content" style="display: none;"></div>';
-        
-        content += '</div>';
-
-
-        // DOM
-        this.dom.be = document.getElementById(dom_id);
-        this.dom.be.innerHTML = content;
-        this.dom.be_content = document.getElementById(dom_id+"_content");
-        this.dom.sidebar = document.getElementById(this.dom_id+'_sidebar');
-        this.dom.sidebar_header_col__site = document.getElementById(dom_id+'_sidebar_header_col__site');
-        this.dom.sidebar_header_col__baustein = document.getElementById(this.dom_id+'_sidebar_header_col__baustein');
-        this.dom.sidebar_content__site = document.getElementById(this.dom_id+'_sidebar_content__site');
-        this.dom.sidebar_content__baustein = document.getElementById(this.dom_id+'_sidebar_content__baustein');
-        this.dom.page_styles = document.getElementById(this.dom_id+'_page_styles');
         this.be_bausteinSelector_isOpen = false;
         this.apply_styles();
         
+
         // Events
         const self = this;
         this.formcontroll_events();
@@ -389,21 +407,40 @@ class BausteinEditor {
                 this.types[type].id, this.types[type].title, this.types[type].icon, this.types[type].tag, this.types[type].hasEndtag, this.types[type].renderType, this.types[type].style
             );
 
-            const row_max = this.data.bausteine.length;
-            baustein_entry.position = position;
-            this.data.bausteine[row_max] = [];
-            this.data.bausteine[row_max][0] = [];
-            this.data.bausteine[row_max][0][0] = baustein_entry;
-            this.selected_baustein_position = position;
-
-            console.log("addBaustein() this.data.bausteine", this.data.bausteine);
-            
-            // any baustein with equel or greater then position.row will be changed to +1, but not the newest
-            const to = this.data.bausteine.length -1;
-            for (var i = 0; i < to; i++) {
-                if (this.data.bausteine[i][0][0].position.row >= position.row) {
-                    this.data.bausteine[i][0][0].position.row++;
+            if (position.depth === 0) {
+                const row_max = this.data.bausteine.length;
+                baustein_entry.position = position;
+                this.data.bausteine[row_max] = [[ baustein_entry ]];
+                this.selected_baustein_position = position;
+    
+                console.log("addBaustein() this.data.bausteine", this.data.bausteine);
+                
+                // any baustein with equel or greater then position.row will be changed to +1, but not the newest
+                const to = this.data.bausteine.length -1;
+                for (var i = 0; i < to; i++) {
+                    if (this.data.bausteine[i][0][0].position.row >= position.row) {
+                        this.data.bausteine[i][0][0].position.row++;
+                    }
                 }
+            } else {
+                if (this.data.bausteine[position.row].length -1 < position.depth) {
+                    this.data.bausteine[position.row][position.depth] = [];
+                }
+                const item_max = this.data.bausteine[position.row][position.depth].length;
+                baustein_entry.position = position;
+                this.data.bausteine[position.row][position.depth][item_max] = baustein_entry;
+                this.selected_baustein_position = position;
+    
+                console.log("addBaustein() this.data.bausteine", this.data.bausteine);
+                
+                // any baustein with equel or greater then position.row will be changed to +1, but not the newest
+                const to = this.data.bausteine.length -1;
+                for (var i = 0; i < to; i++) {
+                    if (this.data.bausteine[i][0][0].position.row >= position.row) {
+                        this.data.bausteine[i][0][0].position.row++;
+                    }
+                }
+
             }
             
             this.render();
@@ -657,19 +694,16 @@ class BausteinEditor {
     }
     
     render() {
-        this.dom.be_content.innerHTML = "";
+        this.dom.content.innerHTML = "";
         this.data.bausteine = this.getBausteine();
 
         /*  Bausteine 3D Graph Array
             this.data.bausteine[row][depth][item]
         */
-        var depth = 0, item = 0;
         for (var row = 0; row < this.data.bausteine.length; row++) {
-            const const_row = row;
-            const const_depth = depth;
-            const const_item = item;
-            const baustein_entry = this.data.bausteine[const_row][const_depth][const_item];
-            this.dom.be_content.insertAdjacentHTML('beforeend', 
+            var depth = 0, item = 0;
+            const baustein_entry = this.data.bausteine[row][depth][item];
+            this.dom.content.insertAdjacentHTML('beforeend', 
                 this.addBausteinSelector({row: row, depth: depth, item: item}, true)
             );
             this.addBausteinSelectorEvents({row: row, depth: depth, item: item});
@@ -697,24 +731,30 @@ class BausteinEditor {
                 content += '<label for="'+baustein_id+'" class="baustein_indicator">'+baustein_entry.title+'</label>';
 
 
-                //TODO Baustein Layout
-                depth += 1;
+                //TODO Baustein Layout Items
+                depth = 1;
+                if (this.data.bausteine[row].length > 1) {
+                    for (var item = 0; item < this.data.bausteine[row][depth].length; item++) {
+                        const baustein_item = this.data.bausteine[row][depth][item];
+                        content += this.renderBaustein(baustein_item, {row: row, depth: depth, item: item});
+                    }
+                }
                 content += this.addBausteinSelector({row: row, depth: depth, item: item}, false)
                 content += '</div>';
-                this.dom.be_content.insertAdjacentHTML('beforeend', content);
+                this.dom.content.insertAdjacentHTML('beforeend', content);
                 this.addBausteinSelectorEvents({row: row, depth: depth, item: item});
             } else {
                 var content = this.renderBaustein(baustein_entry, {row: row, depth: depth, item: item});
-                this.dom.be_content.insertAdjacentHTML('beforeend', content);
+                this.dom.content.insertAdjacentHTML('beforeend', content);
                 this.renderBausteinEvents(baustein_entry, {row: row, depth: depth, item: item});
             }
         }
 
         var row: number = this.data.bausteine.length;
-        this.dom.be_content.insertAdjacentHTML('beforeend', 
-            this.addBausteinSelector({row: row, depth: depth, item: item}, false)
+        this.dom.content.insertAdjacentHTML('beforeend', 
+            this.addBausteinSelector({row: row, depth: 0, item: 0}, false)
         );
-        this.addBausteinSelectorEvents({row: row, depth: depth, item: item});
+        this.addBausteinSelectorEvents({row: row, depth: 0, item: 0});
     }
     
     bausteinSelector_open(be_bausteinSelector: HTMLElement, be_bausteinSelector_layer: HTMLElement, be_bausteinSelector_layer_item_container1: HTMLElement, be_bausteinSelector_layer_item_container2: HTMLElement) { 
@@ -763,42 +803,64 @@ class BausteinEditor {
 
     formcontroll(domArk: string, type: string, name: string, title: string, value: string, suffix: string, options: any) {
         var fc_dom_id = (this.dom_id+'_'+domArk+'_content_row_'+name);
-        var content = '<div class="be_sidebar_content_row">';
-        content += '<label for="'+fc_dom_id+'">'+title+'</label>';
+
+        var be_sidebar_content_row = this.createElement("div", "", "be_sidebar_content_row");
+
+        var content = '';
+        var label: HTMLLabelElement = <HTMLLabelElement> be_sidebar_content_row.appendChild(
+            this.createElement("label", "", "")
+        );
+        label.htmlFor = fc_dom_id;
+        label.innerHTML = title;
         
-        content += '<div class="form-controll-container';
+        var form_controll_container = be_sidebar_content_row.appendChild(
+            this.createElement("label", "", "form-controll-container")
+        );
         if (type === "number") {
-            content += ' number';
+            form_controll_container.classList.add("number");
         }
-        content += '">';
 
         if (type === "select") {
-            content += '<select id="'+fc_dom_id+'" class="form-controll" name="'+name+'">';
+            var form_controll_select: HTMLSelectElement = <HTMLSelectElement> be_sidebar_content_row.appendChild(
+                this.createElement("select", fc_dom_id, "form-controll")
+            );
+            form_controll_select.name = name;
+            
             for (var i = 0; i < options.length; i++) {
-                content += '<option value="'+options[i].value+'"';
+                var option_element: HTMLOptionElement = <HTMLOptionElement> form_controll_select.appendChild(
+                    this.createElement("option", "", "")
+                );
+                option_element.value = options[i].value;
+                option_element.innerHTML = options[i].text;
+    
                 if (options[i].value == value) {
-                    content += " selected";
+                    option_element.classList.add("selected");
                 }
-                content += '>'+options[i].text+'</option>';
             }
-            content += '</select>';
         } else {
-            content += '<input type="text" id="'+fc_dom_id+'" class="form-controll" name="'+name+'" value="'+value+'"';
+            var form_controll: HTMLInputElement = <HTMLInputElement> be_sidebar_content_row.appendChild(
+                this.createElement("input", fc_dom_id, "form-controll")
+            );
+            form_controll.name = name;
+            form_controll.value = value;
+            form_controll.type = "text";
+
             if (type === "number") {
-                content += ' data-suffix="'+suffix+'">';
-                
-                content += '<div class="form-controll-container_up">⮝</div>';
-                content += '<div class="form-controll-container_down">⮟</div>';
-                
-            } else {
-                content += '>';
+                form_controll.dataset.suffix = suffix;
+
+                var form_controll_container_up: HTMLInputElement = <HTMLInputElement> form_controll.appendChild(
+                    this.createElement("div", "", "form-controll-container_up")
+                );
+                form_controll_container_up.innerHTML = '⮝';
+
+                var form_controll_container_down: HTMLInputElement = <HTMLInputElement> form_controll.appendChild(
+                    this.createElement("div", "", "form-controll-container_down")
+                );
+                form_controll_container_down.innerHTML = '⮟';
             }
         }
 
-        
-        content += '</div>';
-        content += '</div>';
-        return content;
+        return be_sidebar_content_row;
     }
 
     formcontroll_events() {
