@@ -143,7 +143,7 @@ var TinyEditor = {
     },
     transformToEditor: function (editor) {
         editor.setAttribute('contentEditable', true);
-        editor.className = '__editor';
+        editor.classList.add("__editor");
         var execCommand = function (commandId, value) {
             document.execCommand(commandId, false, value);
             editor.focus();

@@ -300,7 +300,7 @@ const TinyEditor = {
         editor.setAttribute('contentEditable', true);
     
         // Add a custom class
-        editor.className = '__editor';
+        editor.classList.add("__editor");
     
         // Create an exec command function
         const execCommand = function(commandId: any, value: any) {
