@@ -540,7 +540,7 @@ class BausteinEditor {
         }
     }
     
-    //TODO: FIX THIS
+    //TODO: FIX moveBaustein
     moveBaustein(position: Position, position_new: Position) {
         const position_new_const__row = position_new.row; // need to clone because magic
         console.log("moveBaustein()", "\nposition", position, "\nposition_new", position_new);
@@ -613,7 +613,7 @@ class BausteinEditor {
             this.createElement("label", "", "baustein_indicator")
         );
         baustein_indicator.htmlFor = baustein_id;
-        baustein_indicator.innerHTML = baustein_entry.title;
+        baustein_indicator.innerHTML = "<b>" + baustein_entry.icon + "</b> " + baustein_entry.title;
 
         var editor: any;
         switch (baustein_entry.renderType) {
@@ -757,7 +757,7 @@ class BausteinEditor {
                     this.createElement("label", "", "baustein_indicator")
                 );
                 baustein_indicator.htmlFor = baustein_id;
-                baustein_indicator.innerHTML = baustein_entry.title;
+                baustein_indicator.innerHTML = "<b>" + baustein_entry.icon + "</b> " + baustein_entry.title;
 
 
                 //TODO Baustein Layout Items
@@ -824,6 +824,7 @@ class BausteinEditor {
         this.dom.page_styles.innerHTML = style_string;
 
         // Apply Baustein Styles
+        // TODO FIX this for layout
         if (this.selected_baustein !== null && this.selected_baustein_position !== null) {
             var selected_baustein_editor: HTMLElement = <HTMLElement> this.selected_baustein.lastChild;
             
@@ -833,7 +834,11 @@ class BausteinEditor {
                 baustein.value = formcontrol_item?.value;
                 console.log('element', i, baustein);
                 
-                selected_baustein_editor.style[baustein.property.name] = baustein.value;
+                if (baustein.renderType === BausteinRenderType.layout) {
+                    this.selected_baustein.style[baustein.property.name] = baustein.value;
+                } else {
+                    selected_baustein_editor.style[baustein.property.name] = baustein.value;
+                }
             }
         }
     }
@@ -881,9 +886,11 @@ class BausteinEditor {
             );
             form_control.name = name;
             form_control.value = value;
-            form_control.type = "text";
 
-            if (type === "number") {
+            if (type === "color") {
+                form_control.type = "color";
+            } else if (type === "number") {
+                form_control.type = "text";
                 form_control.dataset.suffix = suffix;
 
                 var form_control_container_up: HTMLInputElement = <HTMLInputElement> form_control_container.appendChild(
@@ -932,6 +939,8 @@ class BausteinEditor {
                 });
                 form_control_container_up.addEventListener("click", function() { formcontrol_number(+1); self.apply_styles(); });
                 form_control_container_down.addEventListener("click", function() { formcontrol_number(-1); self.apply_styles(); });
+            } else {
+                form_control.type = "text";
             }
         }
 

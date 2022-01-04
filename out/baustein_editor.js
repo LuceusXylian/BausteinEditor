@@ -257,7 +257,6 @@ var BausteinEditor = (function () {
         var be_bausteinSelector_layer_item_container2 = be_bausteinSelector_layer.appendChild(this.createElement("div", selector_dom_id + '_bausteinSelector_layer_item_container2', "be_bausteinSelector_layer_item_container"));
         var _loop_1 = function () {
             var itemset = this_1.bausteinSelector[i];
-            console.log("this.bausteinSelector[i]", this_1.bausteinSelector[i]);
             if (showLayoutItems === false && itemset.type === 0 && itemset.baustein.renderType === BausteinRenderType.layout) {
                 return "continue";
             }
@@ -449,7 +448,7 @@ var BausteinEditor = (function () {
         }
         var baustein_indicator = be_baustein.appendChild(this.createElement("label", "", "baustein_indicator"));
         baustein_indicator.htmlFor = baustein_id;
-        baustein_indicator.innerHTML = baustein_entry.title;
+        baustein_indicator.innerHTML = "<b>" + baustein_entry.icon + "</b> " + baustein_entry.title;
         var editor;
         switch (baustein_entry.renderType) {
             default:
@@ -544,7 +543,7 @@ var BausteinEditor = (function () {
                 }
                 var baustein_indicator = be_baustein.appendChild(this.createElement("label", "", "baustein_indicator"));
                 baustein_indicator.htmlFor = baustein_id;
-                baustein_indicator.innerHTML = baustein_entry.title;
+                baustein_indicator.innerHTML = "<b>" + baustein_entry.icon + "</b> " + baustein_entry.title;
                 depth = 1;
                 if (this.data.bausteine[row].length > 1) {
                     for (var item = 0; item < this.data.bausteine[row][depth].length; item++) {
@@ -598,7 +597,12 @@ var BausteinEditor = (function () {
                 var formcontrol_item = document.getElementById(this.dom_id + "_baustein_content_row_" + baustein.property.name);
                 baustein.value = formcontrol_item === null || formcontrol_item === void 0 ? void 0 : formcontrol_item.value;
                 console.log('element', i, baustein);
-                selected_baustein_editor.style[baustein.property.name] = baustein.value;
+                if (baustein.renderType === BausteinRenderType.layout) {
+                    this.selected_baustein.style[baustein.property.name] = baustein.value;
+                }
+                else {
+                    selected_baustein_editor.style[baustein.property.name] = baustein.value;
+                }
             }
         }
     };
@@ -630,8 +634,11 @@ var BausteinEditor = (function () {
             form_control = form_control_container.appendChild(this.createElement("input", fc_dom_id, "form-control"));
             form_control.name = name;
             form_control.value = value;
-            form_control.type = "text";
-            if (type === "number") {
+            if (type === "color") {
+                form_control.type = "color";
+            }
+            else if (type === "number") {
+                form_control.type = "text";
                 form_control.dataset.suffix = suffix;
                 var form_control_container_up = form_control_container.appendChild(this.createElement("div", "", "form-control-container_up"));
                 form_control_container_up.innerHTML = '⮝';
@@ -670,6 +677,9 @@ var BausteinEditor = (function () {
                 });
                 form_control_container_up.addEventListener("click", function () { formcontrol_number_1(+1); self.apply_styles(); });
                 form_control_container_down.addEventListener("click", function () { formcontrol_number_1(-1); self.apply_styles(); });
+            }
+            else {
+                form_control.type = "text";
             }
         }
         if (type !== "number")
