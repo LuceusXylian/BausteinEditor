@@ -424,6 +424,30 @@ class BausteinEditor {
         be_bausteinSelector.addEventListener("click", function() { self.bausteinSelector_toggle(be_bausteinSelector, be_bausteinSelector_layer, be_bausteinSelector_layer_item_container1, be_bausteinSelector_layer_item_container2); });
         be_bausteinSelector_layer_close.addEventListener("click", function() { self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer); });
 
+        be_bausteinSelector.addEventListener("dragover", function(e: any) {
+            e.preventDefault();
+        });
+
+        // target
+        be_bausteinSelector.addEventListener("drop", function(e: any) {
+            e.preventDefault();
+            if (e.dataTransfer === null) {
+                console.error("baustein_item.addEventListener('drop'): e.dataTransfer is null");
+            } else {
+                var old_position: Position = {
+                    row: parseInt(e.dataTransfer.getData("row")), 
+                    depth: parseInt(e.dataTransfer.getData("depth")), 
+                    item: parseInt(e.dataTransfer.getData("item")), 
+                };
+
+                var new_position = { row: row_const, depth: depth_const, item: item_const };
+                console.log("drop on addBausteinSelector: old position", old_position);
+                console.log("drop on addBausteinSelector: new position", new_position);
+                if (old_position.row !== new_position.row) {
+                    self.moveBaustein(old_position, new_position);
+                }
+            }
+        });
             
         return be_bausteinSelector_container;
     }
@@ -582,9 +606,9 @@ class BausteinEditor {
 
     renderBaustein(baustein_entry: Baustein, position: Position): HTMLElement {
         const self = this;
-        const const_row = position.row;
-        const const_depth = position.depth;
-        const const_item = position.item;
+        const row_const = position.row;
+        const depth_const = position.depth;
+        const item_const = position.item;
         const baustein_id = this.dom_id+'_be_baustein_item'+position.row+'_'+position.depth+'_'+position.item;
         const baustein_editor_id = baustein_id+'_editor';
 
@@ -617,7 +641,7 @@ class BausteinEditor {
         );
         baustein_indicator.innerHTML = "<b>" + baustein_entry.icon + "</b> " + baustein_entry.title;
         baustein_indicator.addEventListener("click", function() {
-            self.selectBaustein({row: const_row, depth: const_depth, item: const_item, });
+            self.selectBaustein({row: row_const, depth: depth_const, item: item_const, });
         }, false);
 
         if (baustein_entry.renderType === BausteinRenderType.layout) {
@@ -660,7 +684,7 @@ class BausteinEditor {
                     editor.addEventListener("input", function() {
                         editor.style.height = '1px';
                         editor.style.height = editor.scrollHeight + 'px';
-                        self.data.bausteine[const_row][const_depth][const_item].content = editor.innerHTML;
+                        self.data.bausteine[row_const][depth_const][item_const].content = editor.innerHTML;
                     });
                     break;
                 
@@ -674,19 +698,19 @@ class BausteinEditor {
                     be_baustein.addEventListener("input", function() {
                         editor.style.height = '1px';
                         editor.style.height = editor.scrollHeight + 'px';
-                        self.data.bausteine[const_row][const_depth][const_item].content = editor.value.split("<").join("&lt;").split(">").join("&gt;");
+                        self.data.bausteine[row_const][depth_const][item_const].content = editor.value.split("<").join("&lt;").split(">").join("&gt;");
                     });
                     break;
             }
             
             editor.addEventListener("focusin", function() {
-                self.selectBaustein({row: const_row, depth: const_depth, item: const_item, });
+                self.selectBaustein({row: row_const, depth: depth_const, item: item_const, });
             });
         }
 
         be_baustein.addEventListener("click", function(e: any) {
             if (e.target.id === baustein_id) {
-                self.selectBaustein({row: const_row, depth: const_depth, item: const_item, });
+                self.selectBaustein({row: row_const, depth: depth_const, item: item_const, });
             } else {
                 return false;
             }
@@ -703,9 +727,9 @@ class BausteinEditor {
                 console.error("baustein_item.addEventListener('dragstart'): e.dataTransfer is null");
             } else {
                 e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData("row", const_row.toString());
-                e.dataTransfer.setData("depth", const_depth.toString());
-                e.dataTransfer.setData("item", const_item.toString());
+                e.dataTransfer.setData("row", row_const.toString());
+                e.dataTransfer.setData("depth", depth_const.toString());
+                e.dataTransfer.setData("item", item_const.toString());
             }
         });
 
@@ -721,7 +745,7 @@ class BausteinEditor {
                     item: parseInt(e.dataTransfer.getData("item")), 
                 };
 
-                var new_position = self.data.bausteine[const_row][const_depth][const_item].position;
+                var new_position = self.data.bausteine[row_const][depth_const][item_const].position;
                 console.log("old position", old_position);
                 console.log("new position", new_position);
                 if (old_position.row !== new_position.row) {

@@ -311,6 +311,28 @@ var BausteinEditor = (function () {
         }
         be_bausteinSelector.addEventListener("click", function () { self.bausteinSelector_toggle(be_bausteinSelector, be_bausteinSelector_layer, be_bausteinSelector_layer_item_container1, be_bausteinSelector_layer_item_container2); });
         be_bausteinSelector_layer_close.addEventListener("click", function () { self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer); });
+        be_bausteinSelector.addEventListener("dragover", function (e) {
+            e.preventDefault();
+        });
+        be_bausteinSelector.addEventListener("drop", function (e) {
+            e.preventDefault();
+            if (e.dataTransfer === null) {
+                console.error("baustein_item.addEventListener('drop'): e.dataTransfer is null");
+            }
+            else {
+                var old_position = {
+                    row: parseInt(e.dataTransfer.getData("row")),
+                    depth: parseInt(e.dataTransfer.getData("depth")),
+                    item: parseInt(e.dataTransfer.getData("item")),
+                };
+                var new_position = { row: row_const, depth: depth_const, item: item_const };
+                console.log("drop on addBausteinSelector: old position", old_position);
+                console.log("drop on addBausteinSelector: new position", new_position);
+                if (old_position.row !== new_position.row) {
+                    self.moveBaustein(old_position, new_position);
+                }
+            }
+        });
         return be_bausteinSelector_container;
     };
     BausteinEditor.prototype.addBaustein = function (type, position) {
@@ -425,9 +447,9 @@ var BausteinEditor = (function () {
     };
     BausteinEditor.prototype.renderBaustein = function (baustein_entry, position) {
         var self = this;
-        var const_row = position.row;
-        var const_depth = position.depth;
-        var const_item = position.item;
+        var row_const = position.row;
+        var depth_const = position.depth;
+        var item_const = position.item;
         var baustein_id = this.dom_id + '_be_baustein_item' + position.row + '_' + position.depth + '_' + position.item;
         var baustein_editor_id = baustein_id + '_editor';
         var be_baustein = this.createElement("div", baustein_id, "be_baustein");
@@ -449,8 +471,8 @@ var BausteinEditor = (function () {
         }
         var baustein_indicator = be_baustein.appendChild(this.createElement("label", "", "baustein_indicator"));
         baustein_indicator.innerHTML = "<b>" + baustein_entry.icon + "</b> " + baustein_entry.title;
-        baustein_indicator.addEventListener("click", function (e) {
-            self.selectBaustein({ row: const_row, depth: const_depth, item: const_item, });
+        baustein_indicator.addEventListener("click", function () {
+            self.selectBaustein({ row: row_const, depth: depth_const, item: item_const, });
         }, false);
         if (baustein_entry.renderType === BausteinRenderType.layout) {
         }
@@ -474,7 +496,7 @@ var BausteinEditor = (function () {
                     editor.addEventListener("input", function () {
                         editor.style.height = '1px';
                         editor.style.height = editor.scrollHeight + 'px';
-                        self.data.bausteine[const_row][const_depth][const_item].content = editor.innerHTML;
+                        self.data.bausteine[row_const][depth_const][item_const].content = editor.innerHTML;
                     });
                     break;
                 default:
@@ -484,17 +506,17 @@ var BausteinEditor = (function () {
                     be_baustein.addEventListener("input", function () {
                         editor.style.height = '1px';
                         editor.style.height = editor.scrollHeight + 'px';
-                        self.data.bausteine[const_row][const_depth][const_item].content = editor.value.split("<").join("&lt;").split(">").join("&gt;");
+                        self.data.bausteine[row_const][depth_const][item_const].content = editor.value.split("<").join("&lt;").split(">").join("&gt;");
                     });
                     break;
             }
             editor.addEventListener("focusin", function () {
-                self.selectBaustein({ row: const_row, depth: const_depth, item: const_item, });
+                self.selectBaustein({ row: row_const, depth: depth_const, item: item_const, });
             });
         }
         be_baustein.addEventListener("click", function (e) {
             if (e.target.id === baustein_id) {
-                self.selectBaustein({ row: const_row, depth: const_depth, item: const_item, });
+                self.selectBaustein({ row: row_const, depth: depth_const, item: item_const, });
             }
             else {
                 return false;
@@ -509,9 +531,9 @@ var BausteinEditor = (function () {
             }
             else {
                 e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData("row", const_row.toString());
-                e.dataTransfer.setData("depth", const_depth.toString());
-                e.dataTransfer.setData("item", const_item.toString());
+                e.dataTransfer.setData("row", row_const.toString());
+                e.dataTransfer.setData("depth", depth_const.toString());
+                e.dataTransfer.setData("item", item_const.toString());
             }
         });
         be_baustein.addEventListener("drop", function (e) {
@@ -525,7 +547,7 @@ var BausteinEditor = (function () {
                     depth: parseInt(e.dataTransfer.getData("depth")),
                     item: parseInt(e.dataTransfer.getData("item")),
                 };
-                var new_position = self.data.bausteine[const_row][const_depth][const_item].position;
+                var new_position = self.data.bausteine[row_const][depth_const][item_const].position;
                 console.log("old position", old_position);
                 console.log("new position", new_position);
                 if (old_position.row !== new_position.row) {
