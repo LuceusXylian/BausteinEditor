@@ -38,7 +38,6 @@ class Baustein {
         this.tag = tag;
         this.endtag = hasEndtag;
         this.renderType = renderType;
-        console.log("baustein constructor renderType", this.renderType)
         this.style = [];
         // Objects are reference types, we need to use clone here
         for (var i = 0; i < style.length; i++) {
@@ -431,8 +430,7 @@ class BausteinEditor {
     
 
     addBaustein(type: string, position: Position) {
-        console.log("addBaustein() type", type);
-        console.log("addBaustein() position", position);
+        console.log("addBaustein( type:", type, ", position:", position, " )");
 
         if (type !== "") {
             // Objects are reference types, we need to use clone here
@@ -832,10 +830,7 @@ class BausteinEditor {
                 const formcontrol_item: HTMLInputElement = <HTMLInputElement> document.getElementById(this.dom_id+"_baustein_content_row_"+baustein.style[i].property.name);
                 baustein.style[i].value = formcontrol_item?.value;
                 
-                console.log('baustein.renderType', i, baustein.renderType);
                 if (baustein.renderType === BausteinRenderType.layout) {
-                    console.log('this.selected_baustein', i, this.selected_baustein);
-                    console.log('element', i, baustein);
                     this.selected_baustein.style[baustein.style[i].property.name] = baustein.style[i].value;
                 } else {
                     selected_baustein_editor.style[baustein.style[i].property.name] = baustein.style[i].value;
