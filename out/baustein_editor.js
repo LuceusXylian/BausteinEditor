@@ -62,8 +62,8 @@ var BausteinEditor = (function () {
             text_align: { name: "text-align", title: "Textausrichtung", type: "select", suffix: "",
                 options: [new Option("Normal", "initial"), new Option("left", "left"), new Option("center", "center"), new Option("right", "right")] },
             color: { name: "color", title: "Farbe", type: "color", suffix: "" },
-            background_color: { name: "background_color", title: "Background Color", type: "color", suffix: "" },
-            background_image: { name: "background_image", title: "Background Image", type: "string", suffix: "" },
+            background_color: { name: "background-color", title: "Background Color", type: "color", suffix: "" },
+            background_image: { name: "background-image", title: "Background Image", type: "string", suffix: "" },
             max_width: { name: "max-width", title: "Maximale Breite", type: "number", suffix: "px" },
             max_height: { name: "max-height", title: "Maximale Höhe", type: "number", suffix: "px" },
             margin_top: { name: "margin-top", title: "Außenabstand Oben", type: "number", suffix: "px" },
@@ -593,15 +593,17 @@ var BausteinEditor = (function () {
         if (this.selected_baustein !== null && this.selected_baustein_position !== null) {
             var selected_baustein_editor = this.selected_baustein.lastChild;
             for (var i = 0; i < this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item].style.length; i++) {
-                var baustein = this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item].style[i];
-                var formcontrol_item = document.getElementById(this.dom_id + "_baustein_content_row_" + baustein.property.name);
-                baustein.value = formcontrol_item === null || formcontrol_item === void 0 ? void 0 : formcontrol_item.value;
-                console.log('element', i, baustein);
+                var baustein = this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item];
+                var formcontrol_item = document.getElementById(this.dom_id + "_baustein_content_row_" + baustein.style[i].property.name);
+                baustein.style[i].value = formcontrol_item === null || formcontrol_item === void 0 ? void 0 : formcontrol_item.value;
+                console.log('baustein.renderType', i, baustein.renderType);
                 if (baustein.renderType === BausteinRenderType.layout) {
-                    this.selected_baustein.style[baustein.property.name] = baustein.value;
+                    console.log('this.selected_baustein', i, this.selected_baustein);
+                    console.log('element', i, baustein);
+                    this.selected_baustein.style[baustein.style[i].property.name] = baustein.style[i].value;
                 }
                 else {
-                    selected_baustein_editor.style[baustein.property.name] = baustein.value;
+                    selected_baustein_editor.style[baustein.style[i].property.name] = baustein.style[i].value;
                 }
             }
         }

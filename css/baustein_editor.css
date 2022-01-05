@@ -272,9 +272,10 @@ select.form-control:not([multiple]) {
     left: 4px;
     font-size: 0.6rem;
     font-weight: normal;
-    background: white;
     padding: 2px;
     border-radius: 4px;
+    color: black;
+    background: white;
 }
 
 .be_bausteinSelector_container {

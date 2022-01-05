@@ -105,8 +105,8 @@ class BausteinEditor {
                 , options: [ new Option("Normal", "initial"), new Option("left", "left"), new Option("center", "center"), new Option("right", "right") ] },
 
             color: { name: "color", title: "Farbe", type: "color", suffix: "" },
-            background_color: { name: "background_color", title: "Background Color", type: "color", suffix: "" },
-            background_image: { name: "background_image", title: "Background Image", type: "string", suffix: "" },
+            background_color: { name: "background-color", title: "Background Color", type: "color", suffix: "" },
+            background_image: { name: "background-image", title: "Background Image", type: "string", suffix: "" },
 
             max_width: { name: "max-width", title: "Maximale Breite", type: "number", suffix: "px" },
             max_height: { name: "max-height", title: "Maximale Höhe", type: "number", suffix: "px" },
@@ -824,20 +824,21 @@ class BausteinEditor {
         this.dom.page_styles.innerHTML = style_string;
 
         // Apply Baustein Styles
-        // TODO FIX this for layout
         if (this.selected_baustein !== null && this.selected_baustein_position !== null) {
             var selected_baustein_editor: HTMLElement = <HTMLElement> this.selected_baustein.lastChild;
             
             for (var i = 0; i < this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item].style.length; i++) {
-                const baustein = this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item].style[i];
-                const formcontrol_item: HTMLInputElement = <HTMLInputElement> document.getElementById(this.dom_id+"_baustein_content_row_"+baustein.property.name);
-                baustein.value = formcontrol_item?.value;
-                console.log('element', i, baustein);
+                const baustein = this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item];
+                const formcontrol_item: HTMLInputElement = <HTMLInputElement> document.getElementById(this.dom_id+"_baustein_content_row_"+baustein.style[i].property.name);
+                baustein.style[i].value = formcontrol_item?.value;
                 
+                console.log('baustein.renderType', i, baustein.renderType);
                 if (baustein.renderType === BausteinRenderType.layout) {
-                    this.selected_baustein.style[baustein.property.name] = baustein.value;
+                    console.log('this.selected_baustein', i, this.selected_baustein);
+                    console.log('element', i, baustein);
+                    this.selected_baustein.style[baustein.style[i].property.name] = baustein.style[i].value;
                 } else {
-                    selected_baustein_editor.style[baustein.property.name] = baustein.value;
+                    selected_baustein_editor.style[baustein.style[i].property.name] = baustein.style[i].value;
                 }
             }
         }
