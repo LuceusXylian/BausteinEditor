@@ -317,7 +317,7 @@ var BausteinEditor = (function () {
         be_bausteinSelector.addEventListener("drop", function (e) {
             e.preventDefault();
             if (e.dataTransfer === null) {
-                console.error("baustein_item.addEventListener('drop'): e.dataTransfer is null");
+                console.error("be_bausteinSelector.addEventListener('drop'): e.dataTransfer is null");
             }
             else {
                 var old_position = {
@@ -328,7 +328,7 @@ var BausteinEditor = (function () {
                 var new_position = { row: row_const, depth: depth_const, item: item_const };
                 console.log("drop on addBausteinSelector: old position", old_position);
                 console.log("drop on addBausteinSelector: new position", new_position);
-                if (old_position.row !== new_position.row) {
+                if (old_position.row !== new_position.row || old_position.depth !== new_position.depth || old_position.item !== new_position.item) {
                     self.moveBaustein(old_position, new_position);
                 }
             }
@@ -522,9 +522,6 @@ var BausteinEditor = (function () {
                 return false;
             }
         }, false);
-        be_baustein.addEventListener("dragover", function (e) {
-            e.preventDefault();
-        });
         be_baustein.addEventListener("dragstart", function (e) {
             if (e.dataTransfer === null) {
                 console.error("baustein_item.addEventListener('dragstart'): e.dataTransfer is null");
@@ -534,25 +531,6 @@ var BausteinEditor = (function () {
                 e.dataTransfer.setData("row", row_const.toString());
                 e.dataTransfer.setData("depth", depth_const.toString());
                 e.dataTransfer.setData("item", item_const.toString());
-            }
-        });
-        be_baustein.addEventListener("drop", function (e) {
-            e.preventDefault();
-            if (e.dataTransfer === null) {
-                console.error("baustein_item.addEventListener('drop'): e.dataTransfer is null");
-            }
-            else {
-                var old_position = {
-                    row: parseInt(e.dataTransfer.getData("row")),
-                    depth: parseInt(e.dataTransfer.getData("depth")),
-                    item: parseInt(e.dataTransfer.getData("item")),
-                };
-                var new_position = self.data.bausteine[row_const][depth_const][item_const].position;
-                console.log("old position", old_position);
-                console.log("new position", new_position);
-                if (old_position.row !== new_position.row) {
-                    self.moveBaustein(old_position, new_position);
-                }
             }
         });
         return be_baustein;

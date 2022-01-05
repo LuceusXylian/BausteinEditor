@@ -2,9 +2,10 @@
 
 const BausteinRenderType = {
     layout: 0,
-    plaintext: 1,
-    richtext: 2,
-    image: 3,
+    table: 1,
+    plaintext: 2,
+    richtext: 3,
+    image: 4,
 };
 
 class Position {
@@ -432,7 +433,7 @@ class BausteinEditor {
         be_bausteinSelector.addEventListener("drop", function(e: any) {
             e.preventDefault();
             if (e.dataTransfer === null) {
-                console.error("baustein_item.addEventListener('drop'): e.dataTransfer is null");
+                console.error("be_bausteinSelector.addEventListener('drop'): e.dataTransfer is null");
             } else {
                 var old_position: Position = {
                     row: parseInt(e.dataTransfer.getData("row")), 
@@ -443,7 +444,7 @@ class BausteinEditor {
                 var new_position = { row: row_const, depth: depth_const, item: item_const };
                 console.log("drop on addBausteinSelector: old position", old_position);
                 console.log("drop on addBausteinSelector: new position", new_position);
-                if (old_position.row !== new_position.row) {
+                if (old_position.row !== new_position.row || old_position.depth !== new_position.depth || old_position.item !== new_position.item) {
                     self.moveBaustein(old_position, new_position);
                 }
             }
@@ -605,6 +606,7 @@ class BausteinEditor {
     }
 
     renderBaustein(baustein_entry: Baustein, position: Position): HTMLElement {
+        //TODO: bausteinRenderType: image
         const self = this;
         const row_const = position.row;
         const depth_const = position.depth;
@@ -717,10 +719,6 @@ class BausteinEditor {
         }, false);
 
 
-        be_baustein.addEventListener("dragover", function(e: any) {
-            e.preventDefault();
-        });
-
         // source
         be_baustein.addEventListener("dragstart", function(e: any) {
             if (e.dataTransfer === null) {
@@ -734,6 +732,11 @@ class BausteinEditor {
         });
 
         // target
+        /*
+        be_baustein.addEventListener("dragover", function(e: any) {
+            e.preventDefault();
+        });
+        
         be_baustein.addEventListener("drop", function(e: any) {
             e.preventDefault();
             if (e.dataTransfer === null) {
@@ -753,6 +756,7 @@ class BausteinEditor {
                 }
             }
         });
+        */
 
         return be_baustein;
     }
@@ -813,7 +817,7 @@ class BausteinEditor {
                 */
 
 
-                //TODO Baustein Layout Items
+                //TODO: Baustein Layout: Table
                 depth = 1;
                 if (this.data.bausteine[row].length > 1) {
                     for (var item = 0; item < this.data.bausteine[row][depth].length; item++) {
