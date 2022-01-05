@@ -235,8 +235,8 @@ select.form-control:not([multiple]) {
 
 .be_baustein {
     display: block;
-    margin: 0 10px;
-    padding: 4px;
+    min-width: 100px;
+    margin: 4px;
     border-radius: 6px;
     border: 1px dashed #ccc;
     position: relative;
@@ -246,7 +246,7 @@ select.form-control:not([multiple]) {
 
 .be_baustein[data-type="layout"] > .be_baustein, 
 .be_baustein[data-type="layout"] > .be_bausteinSelector_container 
-    { display: inline-block; vertical-align: top; margin-top: 10px; }
+    { display: inline-block; vertical-align: top; margin-top: 20px; }
 .be_baustein[data-type="layout"] > .be_bausteinSelector_container > .be_bausteinSelector { padding: 1rem; }
 
 
@@ -425,8 +425,8 @@ select.form-control:not([multiple]) {
 
 /* TinyEditor */
 .__editor {
-    background: #ffffff;
-    color: #000000;
+    background: inherit;
+    color: inherit;
     font-family: inherit;
     overflow: auto;
     padding: 10px;
@@ -441,6 +441,9 @@ select.form-control:not([multiple]) {
     flex-wrap: wrap;
     padding: 5px;
     border-bottom: solid 1px #e0e0e0;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    background: white;
 }
 .be_baustein.selected .__toolbar {
     display: flex;

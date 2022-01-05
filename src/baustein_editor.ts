@@ -70,7 +70,7 @@ class BausteinEditor {
 	public styleProperties: any;
 	public data: any;
 	public types: any;
-	public bausteinSelector: any;
+	public addBausteinSelectorItems: any;
 	public be_bausteinSelector_isOpen: any;
 	public selected_baustein: HTMLElement | null;
 	public selected_baustein_position: Position | null;
@@ -228,7 +228,7 @@ class BausteinEditor {
             ,table: new Baustein("table", "Tabelle", '<i class="fas fa-table"></i>', "table", true, BausteinRenderType.layout, layout_styles)
         };
 
-        this.bausteinSelector = [
+        this.addBausteinSelectorItems = [
             { type: 1, title: "Überschriften", icon: '<i class="fas fa-heading"></i>', items: [ this.types.h1, this.types.h2, this.types.h3, this.types.h4, this.types.h5, this.types.h6 ] }
             ,{ type: 0, baustein: this.types.text }
             ,{ type: 0, baustein: this.types.picture }
@@ -358,8 +358,8 @@ class BausteinEditor {
         );
 
 
-        for (var i = 0; i < this.bausteinSelector.length; i++) {
-            const itemset = this.bausteinSelector[i];
+        for (var i = 0; i < this.addBausteinSelectorItems.length; i++) {
+            const itemset = this.addBausteinSelectorItems[i];
             if (showLayoutItems === false && itemset.type === 0 && itemset.baustein.renderType === BausteinRenderType.layout) {
                 continue;
             }
@@ -390,11 +390,11 @@ class BausteinEditor {
             
             const category = i;
             be_bausteinSelector_layer_item.addEventListener("click", function() {
-                if(self.bausteinSelector[category].type === 0) {
-                    self.addBaustein(self.bausteinSelector[category].baustein.id, {row: row_const, depth: depth_const, item: item_const});
+                if(self.addBausteinSelectorItems[category].type === 0) {
+                    self.addBaustein(self.addBausteinSelectorItems[category].baustein.id, {row: row_const, depth: depth_const, item: item_const});
                     self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
                 } else {
-                    const types_array = self.bausteinSelector[category].items;
+                    const types_array = self.addBausteinSelectorItems[category].items;
                     be_bausteinSelector_layer_item_container2.innerHTML = "";
                     
                     for (var b = 0; b < types_array.length; b++) {
@@ -442,7 +442,6 @@ class BausteinEditor {
                 const row_max = this.data.bausteine.length;
                 baustein_entry.position = position;
                 this.data.bausteine[row_max] = [[ baustein_entry ]];
-                this.selected_baustein_position = position;
     
                 console.log("addBaustein() this.data.bausteine", this.data.bausteine);
                 
@@ -460,7 +459,6 @@ class BausteinEditor {
                 const item_max = this.data.bausteine[position.row][position.depth].length;
                 baustein_entry.position = position;
                 this.data.bausteine[position.row][position.depth][item_max] = baustein_entry;
-                this.selected_baustein_position = position;
     
                 console.log("addBaustein() this.data.bausteine", this.data.bausteine);
                 
@@ -484,7 +482,7 @@ class BausteinEditor {
     }
 
     selectBaustein(position: Position) {
-        this.selected_baustein?.classList.remove("selected");
+        this.dom.content.querySelectorAll(".be_baustein").forEach(function(be_baustein: HTMLElement) { be_baustein.classList.remove("selected"); });
         this.selected_baustein = document.getElementById(this.dom_id+'_be_baustein_item'+position.row+'_'+position.depth+'_'+position.item);
         this.selected_baustein?.classList.add("selected");
         this.selected_baustein_position = position;
@@ -590,11 +588,18 @@ class BausteinEditor {
         const baustein_id = this.dom_id+'_be_baustein_item'+position.row+'_'+position.depth+'_'+position.item;
         const baustein_editor_id = baustein_id+'_editor';
 
-        var be_baustein = this.createElement("label", baustein_id, "be_baustein");
+        var be_baustein = this.createElement("div", baustein_id, "be_baustein");
         be_baustein.dataset.type = baustein_entry.id;
         be_baustein.draggable = true;
+
+        console.log("this.selected_baustein_position", this.selected_baustein_position);
+        console.log("position", position);
         
-        if (this.selected_baustein_position !== null && this.selected_baustein_position.row === position.row) {
+        if (this.selected_baustein_position !== null 
+            && this.selected_baustein_position.row === position.row
+            && this.selected_baustein_position.depth === position.depth
+            && this.selected_baustein_position.item === position.item
+        ) {
             be_baustein.classList.add("selected")
         }
 
@@ -610,76 +615,90 @@ class BausteinEditor {
         var baustein_indicator: HTMLLabelElement = <HTMLLabelElement> be_baustein.appendChild(
             this.createElement("label", "", "baustein_indicator")
         );
-        baustein_indicator.htmlFor = baustein_id;
         baustein_indicator.innerHTML = "<b>" + baustein_entry.icon + "</b> " + baustein_entry.title;
+        baustein_indicator.addEventListener("click", function() {
+            self.selectBaustein({row: const_row, depth: const_depth, item: const_item, });
+        }, false);
 
-        var editor: any;
-        switch (baustein_entry.renderType) {
-            default:
-                editor = be_baustein.appendChild(
-                    this.createElement("textarea", baustein_editor_id, "be_baustein_item")
-                );
-                editor.innerHTML = baustein_entry.content;
-                editor.focus();
+        if (baustein_entry.renderType === BausteinRenderType.layout) {
+        } else {
+            var editor: any;
+            switch (baustein_entry.renderType) {
+                case BausteinRenderType.richtext:
+                    editor = be_baustein.appendChild(
+                        this.createElement("div", baustein_editor_id, "be_baustein_item")
+                    );
+                    editor.innerHTML = baustein_entry.content;
+                    editor.style.minHeight = "100px";
+    
+                    /*
+                        formatblock
+                        fontname
+                        bold
+                        italic
+                        underline
+                        forecolor
+                        justifyleft
+                        justifycenter
+                        justifyright
+                        insertorderedlist
+                        insertunorderedlist
+                        outdent
+                        removeFormat
+                    */
+                    editor.dataset.formatblock = "0";
+                    editor.dataset.fontname = "0";
+                    editor.dataset.justifyleft = "0";
+                    editor.dataset.justifycenter = "0";
+                    editor.dataset.justifyright = "0";
+                    editor.dataset.insertorderedlist = "0";
+                    editor.dataset.insertunorderedlist = "0";
+                    editor.dataset.indent = "0";
+                    editor.dataset.outdent = "0";
+    
+                    TinyEditor.transformToEditor(editor);
+                    editor.addEventListener("input", function() {
+                        editor.style.height = '1px';
+                        editor.style.height = editor.scrollHeight + 'px';
+                        self.data.bausteine[const_row][const_depth][const_item].content = editor.innerHTML;
+                    });
+                    break;
                 
-                be_baustein.addEventListener("input", function() {
-                    editor.style.height = '1px';
-                    editor.style.height = editor.scrollHeight + 'px';
-                    self.data.bausteine[const_row][const_depth][const_item].content = editor.value.split("<").join("&lt;").split(">").join("&gt;");
-                });
-                break;
-
-            case BausteinRenderType.richtext:
-                editor = be_baustein.appendChild(
-                    this.createElement("div", baustein_editor_id, "be_baustein_item")
-                );
-                editor.innerHTML = baustein_entry.content;
-                editor.style.minHeight = "100px";
-
-                /*
-                    formatblock
-                    fontname
-                    bold
-                    italic
-                    underline
-                    forecolor
-                    justifyleft
-                    justifycenter
-                    justifyright
-                    insertorderedlist
-                    insertunorderedlist
-                    outdent
-                    removeFormat
-                */
-                editor.dataset.formatblock = "0";
-                editor.dataset.fontname = "0";
-                editor.dataset.justifyleft = "0";
-                editor.dataset.justifycenter = "0";
-                editor.dataset.justifyright = "0";
-                editor.dataset.insertorderedlist = "0";
-                editor.dataset.insertunorderedlist = "0";
-                editor.dataset.indent = "0";
-                editor.dataset.outdent = "0";
-
-                TinyEditor.transformToEditor(editor);
-                editor.addEventListener("input", function() {
-                    editor.style.height = '1px';
-                    editor.style.height = editor.scrollHeight + 'px';
-                    self.data.bausteine[const_row][const_depth][const_item].content = editor.innerHTML;
-                });
-                break;
+                default:
+                    editor = be_baustein.appendChild(
+                        this.createElement("textarea", baustein_editor_id, "be_baustein_item")
+                    );
+                    editor.innerHTML = baustein_entry.content;
+                    editor.focus();
+                    
+                    be_baustein.addEventListener("input", function() {
+                        editor.style.height = '1px';
+                        editor.style.height = editor.scrollHeight + 'px';
+                        self.data.bausteine[const_row][const_depth][const_item].content = editor.value.split("<").join("&lt;").split(">").join("&gt;");
+                    });
+                    break;
+            }
+            
+            editor.addEventListener("focusin", function() {
+                self.selectBaustein({row: const_row, depth: const_depth, item: const_item, });
+            });
         }
 
-        editor.addEventListener("focusin", function() {
-            self.selectBaustein({row: const_row, depth: const_depth, item: const_item, });
-        });
+        be_baustein.addEventListener("click", function(e: any) {
+            if (e.target.id === baustein_id) {
+                self.selectBaustein({row: const_row, depth: const_depth, item: const_item, });
+            } else {
+                return false;
+            }
+        }, false);
 
-        editor.addEventListener("dragover", function(e: any) {
+
+        be_baustein.addEventListener("dragover", function(e: any) {
             e.preventDefault();
         });
 
         // source
-        editor.addEventListener("dragstart", function(e: any) {
+        be_baustein.addEventListener("dragstart", function(e: any) {
             if (e.dataTransfer === null) {
                 console.error("baustein_item.addEventListener('dragstart'): e.dataTransfer is null");
             } else {
@@ -691,7 +710,7 @@ class BausteinEditor {
         });
 
         // target
-        editor.addEventListener("drop", function(e: any) {
+        be_baustein.addEventListener("drop", function(e: any) {
             e.preventDefault();
             if (e.dataTransfer === null) {
                 console.error("baustein_item.addEventListener('drop'): e.dataTransfer is null");
@@ -732,14 +751,25 @@ class BausteinEditor {
             
             if (baustein_entry.renderType === BausteinRenderType.layout) {
                 // Baustein Layout start
+                var be_baustein: HTMLElement = this.dom.content.appendChild( 
+                    this.renderBaustein(baustein_entry, {row: row, depth: depth, item: item})
+                );
+
+                /*
                 const baustein_id = this.dom_id+'_be_baustein_item'+row+'_'+depth+'_'+item;
-        
+
                 var be_baustein: HTMLElement = this.dom.content.appendChild( 
                     this.createElement("div", baustein_id, "be_baustein")
                 );
-                if (this.selected_baustein_position !== null && this.selected_baustein_position.row === row) {
-                    be_baustein.classList.add("selected");
+
+                if (this.selected_baustein_position !== null 
+                    && this.selected_baustein_position.row === row
+                    && this.selected_baustein_position.depth === depth
+                    && this.selected_baustein_position.item === item
+                ) {
+                    be_baustein.classList.add("selected")
                 }
+
                 be_baustein.dataset.type = baustein_entry.id;
                 be_baustein.draggable = true;
 
@@ -756,6 +786,7 @@ class BausteinEditor {
                 );
                 baustein_indicator.htmlFor = baustein_id;
                 baustein_indicator.innerHTML = "<b>" + baustein_entry.icon + "</b> " + baustein_entry.title;
+                */
 
 
                 //TODO Baustein Layout Items
