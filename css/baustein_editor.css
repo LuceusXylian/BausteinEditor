@@ -408,7 +408,7 @@ select.form-control:not([multiple]) {
     font-size: 24px;
 }
 
-.be_sidebar_content { overflow-y: auto; overflow-x: hidden; }
+.be_sidebar_content { overflow-y: auto; overflow-x: hidden; height: calc(100% - 50px); }
 .be_sidebar_content_row {
     margin: 8px;
 }
@@ -445,7 +445,7 @@ select.form-control:not([multiple]) {
     border-top-right-radius: 6px;
     background: white;
 }
-.be_baustein.selected .__toolbar {
+.be_baustein.selected > .__toolbar {
     display: flex;
 }
 
