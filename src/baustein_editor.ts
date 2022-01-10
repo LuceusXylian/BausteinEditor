@@ -693,7 +693,6 @@ class BausteinEditor {
                 }
 
                 image.style.maxWidth = "100%";
-                image.style.margin = "2px";
 
                 image.addEventListener("click", function() {
                     self.selectBaustein({row: row_const, depth: depth_const, item: item_const, });

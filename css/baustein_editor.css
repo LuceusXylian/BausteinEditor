@@ -237,6 +237,7 @@ select.form-control:not([multiple]) {
     display: block;
     min-width: 100px;
     margin: 4px;
+    padding: 2px;
     border-radius: 6px;
     border: 1px dashed #ccc;
     position: relative;
@@ -261,9 +262,6 @@ select.form-control:not([multiple]) {
     text-decoration: inherit;
     font-style: inherit;
 }
-.be_baustein.selected {
-    border: 1px solid #007cba;
-}
 
 .baustein_indicator {
     display: block;
@@ -276,6 +274,11 @@ select.form-control:not([multiple]) {
     border-radius: 4px;
     color: black;
     background: white;
+    border: 1px dashed #ccc;
+}
+
+.be_baustein.selected, .be_baustein.selected .baustein_indicator {
+    border: 1px solid #007cba;
 }
 
 .be_bausteinSelector_container {
