@@ -729,8 +729,8 @@ class BausteinEditor {
                         editor.dataset.justifyleft = "0";
                         editor.dataset.justifycenter = "0";
                         editor.dataset.justifyright = "0";
-                        editor.dataset.insertorderedlist = "0";
-                        editor.dataset.insertunorderedlist = "0";
+                        editor.dataset.insertorderedlist = "1";
+                        editor.dataset.insertunorderedlist = "1";
                         editor.dataset.indent = "0";
                         editor.dataset.outdent = "0";
         
@@ -1081,7 +1081,7 @@ class BausteinEditor {
                     this.formcontrol(
                         "baustein_image", "text", "image"
                         , 'Bildquelle (URL)'
-                        , this.data.bausteine[position_const.row][position_const.depth][position_const.item].class, "", []
+                        , this.data.bausteine[position_const.row][position_const.depth][position_const.item].content, "", []
                     )
                 );
 
@@ -1147,5 +1147,19 @@ class BausteinEditor {
         this.dom.sidebar_header_col__baustein.classList.add("disabled");
     }
 
+
+    import(data: any) {
+        this.data = data;
+        this.render();
+    }
+
+    export() {
+        var html = '<div class="be-article"></div>';
+        
+        return {
+            data: this.data,
+            html: html
+        };
+    }
 }
 

@@ -502,10 +502,8 @@ var BausteinEditor = (function () {
             self.selectBaustein({ row: row_const, depth: depth_const, item: item_const, });
         }, false);
         switch (baustein_entry.renderType) {
-            case BausteinRenderType.layout:
-                break;
-            case BausteinRenderType.table:
-                break;
+            case BausteinRenderType.layout: break;
+            case BausteinRenderType.table: break;
             case BausteinRenderType.image:
                 var image = be_baustein.appendChild(this.createElement("img", baustein_editor_id, "be_baustein_item"));
                 image.dataset.src = baustein_entry.content;
@@ -516,7 +514,6 @@ var BausteinEditor = (function () {
                     image.src = baustein_entry.content;
                 }
                 image.style.maxWidth = "100%";
-                image.style.margin = "2px";
                 image.addEventListener("click", function () {
                     self.selectBaustein({ row: row_const, depth: depth_const, item: item_const, });
                 });
@@ -533,8 +530,8 @@ var BausteinEditor = (function () {
                         editor.dataset.justifyleft = "0";
                         editor.dataset.justifycenter = "0";
                         editor.dataset.justifyright = "0";
-                        editor.dataset.insertorderedlist = "0";
-                        editor.dataset.insertunorderedlist = "0";
+                        editor.dataset.insertorderedlist = "1";
+                        editor.dataset.insertunorderedlist = "1";
                         editor.dataset.indent = "0";
                         editor.dataset.outdent = "0";
                         TinyEditor.transformToEditor(editor);
@@ -747,14 +744,13 @@ var BausteinEditor = (function () {
             console.log("open_baustein_attributes position_const", position_const_1);
             this.dom.sidebar_content__baustein.innerHTML = "";
             if (renderType === BausteinRenderType.image) {
-                var baustein_image_row = this.dom.sidebar_content__baustein.appendChild(this.formcontrol("baustein_image", "text", "image", 'Bildquelle (URL)', this.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item].class, "", []));
+                var baustein_image_row = this.dom.sidebar_content__baustein.appendChild(this.formcontrol("baustein_image", "text", "image", 'Bildquelle (URL)', this.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item].content, "", []));
                 var baustein_image_form_control = baustein_image_row.getElementsByClassName('form-control')[0];
                 baustein_image_form_control.addEventListener("change", function () {
                     self_1.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item].content = this.value;
-                    console.log("self.selected_baustein", self_1.selected_baustein);
                     if (self_1.selected_baustein !== null) {
-                        var selected_baustein = self_1.selected_baustein.querySelector(".be_baustein_item");
-                        selected_baustein.src = this.value;
+                        var selected_baustein_item = self_1.selected_baustein.querySelector(".be_baustein_item");
+                        selected_baustein_item.src = this.value;
                     }
                 });
             }
@@ -790,6 +786,17 @@ var BausteinEditor = (function () {
         this.dom.sidebar_content__baustein.style.display = "none";
         this.dom.sidebar_header_col__baustein.classList.remove("active");
         this.dom.sidebar_header_col__baustein.classList.add("disabled");
+    };
+    BausteinEditor.prototype.import = function (data) {
+        this.data = data;
+        this.render();
+    };
+    BausteinEditor.prototype.export = function () {
+        var html = '<div class="be-article"></div>';
+        return {
+            data: this.data,
+            html: html
+        };
     };
     return BausteinEditor;
 }());
