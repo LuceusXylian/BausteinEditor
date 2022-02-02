@@ -99,6 +99,8 @@ class BausteinEditor {
         background_color: { name: "background-color", title: "Background Color", type: "color", suffix: "", options: [] },
         background_image: { name: "background-image", title: "Background Image", type: "string", suffix: "", options: [] },
 
+        width: { name: "width", title: "Breite", type: "number", suffix: "px", options: [] },
+        height: { name: "height", title: "Höhe", type: "number", suffix: "px", options: [] },
         max_width: { name: "max-width", title: "Maximale Breite", type: "number", suffix: "px", options: [] },
         max_height: { name: "max-height", title: "Maximale Höhe", type: "number", suffix: "px", options: [] },
 
@@ -112,6 +114,16 @@ class BausteinEditor {
         padding_bottom: { name: "padding-bottom", title: "Innenabstand Unten", type: "number", suffix: "px", options: [] },
         padding_left: { name: "padding-left", title: "Innenabstand Links", type: "number", suffix: "px", options: [] },
     };
+
+    private stylePropertiesArray = Object.values(this.styleProperties);
+    getStylePropertyByName(name: string): BausteinStyleProperty {
+        for (var i = 0; i < this.stylePropertiesArray.length; i++) {
+            if (this.stylePropertiesArray[i].name === name) {
+                return <BausteinStyleProperty> this.stylePropertiesArray[i];
+            }            
+        }
+        return new BausteinStyleProperty(name, "", "", "", []);
+    }
 
 	public data: {page: {style: BausteinStyle[]}, bausteine: Baustein[][][]} = {
         page: {
@@ -258,9 +270,9 @@ class BausteinEditor {
 
 
 
-    createElement(type: string, id: string, _class: string): HTMLElement {
-        var element = document.createElement(type);
-        if(id !== "") element.id = id;
+    createElement(_type: string, _id: string, _class: string): HTMLElement {
+        var element = document.createElement(_type);
+        if(_id !== "") element.id = _id;
         if(_class !== "") element.className = _class;
         return element;
     }
@@ -303,6 +315,12 @@ class BausteinEditor {
         );
         this.dom.sidebar_content__baustein = this.dom.sidebar.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_content__baustein", "be_sidebar_content")
+        );
+        this.dom.sidebar_content__baustein_styles = this.dom.sidebar_content__baustein.appendChild(
+            this.createElement("div", this.dom_id+"_sidebar_content__baustein_styles", "")
+        );
+        this.dom.sidebar_content__baustein_misc = this.dom.sidebar_content__baustein.appendChild(
+            this.createElement("div", this.dom_id+"_sidebar_content__baustein_misc", "")
         );
         
         this.dom.sidebar_header_col__site = this.dom.sidebar_header.appendChild(
@@ -581,6 +599,7 @@ class BausteinEditor {
         }
         
         this.data.bausteine = bausteine;
+        this.selected_baustein_position = null;
         this.render();
         window.focus();
         if (document.activeElement === null) {
@@ -926,7 +945,7 @@ class BausteinEditor {
         var style_string = ".be_baustein  {";
 
         for (var i = 0; i < this.data.page.style.length; i++) {
-            const formfield: HTMLFormElement = <HTMLFormElement> document.getElementById(this.dom_id+"_page_content_row_"+this.data.page.style[i].property.name);
+            const formfield: HTMLFormElement = <HTMLFormElement> document.getElementById(this.dom_id+"_page_fc_"+this.data.page.style[i].property.name);
             this.data.page.style[i].value = formfield.value;
             style_string += this.data.page.style[i].property.name + ':' + this.data.page.style[i].value + ';';
         }
@@ -935,36 +954,57 @@ class BausteinEditor {
 
         // Apply Baustein Styles
         if (this.selected_baustein !== null && this.selected_baustein_position !== null) {
+            const baustein = this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item];
             var selected_baustein_editor: HTMLElement = <HTMLElement> this.selected_baustein.lastChild;
             
-            for (var i = 0; i < this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item].style.length; i++) {
-                const baustein = this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item];
-                const formcontrol_item: HTMLInputElement = <HTMLInputElement> document.getElementById(this.dom_id+"_baustein_content_row_"+baustein.style[i].property.name);
-                baustein.style[i].value = formcontrol_item?.value;
+            var nodes = this.dom.sidebar_content__baustein_styles.querySelectorAll(".be_formrow .form-control");
+            for (var i = 0; i < nodes.length; i++) {
+                const property_name: string = nodes[i].name;
+                const value = typeof nodes[i].dataset.value === "undefined"? nodes[i].value : nodes[i].dataset.value;
+
+                var baustein_style_index: number = baustein.style.length;
+                for (var b = 0; b < baustein.style.length; b++) {
+                    if (baustein.style[b].property.name === property_name) {
+                        baustein_style_index = b;
+                        break;
+                    }
+                }
+
+                if(baustein_style_index === baustein.style.length) {
+                    if(value === "" || value === "0" || value === "auto") continue;
+                    var new_style = new BausteinStyle(this.getStylePropertyByName(property_name), "");
+                    if(new_style.property.options.length > 0 && new_style.property.options[0] === value) continue;
+                    baustein.style[baustein_style_index] = new_style;
+                }
+
+                baustein.style[baustein_style_index].value = value;
                 
-                var property_name: any = baustein.style[i].property.name;
                 if (baustein.renderType === BausteinRenderType.layout) {
-                    this.selected_baustein.style[property_name] = baustein.style[i].value;
+                    this.selected_baustein.style[nodes[i].name] = baustein.style[baustein_style_index].value;
                 } else {
-                    selected_baustein_editor.style[property_name] = baustein.style[i].value;
+                    selected_baustein_editor.style[nodes[i].name] = baustein.style[baustein_style_index].value;
                 }
             }
         }
     }
 
-    formcontrol(domArk: string, type: string, name: string, title: string, value: string, suffix: string, options: any) {
+    /// create a forminput. first options item is default value
+    formcontrol(domArk: string, type: string, name: string, title: string | null, value: string, suffix: string, options: any) {
         const self = this;
-        var fc_dom_id = (this.dom_id+'_'+domArk+'_content_row_'+name);
+        var fc_dom_id = (this.dom_id+'_'+domArk+'_fc_'+name);
+        var useDataValue = false;
 
-        var be_sidebar_content_row = this.createElement("div", "", "be_sidebar_content_row");
+        var be_formrow = this.createElement("div", "", "be_formrow");
 
-        var label: HTMLLabelElement = <HTMLLabelElement> be_sidebar_content_row.appendChild(
-            this.createElement("label", "", "")
-        );
-        label.htmlFor = fc_dom_id;
-        label.innerHTML = title;
+        if (title !== null) {
+            var label: HTMLLabelElement = <HTMLLabelElement> be_formrow.appendChild(
+                this.createElement("label", "", "")
+            );
+            label.htmlFor = fc_dom_id;
+            label.innerHTML = title;
+        }
         
-        var form_control_container = be_sidebar_content_row.appendChild(
+        var form_control_container = be_formrow.appendChild(
             this.createElement("div", "", "form-control-container")
         );
         if (type === "number") {
@@ -998,6 +1038,7 @@ class BausteinEditor {
 
             if (type === "color") {
                 form_control.type = "color";
+                useDataValue = true;
             } else if (type === "number") {
                 form_control.type = "text";
                 form_control.dataset.suffix = suffix;
@@ -1031,7 +1072,10 @@ class BausteinEditor {
                     form_control.value = num.toString() + suffix_const;
                 }
     
-                form_control.addEventListener("change", function() { formcontrol_number(0); self.apply_styles(); });
+                form_control.addEventListener("change", function() { 
+                    formcontrol_number(0);
+                    self.apply_styles(); 
+                });
                 form_control.addEventListener("keydown", function(e: any) { 
                     var steps = e.shiftKey? 10 : (e.ctrlKey? 0.1 : 1)
     
@@ -1054,14 +1098,41 @@ class BausteinEditor {
         }
 
         // Events
-        if (type !== "number") form_control.addEventListener("change", function() { self.apply_styles(); });
-        
-        if (type === "number") {
-        } else {
-            form_control.addEventListener("change", function() { self.apply_styles(); });
+        if (type !== "number") {
+            const _useDataValue = useDataValue;
+            if (_useDataValue) {
+                form_control.dataset.value = value;
+            }
+
+            form_control.addEventListener("change", function() { 
+                if (_useDataValue) {
+                    form_control.dataset.value = form_control.value;
+                }
+                self.apply_styles();
+            });
         }
 
-        return be_sidebar_content_row;
+        return be_formrow;
+    }
+
+    /// helper funktion for creating a forminput of layout devtool. Position values: null = do not set, empty = center, non-empty = normal 
+    layout_fc(name: string, value: string, top: string | null, right: string | null, bottom: string | null, left: string | null) {
+        var be_layout_fc__margin_top: HTMLInputElement = <HTMLInputElement>
+            this.formcontrol(
+                "baustein", "number", name
+                , null
+                , value, "px", ["0", "auto"]
+            )
+        ;
+        be_layout_fc__margin_top.style.width = "34px";
+        be_layout_fc__margin_top.style.height = "30px";
+
+        if(top !== null) be_layout_fc__margin_top.style.top = top === ""? "calc(50% - ("+be_layout_fc__margin_top.style.height+" / 2))" : top;
+        if(bottom !== null) be_layout_fc__margin_top.style.bottom = bottom === ""? "calc(50% - ("+be_layout_fc__margin_top.style.height+" / 2))" : bottom;
+        if(left !== null) be_layout_fc__margin_top.style.left = left === ""? "calc(50% - ("+be_layout_fc__margin_top.style.width+" / 2))" : left;
+        if(right !== null) be_layout_fc__margin_top.style.right = right === ""? "calc(50% - ("+be_layout_fc__margin_top.style.width+" / 2))" : right;
+
+        return be_layout_fc__margin_top;
     }
 
     open_baustein_attributes(position: Position, renderType: number) {
@@ -1072,16 +1143,76 @@ class BausteinEditor {
             const position_const = { row: position.row, depth: position.depth, item: position.item };
             this.open_baustein_attributes__position = position_const;
             const self = this;
+            const current_baustein = this.data.bausteine[position_const.row][position_const.depth][position_const.item];
 
             console.log("open_baustein_attributes position_const", position_const)
-            this.dom.sidebar_content__baustein.innerHTML = "";
+            this.dom.sidebar_content__baustein_styles.innerHTML = "";
+            this.dom.sidebar_content__baustein_misc.innerHTML = "";
+
+
+            // Layout view like Firefox DevTools
+            var be_layout_view = this.dom.sidebar_content__baustein_styles.appendChild(
+                this.createElement("div", "", "be_layout_view")
+            );
+
+            // margin
+            var be_layout_view_margin = be_layout_view.appendChild(
+                this.createElement("div", "", "be_layout_view_margin")
+            );
+            var be_layout_view_margin_indicator = be_layout_view_margin.appendChild(
+                this.createElement("div", "", "be_layout_view_indicator")
+            );
+            be_layout_view_margin_indicator.innerHTML = "margin";
+
+            be_layout_view_margin.appendChild(this.layout_fc("margin-top", this.getItemFromArray(current_baustein.style, "margin-top", "0"), "-6px", null, null, ""));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-bottom", this.getItemFromArray(current_baustein.style, "margin-bottom", "0"), null, null, "-6px", ""));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-left", this.getItemFromArray(current_baustein.style, "margin-left", "0"), "", null, null, "-6px"));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-right", this.getItemFromArray(current_baustein.style, "margin-right", "0"), "", "-6px", null, null));
+
+            // border
+            var be_layout_view_border = be_layout_view_margin.appendChild(
+                this.createElement("div", "", "be_layout_view_border")
+            );
+            var be_layout_view_border_indicator = be_layout_view_border.appendChild(
+                this.createElement("div", "", "be_layout_view_indicator")
+            );
+            be_layout_view_border_indicator.innerHTML = "border";
+
+            be_layout_view_border.appendChild(this.layout_fc("border-top", this.getItemFromArray(current_baustein.style, "border-top", "0"), "-13px", null, null, ""));
+            be_layout_view_border.appendChild(this.layout_fc("border-bottom", this.getItemFromArray(current_baustein.style, "border-bottom", "0"), null, null, "-13px", ""));
+            be_layout_view_border.appendChild(this.layout_fc("border-left", this.getItemFromArray(current_baustein.style, "border-left", "0"), "", null, null, "-14px"));
+            be_layout_view_border.appendChild(this.layout_fc("border-right", this.getItemFromArray(current_baustein.style, "border-right", "0"), "", "-14px", null, null));
+
+            // padding
+            var be_layout_view_padding = be_layout_view_border.appendChild(
+                this.createElement("div", "", "be_layout_view_padding")
+            );
+            var be_layout_view_padding_indicator = be_layout_view_padding.appendChild(
+                this.createElement("div", "", "be_layout_view_indicator")
+            );
+            be_layout_view_padding_indicator.innerHTML = "padding";
+
+            be_layout_view_padding.appendChild(this.layout_fc("padding-top", this.getItemFromArray(current_baustein.style, "padding-top", "0"), "0px", null, null, ""));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-bottom", this.getItemFromArray(current_baustein.style, "padding-bottom", "0"), null, null, "0px", ""));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-left", this.getItemFromArray(current_baustein.style, "padding-left", "0"), "", null, null, "8px"));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-right", this.getItemFromArray(current_baustein.style, "padding-right", "0"), "", "8px", null, null));
+
+            // inner
+            var be_layout_view_inner = be_layout_view_padding.appendChild(
+                this.createElement("div", "", "be_layout_view_inner")
+            );
+            be_layout_view_inner.appendChild(this.layout_fc("max-width", this.getItemFromArray(current_baustein.style, "max-width", "auto"), null, null, null, null));
+            be_layout_view_inner.appendChild(this.createElement("span", "", "be_layout_wh_delimiter")).innerHTML = " &times; ";
+            be_layout_view_inner.appendChild(this.layout_fc("max-height", this.getItemFromArray(current_baustein.style, "max-height", "auto"), null, null, null, null));
+            ///////////////////////////////////////////////////////
+
 
             if (renderType === BausteinRenderType.image) {
-                var baustein_image_row = this.dom.sidebar_content__baustein.appendChild(
+                var baustein_image_row = this.dom.sidebar_content__baustein_styles.appendChild(
                     this.formcontrol(
                         "baustein_image", "text", "image"
                         , 'Bildquelle (URL)'
-                        , this.data.bausteine[position_const.row][position_const.depth][position_const.item].content, "", []
+                        , current_baustein.content, "", []
                     )
                 );
 
@@ -1095,25 +1226,25 @@ class BausteinEditor {
                 });
             }
     
-            for (var i = 0; i < this.data.bausteine[position_const.row][position_const.depth][position_const.item].style.length; i++) {
-                const element = this.data.bausteine[position_const.row][position_const.depth][position_const.item].style[i];
-                this.dom.sidebar_content__baustein.appendChild(
+            for (var i = 0; i < current_baustein.style.length; i++) {
+                const element = current_baustein.style[i];
+                this.dom.sidebar_content__baustein_styles.appendChild(
                     this.formcontrol("baustein", element.property.type, element.property.name, element.property.title
                         , element.value, element.property.suffix, element.property.options)
                 );
             }
             
-            var baustein_class_row = this.dom.sidebar_content__baustein.appendChild(
+            var baustein_class_row = this.dom.sidebar_content__baustein_misc.appendChild(
                 this.formcontrol(
                     "baustein_class", "text", "class"
                     , 'CSS Klasse <div style="font-size: 11px; margin-bottom: 2px;">(für Fortgeschrittene Nutzer)</div>'
-                    , this.data.bausteine[position_const.row][position_const.depth][position_const.item].class, "", []
+                    , current_baustein.class, "", []
                 )
             );
 
             console.log("baustein_class_row", baustein_class_row)
             
-            var baustein_delete_button: HTMLButtonElement = <HTMLButtonElement> this.dom.sidebar_content__baustein.appendChild(
+            var baustein_delete_button: HTMLButtonElement = <HTMLButtonElement> this.dom.sidebar_content__baustein_misc.appendChild(
                 this.createElement("button", this.dom_id+'_deleteBaustein', "form-control bautstein-delete")
             )
             baustein_delete_button.innerHTML = "Baustein löschen";
@@ -1137,6 +1268,25 @@ class BausteinEditor {
             this.dom.sidebar_header_col__baustein.classList.add("active");
             this.dom.sidebar_header_col__baustein.classList.remove("disabled");
         }
+    }
+
+    // returns the value of the pointed array item OR attribute def on fail
+    getItemFromArray(array: any, index: any, def: any) {
+        if (typeof array[index] === "undefined") {
+            return def;
+        } else {
+            return array[index];
+        }
+    }
+
+    // returns the index of the pointed array on condition OR null on fail
+    getIndexFromItem(array: any, item: any): number | null {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i] === item) {
+                return i;
+            }
+        }
+        return null;
     }
     
     close_baustein_attributes() {

@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "lib": ["es5", "es6", "dom"],
+        "lib": ["es5", "es6", "es2017", "dom"],
         "rootDir": "./src/",
         "outDir": "./out",
         "noImplicitAny": true,

@@ -68,6 +68,8 @@ var BausteinEditor = (function () {
             color: { name: "color", title: "Farbe", type: "color", suffix: "", options: [] },
             background_color: { name: "background-color", title: "Background Color", type: "color", suffix: "", options: [] },
             background_image: { name: "background-image", title: "Background Image", type: "string", suffix: "", options: [] },
+            width: { name: "width", title: "Breite", type: "number", suffix: "px", options: [] },
+            height: { name: "height", title: "Höhe", type: "number", suffix: "px", options: [] },
             max_width: { name: "max-width", title: "Maximale Breite", type: "number", suffix: "px", options: [] },
             max_height: { name: "max-height", title: "Maximale Höhe", type: "number", suffix: "px", options: [] },
             margin_top: { name: "margin-top", title: "Außenabstand Oben", type: "number", suffix: "px", options: [] },
@@ -79,6 +81,7 @@ var BausteinEditor = (function () {
             padding_bottom: { name: "padding-bottom", title: "Innenabstand Unten", type: "number", suffix: "px", options: [] },
             padding_left: { name: "padding-left", title: "Innenabstand Links", type: "number", suffix: "px", options: [] },
         };
+        this.stylePropertiesArray = Object.values(this.styleProperties);
         this.data = {
             page: {
                 style: [
@@ -228,6 +231,8 @@ var BausteinEditor = (function () {
         this.dom.sidebar_header = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_header", "be_sidebar_header"));
         this.dom.sidebar_content__site = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__site", "be_sidebar_content"));
         this.dom.sidebar_content__baustein = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__baustein", "be_sidebar_content"));
+        this.dom.sidebar_content__baustein_styles = this.dom.sidebar_content__baustein.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__baustein_styles", ""));
+        this.dom.sidebar_content__baustein_misc = this.dom.sidebar_content__baustein.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__baustein_misc", ""));
         this.dom.sidebar_header_col__site = this.dom.sidebar_header.appendChild(this.createElement("div", this.dom_id + "_sidebar_header_col__site", "be_sidebar_header_col active"));
         this.dom.sidebar_header_col__site.innerHTML = "Artikel";
         this.dom.sidebar_header_col__baustein = this.dom.sidebar_header.appendChild(this.createElement("div", this.dom_id + "_sidebar_header_col__baustein", "be_sidebar_header_col disabled"));
@@ -255,10 +260,18 @@ var BausteinEditor = (function () {
         });
         this.render();
     }
-    BausteinEditor.prototype.createElement = function (type, id, _class) {
-        var element = document.createElement(type);
-        if (id !== "")
-            element.id = id;
+    BausteinEditor.prototype.getStylePropertyByName = function (name) {
+        for (var i = 0; i < this.stylePropertiesArray.length; i++) {
+            if (this.stylePropertiesArray[i].name === name) {
+                return this.stylePropertiesArray[i];
+            }
+        }
+        return new BausteinStyleProperty(name, "", "", "", []);
+    };
+    BausteinEditor.prototype.createElement = function (_type, _id, _class) {
+        var element = document.createElement(_type);
+        if (_id !== "")
+            element.id = _id;
         if (_class !== "")
             element.className = _class;
         return element;
@@ -441,6 +454,7 @@ var BausteinEditor = (function () {
             }
         }
         this.data.bausteine = bausteine;
+        this.selected_baustein_position = null;
         this.render();
         window.focus();
         if (document.activeElement === null) {
@@ -627,36 +641,57 @@ var BausteinEditor = (function () {
     BausteinEditor.prototype.apply_styles = function () {
         var style_string = ".be_baustein  {";
         for (var i = 0; i < this.data.page.style.length; i++) {
-            var formfield = document.getElementById(this.dom_id + "_page_content_row_" + this.data.page.style[i].property.name);
+            var formfield = document.getElementById(this.dom_id + "_page_fc_" + this.data.page.style[i].property.name);
             this.data.page.style[i].value = formfield.value;
             style_string += this.data.page.style[i].property.name + ':' + this.data.page.style[i].value + ';';
         }
         style_string += '}';
         this.dom.page_styles.innerHTML = style_string;
         if (this.selected_baustein !== null && this.selected_baustein_position !== null) {
+            var baustein = this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item];
             var selected_baustein_editor = this.selected_baustein.lastChild;
-            for (var i = 0; i < this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item].style.length; i++) {
-                var baustein = this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item];
-                var formcontrol_item = document.getElementById(this.dom_id + "_baustein_content_row_" + baustein.style[i].property.name);
-                baustein.style[i].value = formcontrol_item === null || formcontrol_item === void 0 ? void 0 : formcontrol_item.value;
-                var property_name = baustein.style[i].property.name;
+            var nodes = this.dom.sidebar_content__baustein_styles.querySelectorAll(".be_formrow .form-control");
+            for (var i = 0; i < nodes.length; i++) {
+                var property_name = nodes[i].name;
+                var value = typeof nodes[i].dataset.value === "undefined" ? nodes[i].value : nodes[i].dataset.value;
+                var baustein_style_index = baustein.style.length;
+                for (var b = 0; b < baustein.style.length; b++) {
+                    if (baustein.style[b].property.name === property_name) {
+                        baustein_style_index = b;
+                        break;
+                    }
+                }
+                console.log("baustein_style_index", baustein_style_index);
+                if (baustein_style_index === baustein.style.length) {
+                    if (value === "" || value === "0" || value === "auto")
+                        continue;
+                    var new_style = new BausteinStyle(this.getStylePropertyByName(property_name), "");
+                    if (value === new_style.value)
+                        continue;
+                    baustein.style[baustein_style_index] = new_style;
+                    console.log("new BausteinStyle", property_name);
+                }
+                baustein.style[baustein_style_index].value = value;
                 if (baustein.renderType === BausteinRenderType.layout) {
-                    this.selected_baustein.style[property_name] = baustein.style[i].value;
+                    this.selected_baustein.style[nodes[i].name] = baustein.style[baustein_style_index].value;
                 }
                 else {
-                    selected_baustein_editor.style[property_name] = baustein.style[i].value;
+                    selected_baustein_editor.style[nodes[i].name] = baustein.style[baustein_style_index].value;
                 }
             }
         }
     };
     BausteinEditor.prototype.formcontrol = function (domArk, type, name, title, value, suffix, options) {
         var self = this;
-        var fc_dom_id = (this.dom_id + '_' + domArk + '_content_row_' + name);
-        var be_sidebar_content_row = this.createElement("div", "", "be_sidebar_content_row");
-        var label = be_sidebar_content_row.appendChild(this.createElement("label", "", ""));
-        label.htmlFor = fc_dom_id;
-        label.innerHTML = title;
-        var form_control_container = be_sidebar_content_row.appendChild(this.createElement("div", "", "form-control-container"));
+        var fc_dom_id = (this.dom_id + '_' + domArk + '_fc_' + name);
+        var useDataValue = false;
+        var be_formrow = this.createElement("div", "", "be_formrow");
+        if (title !== null) {
+            var label = be_formrow.appendChild(this.createElement("label", "", ""));
+            label.htmlFor = fc_dom_id;
+            label.innerHTML = title;
+        }
+        var form_control_container = be_formrow.appendChild(this.createElement("div", "", "form-control-container"));
         if (type === "number") {
             form_control_container.classList.add("number");
         }
@@ -679,6 +714,7 @@ var BausteinEditor = (function () {
             form_control.value = value;
             if (type === "color") {
                 form_control.type = "color";
+                useDataValue = true;
             }
             else if (type === "number") {
                 form_control.type = "text";
@@ -703,7 +739,10 @@ var BausteinEditor = (function () {
                     }
                     form_control.value = num.toString() + suffix_const_1;
                 };
-                form_control.addEventListener("change", function () { formcontrol_number_1(0); self.apply_styles(); });
+                form_control.addEventListener("change", function () {
+                    formcontrol_number_1(0);
+                    self.apply_styles();
+                });
                 form_control.addEventListener("keydown", function (e) {
                     var steps = e.shiftKey ? 10 : (e.ctrlKey ? 0.1 : 1);
                     var keyCode = e.which | e.keyCode;
@@ -725,14 +764,33 @@ var BausteinEditor = (function () {
                 form_control.type = "text";
             }
         }
-        if (type !== "number")
-            form_control.addEventListener("change", function () { self.apply_styles(); });
-        if (type === "number") {
+        if (type !== "number") {
+            var _useDataValue_1 = useDataValue;
+            if (_useDataValue_1) {
+                form_control.dataset.value = value;
+            }
+            form_control.addEventListener("change", function () {
+                if (_useDataValue_1) {
+                    form_control.dataset.value = form_control.value;
+                }
+                self.apply_styles();
+            });
         }
-        else {
-            form_control.addEventListener("change", function () { self.apply_styles(); });
-        }
-        return be_sidebar_content_row;
+        return be_formrow;
+    };
+    BausteinEditor.prototype.layout_fc = function (name, value, top, right, bottom, left) {
+        var be_layout_fc__margin_top = this.formcontrol("baustein", "number", name, null, value, "px", ["0", "auto"]);
+        be_layout_fc__margin_top.style.width = "34px";
+        be_layout_fc__margin_top.style.height = "30px";
+        if (top !== null)
+            be_layout_fc__margin_top.style.top = top === "" ? "calc(50% - (" + be_layout_fc__margin_top.style.height + " / 2))" : top;
+        if (bottom !== null)
+            be_layout_fc__margin_top.style.bottom = bottom === "" ? "calc(50% - (" + be_layout_fc__margin_top.style.height + " / 2))" : bottom;
+        if (left !== null)
+            be_layout_fc__margin_top.style.left = left === "" ? "calc(50% - (" + be_layout_fc__margin_top.style.width + " / 2))" : left;
+        if (right !== null)
+            be_layout_fc__margin_top.style.right = right === "" ? "calc(50% - (" + be_layout_fc__margin_top.style.width + " / 2))" : right;
+        return be_layout_fc__margin_top;
     };
     BausteinEditor.prototype.open_baustein_attributes = function (position, renderType) {
         if (this.open_baustein_attributes__position.row !== position.row
@@ -741,10 +799,38 @@ var BausteinEditor = (function () {
             var position_const_1 = { row: position.row, depth: position.depth, item: position.item };
             this.open_baustein_attributes__position = position_const_1;
             var self_1 = this;
+            var current_baustein = this.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item];
             console.log("open_baustein_attributes position_const", position_const_1);
-            this.dom.sidebar_content__baustein.innerHTML = "";
+            this.dom.sidebar_content__baustein_styles.innerHTML = "";
+            this.dom.sidebar_content__baustein_misc.innerHTML = "";
+            var be_layout_view = this.dom.sidebar_content__baustein_styles.appendChild(this.createElement("div", "", "be_layout_view"));
+            var be_layout_view_margin = be_layout_view.appendChild(this.createElement("div", "", "be_layout_view_margin"));
+            var be_layout_view_margin_indicator = be_layout_view_margin.appendChild(this.createElement("div", "", "be_layout_view_indicator"));
+            be_layout_view_margin_indicator.innerHTML = "margin";
+            be_layout_view_margin.appendChild(this.layout_fc("margin-top", this.getItemFromArray(current_baustein.style, "margin-top", "0"), "-6px", null, null, ""));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-bottom", this.getItemFromArray(current_baustein.style, "margin-bottom", "0"), null, null, "-6px", ""));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-left", this.getItemFromArray(current_baustein.style, "margin-left", "0"), "", null, null, "-6px"));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-right", this.getItemFromArray(current_baustein.style, "margin-right", "0"), "", "-6px", null, null));
+            var be_layout_view_border = be_layout_view_margin.appendChild(this.createElement("div", "", "be_layout_view_border"));
+            var be_layout_view_border_indicator = be_layout_view_border.appendChild(this.createElement("div", "", "be_layout_view_indicator"));
+            be_layout_view_border_indicator.innerHTML = "border";
+            be_layout_view_border.appendChild(this.layout_fc("border-top", this.getItemFromArray(current_baustein.style, "border-top", "0"), "-13px", null, null, ""));
+            be_layout_view_border.appendChild(this.layout_fc("border-bottom", this.getItemFromArray(current_baustein.style, "border-bottom", "0"), null, null, "-13px", ""));
+            be_layout_view_border.appendChild(this.layout_fc("border-left", this.getItemFromArray(current_baustein.style, "border-left", "0"), "", null, null, "-14px"));
+            be_layout_view_border.appendChild(this.layout_fc("border-right", this.getItemFromArray(current_baustein.style, "border-right", "0"), "", "-14px", null, null));
+            var be_layout_view_padding = be_layout_view_border.appendChild(this.createElement("div", "", "be_layout_view_padding"));
+            var be_layout_view_padding_indicator = be_layout_view_padding.appendChild(this.createElement("div", "", "be_layout_view_indicator"));
+            be_layout_view_padding_indicator.innerHTML = "padding";
+            be_layout_view_padding.appendChild(this.layout_fc("padding-top", this.getItemFromArray(current_baustein.style, "padding-top", "0"), "0px", null, null, ""));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-bottom", this.getItemFromArray(current_baustein.style, "padding-bottom", "0"), null, null, "0px", ""));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-left", this.getItemFromArray(current_baustein.style, "padding-left", "0"), "", null, null, "8px"));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-right", this.getItemFromArray(current_baustein.style, "padding-right", "0"), "", "8px", null, null));
+            var be_layout_view_inner = be_layout_view_padding.appendChild(this.createElement("div", "", "be_layout_view_inner"));
+            be_layout_view_inner.appendChild(this.layout_fc("max-width", this.getItemFromArray(current_baustein.style, "max-width", "auto"), null, null, null, null));
+            be_layout_view_inner.appendChild(this.createElement("span", "", "be_layout_wh_delimiter")).innerHTML = " &times; ";
+            be_layout_view_inner.appendChild(this.layout_fc("max-height", this.getItemFromArray(current_baustein.style, "max-height", "auto"), null, null, null, null));
             if (renderType === BausteinRenderType.image) {
-                var baustein_image_row = this.dom.sidebar_content__baustein.appendChild(this.formcontrol("baustein_image", "text", "image", 'Bildquelle (URL)', this.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item].content, "", []));
+                var baustein_image_row = this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein_image", "text", "image", 'Bildquelle (URL)', current_baustein.content, "", []));
                 var baustein_image_form_control = baustein_image_row.getElementsByClassName('form-control')[0];
                 baustein_image_form_control.addEventListener("change", function () {
                     self_1.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item].content = this.value;
@@ -754,13 +840,13 @@ var BausteinEditor = (function () {
                     }
                 });
             }
-            for (var i = 0; i < this.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item].style.length; i++) {
-                var element = this.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item].style[i];
-                this.dom.sidebar_content__baustein.appendChild(this.formcontrol("baustein", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options));
+            for (var i = 0; i < current_baustein.style.length; i++) {
+                var element = current_baustein.style[i];
+                this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options));
             }
-            var baustein_class_row = this.dom.sidebar_content__baustein.appendChild(this.formcontrol("baustein_class", "text", "class", 'CSS Klasse <div style="font-size: 11px; margin-bottom: 2px;">(für Fortgeschrittene Nutzer)</div>', this.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item].class, "", []));
+            var baustein_class_row = this.dom.sidebar_content__baustein_misc.appendChild(this.formcontrol("baustein_class", "text", "class", 'CSS Klasse <div style="font-size: 11px; margin-bottom: 2px;">(für Fortgeschrittene Nutzer)</div>', current_baustein.class, "", []));
             console.log("baustein_class_row", baustein_class_row);
-            var baustein_delete_button = this.dom.sidebar_content__baustein.appendChild(this.createElement("button", this.dom_id + '_deleteBaustein', "form-control bautstein-delete"));
+            var baustein_delete_button = this.dom.sidebar_content__baustein_misc.appendChild(this.createElement("button", this.dom_id + '_deleteBaustein', "form-control bautstein-delete"));
             baustein_delete_button.innerHTML = "Baustein löschen";
             baustein_delete_button.type = "button";
             var baustein_class_form_control = baustein_class_row.getElementsByClassName('form-control')[0];
@@ -779,6 +865,22 @@ var BausteinEditor = (function () {
             this.dom.sidebar_header_col__baustein.classList.add("active");
             this.dom.sidebar_header_col__baustein.classList.remove("disabled");
         }
+    };
+    BausteinEditor.prototype.getItemFromArray = function (array, index, def) {
+        if (typeof array[index] === "undefined") {
+            return def;
+        }
+        else {
+            return array[index];
+        }
+    };
+    BausteinEditor.prototype.getIndexFromItem = function (array, item) {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i] === item) {
+                return i;
+            }
+        }
+        return null;
     };
     BausteinEditor.prototype.close_baustein_attributes = function () {
         this.dom.sidebar_content__site.style.display = "";
