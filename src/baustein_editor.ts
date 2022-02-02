@@ -414,7 +414,7 @@ class BausteinEditor {
 
         for (var i = 0; i < this.addBausteinSelectorItems.length; i++) {
             const itemset = this.addBausteinSelectorItems[i];
-            if (showLayoutItems === false && itemset.type === 0 && itemset.items[0].renderType === BausteinRenderType.layout) {
+            if (showLayoutItems === false && itemset.type === 0 && (itemset.items[0].renderType === BausteinRenderType.layout || itemset.items[0].renderType === BausteinRenderType.table)) {
                 continue;
             }
             

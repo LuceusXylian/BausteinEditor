@@ -301,7 +301,7 @@ var BausteinEditor = (function () {
         var be_bausteinSelector_layer_item_container2 = be_bausteinSelector_layer.appendChild(this.createElement("div", selector_dom_id + '_bausteinSelector_layer_item_container2', "be_bausteinSelector_layer_item_container"));
         var _loop_1 = function () {
             var itemset = this_1.addBausteinSelectorItems[i];
-            if (showLayoutItems === false && itemset.type === 0 && itemset.items[0].renderType === BausteinRenderType.layout) {
+            if (showLayoutItems === false && itemset.type === 0 && (itemset.items[0].renderType === BausteinRenderType.layout || itemset.items[0].renderType === BausteinRenderType.table)) {
                 return "continue";
             }
             be_bausteinSelector_layer_item = be_bausteinSelector_layer_item_container1.appendChild(this_1.createElement("button", "", "be_bausteinSelector_layer_item"));
