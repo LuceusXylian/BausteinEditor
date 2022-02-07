@@ -221,14 +221,6 @@ class BausteinEditor {
         ,layout: new Baustein("layout", "Layout", '<i class="fas fa-layer-group" style="transform: rotate(90deg);"></i>', "div", BausteinRenderType.layout, [ 
             { property: this.styleProperties.max_width, value:"" }, 
             { property: this.styleProperties.max_height, value:"" }, 
-            { property: this.styleProperties.margin_top, value:"" }, 
-            { property: this.styleProperties.margin_right, value:"" }, 
-            { property: this.styleProperties.margin_bottom, value:"" }, 
-            { property: this.styleProperties.margin_left, value:"" }, 
-            { property: this.styleProperties.padding_top, value:"" }, 
-            { property: this.styleProperties.padding_right, value:"" }, 
-            { property: this.styleProperties.padding_bottom, value:"" }, 
-            { property: this.styleProperties.padding_left, value:"" }, 
             { property: this.styleProperties.color, value:"" },
             { property: this.styleProperties.background_color, value:"" }, 
             { property: this.styleProperties.background_image, value:"" }, 
@@ -236,14 +228,6 @@ class BausteinEditor {
         ,table: new Baustein("table", "Tabelle", '<i class="fas fa-table"></i>', "table", BausteinRenderType.table, [ 
             { property: this.styleProperties.max_width, value:"" }, 
             { property: this.styleProperties.max_height, value:"" }, 
-            { property: this.styleProperties.margin_top, value:"" }, 
-            { property: this.styleProperties.margin_right, value:"" }, 
-            { property: this.styleProperties.margin_bottom, value:"" }, 
-            { property: this.styleProperties.margin_left, value:"" }, 
-            { property: this.styleProperties.padding_top, value:"" }, 
-            { property: this.styleProperties.padding_right, value:"" }, 
-            { property: this.styleProperties.padding_bottom, value:"" }, 
-            { property: this.styleProperties.padding_left, value:"" }, 
             { property: this.styleProperties.color, value:"" },
             { property: this.styleProperties.background_color, value:"" }, 
             { property: this.styleProperties.background_image, value:"" }, 
@@ -263,12 +247,9 @@ class BausteinEditor {
 	public selected_baustein: HTMLElement | null;
 	public selected_baustein_position: Position | null;
 	public open_baustein_attributes__position: Position | null;
-	public open_baustein_attributes__formcontrols: HTMLInputElement[] | HTMLSelectElement[];
     public assets = {
         baustein_image_placeholder_url: "/img/baustein-image-placeholder.png"
     };
-
-
 
     createElement(_type: string, _id: string, _class: string): HTMLElement {
         var element = document.createElement(_type);
@@ -282,8 +263,6 @@ class BausteinEditor {
         this.selected_baustein = null;
         this.selected_baustein_position = null;
         this.open_baustein_attributes__position = null;
-        this.open_baustein_attributes__formcontrols = [];
-        
 
 
         // DOM
@@ -364,6 +343,13 @@ class BausteinEditor {
         });
 
         this.render();
+
+        /* test construction */
+        this.addBaustein(this.types.h1, new Position(0,0,0));
+        this.addBaustein(this.types.h2, new Position(1,0,0));
+        this.addBaustein(this.types.layout, new Position(2,0,0));
+        this.addBaustein(this.types.h1, new Position(2,1,0));
+        this.addBaustein(this.types.h2, new Position(2,1,1));
     }
     
     addBausteinSelector(position: Position, hide: boolean, showLayoutItems: boolean) {
@@ -539,10 +525,9 @@ class BausteinEditor {
 
             console.log("addBaustein() this.data.bausteine", this.data.bausteine);
             
-            // any baustein with equel or greater then position.row will be changed to +1, but not the newest
-            
             
             // any baustein with equel or greater then position.row will be changed to +1, but not the newest
+            /*
             const to = this.data.bausteine.length -1;
             for (var r = 0; r < to; r++) {
                 if (this.data.bausteine[r][0][0].position.row >= position.row) {
@@ -555,6 +540,7 @@ class BausteinEditor {
                     }
                 }
             }
+            */
         }
 
         
@@ -580,9 +566,10 @@ class BausteinEditor {
 
             for (var depth = 0; depth < this.data.bausteine[row].length; depth++) {
                 for (var item = 0; item < this.data.bausteine[row][depth].length; item++) {
-                    console.log("row", row, "depth", depth, "item", item)
-
-                    if (row !== position.row || depth !== position.depth || item !== position.item) {
+                    
+                    if (position.row === row && ((position.depth === depth && position.item === item) || position.depth === 0)) {
+                        console.log("deleteBaustein", "row", row, "depth", depth, "item", item)
+                    } else {
                         var new_depth: number;
                         if (new_row === 0 || typeof bausteine[new_row] === "undefined") {
                             bausteine[new_row] = [[]];
@@ -619,7 +606,7 @@ class BausteinEditor {
             activeElement.blur();
         }
     }
-    
+
     //TODO: FIX moveBaustein
     moveBaustein(position: Position, position_new: Position) {
         const position_new_const__row = position_new.row; // need to clone because magic
@@ -627,23 +614,16 @@ class BausteinEditor {
         console.log("0 moveBaustein() this.data.bausteine[0][0][0].position", this.data.bausteine[0][0][0].position)
         console.log("0 moveBaustein() this.data.bausteine[1][0][0].position", this.data.bausteine[1][0][0].position)
 
-        //this.data.bausteine[position.row][position.depth][position.item].position.row = position_new.row;
-        
-        /*
-        if (position_new.row > position.row) {
-            console.info("BIGGER")
-            // jeden Baustein row, der größer als position_new.row ist, row -1
-            for (var i = position_new.row; i < this.data.bausteine.length; i++) {
-                this.data.bausteine[i][0][0].position.row -= 1;
-            }
-        } else {
-            console.info("SMALLER")
-            // jeden Baustein row, der kleiner als position_new.row ist, row +1
-            for (var i = position_new.row; i > 0; i--) {
-                this.data.bausteine[i][0][0].position.row += 1;
+        if (position.row > position_new.row) {
+            // jeden Baustein row, der größer als position_new.row ist, row +1
+            for (var r = position_new.row; r < this.data.bausteine.length; r++) {
+                for (var d = 0; d < this.data.bausteine[r].length; d++) {
+                    for (var i = 0; i < this.data.bausteine[r][d].length; i++) {
+                        this.data.bausteine[r][d][i].position.row += 1;
+                    }
+                }
             }
         }
-        */
         
         console.info("position_new_const__row", position_new_const__row) 
         this.data.bausteine[position.row][position.depth][position.item].position.row = position_new_const__row;
@@ -655,11 +635,53 @@ class BausteinEditor {
         console.log("2 moveBaustein() this.data.bausteine[1][0][0].position", this.data.bausteine[1][0][0].position)
     }
     
-    
+    /// nachdem es sortiert wurde, überschreibt es die Position, entsprechend dem Index
     getBausteine() {
+        // Row
         var bausteine: any = this.data.bausteine.sort(function(a: any, b: any) {
             return a[0][0].position.row > b[0][0].position.row? 1 : 0;
         });
+
+        console.log("getBausteine bausteine", bausteine);
+        // Row POST & Depth
+        for (var r = 0; r < bausteine.length; r++) {
+            // Row POST
+            for (var d = 0; d < bausteine[r].length; d++) {
+                for (var i = 0; i < bausteine[r][d].length; i++) {
+                    bausteine[r][d][i].position.row = r;
+                }
+            }
+
+            // Depth
+            bausteine[r] = bausteine[r].sort(function(a: any, b: any) {
+                return a[0].position.depth > b[0].position.depth? 1 : 0;
+            });
+        }
+
+        // Depth POST & Item
+        for (var r = 0; r < bausteine.length; r++) {
+            for (var d = 0; d < bausteine[r].length; d++) {
+                // Depth POST
+                for (var i = 0; i < bausteine[r][d].length; i++) {
+                    bausteine[r][d][i].position.depth = d;
+                }
+
+                // Item
+                console.log("bausteine["+r+"]["+d+"]", bausteine[r][d])
+                bausteine[r][d] = bausteine[r][d].sort(function(a: any, b: any) {
+                    return a.position.row > b.position.row? 1 : 0;
+                });
+            }
+        }
+
+        // Item POST
+        for (var r = 0; r < bausteine.length; r++) {
+            for (var d = 0; d < bausteine[r].length; d++) {
+                for (var i = 0; i < bausteine[r][d].length; i++) {
+                    bausteine[r][d][i].position.item = i;
+                }
+            }
+        }
         
         return bausteine;
     }

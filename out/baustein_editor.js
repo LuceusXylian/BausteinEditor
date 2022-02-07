@@ -177,14 +177,6 @@ var BausteinEditor = (function () {
             layout: new Baustein("layout", "Layout", '<i class="fas fa-layer-group" style="transform: rotate(90deg);"></i>', "div", BausteinRenderType.layout, [
                 { property: this.styleProperties.max_width, value: "" },
                 { property: this.styleProperties.max_height, value: "" },
-                { property: this.styleProperties.margin_top, value: "" },
-                { property: this.styleProperties.margin_right, value: "" },
-                { property: this.styleProperties.margin_bottom, value: "" },
-                { property: this.styleProperties.margin_left, value: "" },
-                { property: this.styleProperties.padding_top, value: "" },
-                { property: this.styleProperties.padding_right, value: "" },
-                { property: this.styleProperties.padding_bottom, value: "" },
-                { property: this.styleProperties.padding_left, value: "" },
                 { property: this.styleProperties.color, value: "" },
                 { property: this.styleProperties.background_color, value: "" },
                 { property: this.styleProperties.background_image, value: "" },
@@ -192,14 +184,6 @@ var BausteinEditor = (function () {
             table: new Baustein("table", "Tabelle", '<i class="fas fa-table"></i>', "table", BausteinRenderType.table, [
                 { property: this.styleProperties.max_width, value: "" },
                 { property: this.styleProperties.max_height, value: "" },
-                { property: this.styleProperties.margin_top, value: "" },
-                { property: this.styleProperties.margin_right, value: "" },
-                { property: this.styleProperties.margin_bottom, value: "" },
-                { property: this.styleProperties.margin_left, value: "" },
-                { property: this.styleProperties.padding_top, value: "" },
-                { property: this.styleProperties.padding_right, value: "" },
-                { property: this.styleProperties.padding_bottom, value: "" },
-                { property: this.styleProperties.padding_left, value: "" },
                 { property: this.styleProperties.color, value: "" },
                 { property: this.styleProperties.background_color, value: "" },
                 { property: this.styleProperties.background_image, value: "" },
@@ -220,7 +204,6 @@ var BausteinEditor = (function () {
         this.selected_baustein = null;
         this.selected_baustein_position = null;
         this.open_baustein_attributes__position = null;
-        this.open_baustein_attributes__formcontrols = [];
         this.dom = {};
         this.dom.be = document.getElementById(this.dom_id);
         this.dom.page_styles = this.dom.be.appendChild(this.createElement("style", this.dom_id + '_page_styles', ""));
@@ -259,6 +242,11 @@ var BausteinEditor = (function () {
             }
         });
         this.render();
+        this.addBaustein(this.types.h1, new Position(0, 0, 0));
+        this.addBaustein(this.types.h2, new Position(1, 0, 0));
+        this.addBaustein(this.types.layout, new Position(2, 0, 0));
+        this.addBaustein(this.types.h1, new Position(2, 1, 0));
+        this.addBaustein(this.types.h2, new Position(2, 1, 1));
     }
     BausteinEditor.prototype.getStylePropertyByName = function (name) {
         for (var i = 0; i < this.stylePropertiesArray.length; i++) {
@@ -403,18 +391,6 @@ var BausteinEditor = (function () {
             baustein_entry.position = position;
             this.data.bausteine[position.row][position.depth][item_max] = baustein_entry;
             console.log("addBaustein() this.data.bausteine", this.data.bausteine);
-            var to = this.data.bausteine.length - 1;
-            for (var r = 0; r < to; r++) {
-                if (this.data.bausteine[r][0][0].position.row >= position.row) {
-                    this.data.bausteine[r][0][0].position.row++;
-                }
-                var to2 = this.data.bausteine.length - 1;
-                for (var d = 0; d < to2; d++) {
-                    if (this.data.bausteine[r][d][0].position.depth >= position.depth) {
-                        this.data.bausteine[r][d][0].position.depth++;
-                    }
-                }
-            }
         }
         this.render();
         this.selectBaustein(position);
@@ -435,8 +411,10 @@ var BausteinEditor = (function () {
             var new_row = bausteine.length;
             for (var depth = 0; depth < this.data.bausteine[row].length; depth++) {
                 for (var item = 0; item < this.data.bausteine[row][depth].length; item++) {
-                    console.log("row", row, "depth", depth, "item", item);
-                    if (row !== position.row || depth !== position.depth || item !== position.item) {
+                    if (position.row === row && ((position.depth === depth && position.item === item) || position.depth === 0)) {
+                        console.log("deleteBaustein", "row", row, "depth", depth, "item", item);
+                    }
+                    else {
                         var new_depth;
                         if (new_row === 0 || typeof bausteine[new_row] === "undefined") {
                             bausteine[new_row] = [[]];
@@ -477,6 +455,15 @@ var BausteinEditor = (function () {
         console.log("moveBaustein()", "\nposition", position, "\nposition_new", position_new);
         console.log("0 moveBaustein() this.data.bausteine[0][0][0].position", this.data.bausteine[0][0][0].position);
         console.log("0 moveBaustein() this.data.bausteine[1][0][0].position", this.data.bausteine[1][0][0].position);
+        if (position.row > position_new.row) {
+            for (var r = position_new.row; r < this.data.bausteine.length; r++) {
+                for (var d = 0; d < this.data.bausteine[r].length; d++) {
+                    for (var i = 0; i < this.data.bausteine[r][d].length; i++) {
+                        this.data.bausteine[r][d][i].position.row += 1;
+                    }
+                }
+            }
+        }
         console.info("position_new_const__row", position_new_const__row);
         this.data.bausteine[position.row][position.depth][position.item].position.row = position_new_const__row;
         console.log("1 moveBaustein() this.data.bausteine[0][0][0].position", this.data.bausteine[0][0][0].position);
@@ -490,6 +477,35 @@ var BausteinEditor = (function () {
         var bausteine = this.data.bausteine.sort(function (a, b) {
             return a[0][0].position.row > b[0][0].position.row ? 1 : 0;
         });
+        console.log("getBausteine bausteine", bausteine);
+        for (var r = 0; r < bausteine.length; r++) {
+            for (var d = 0; d < bausteine[r].length; d++) {
+                for (var i = 0; i < bausteine[r][d].length; i++) {
+                    bausteine[r][d][i].position.row = r;
+                }
+            }
+            bausteine[r] = bausteine[r].sort(function (a, b) {
+                return a[0].position.depth > b[0].position.depth ? 1 : 0;
+            });
+        }
+        for (var r = 0; r < bausteine.length; r++) {
+            for (var d = 0; d < bausteine[r].length; d++) {
+                for (var i = 0; i < bausteine[r][d].length; i++) {
+                    bausteine[r][d][i].position.depth = d;
+                }
+                console.log("bausteine[" + r + "][" + d + "]", bausteine[r][d]);
+                bausteine[r][d] = bausteine[r][d].sort(function (a, b) {
+                    return a.position.row > b.position.row ? 1 : 0;
+                });
+            }
+        }
+        for (var r = 0; r < bausteine.length; r++) {
+            for (var d = 0; d < bausteine[r].length; d++) {
+                for (var i = 0; i < bausteine[r][d].length; i++) {
+                    bausteine[r][d][i].position.item = i;
+                }
+            }
+        }
         return bausteine;
     };
     BausteinEditor.prototype.renderBaustein = function (baustein_entry, position) {
