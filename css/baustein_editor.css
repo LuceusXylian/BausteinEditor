@@ -75,7 +75,7 @@ select.form-control:not([multiple]) {
 }
 .form-control-container.number .form-control { text-align: right; }
 
-/* __dialog */
+/* TODO: implements __dialog for delete_baustein */
 .__dialog {
     position: fixed;
     top: 0;
@@ -200,15 +200,11 @@ select.form-control:not([multiple]) {
     max-height: 100vh;
 }
 .be_main { 
-    margin: 10px;
-    padding: 4px;
     width: calc(100% - 280px);
-    height: calc(100% - 20px);
-    overflow-y: auto;
 }
 .be_sidebar { 
     width: 320px;
-    height: calc(100% - 2px);
+    height: 100%;
     border: 1px solid #ccc;
 }
 .be_sidebar_header { 
@@ -235,11 +231,30 @@ select.form-control:not([multiple]) {
     left: 0;
 }
 
+.be_content {
+    height: calc(100% - 20px - 20px);
+    padding: 10px;
+    overflow-y: auto;
+}
+.be_preview {
+    position: relative; z-index: 1;
+    text-align: right;
+    border-top: 1px solid #ccc;
+    padding: 10px;
+}
+
+.be_preview_button_desktop, .be_preview_button_mobile { margin-right: 8px; }
+.be_preview_button { cursor: pointer; }
+.be_preview_content { 
+    overflow-y: auto;
+    overflow-x: hidden;
+    text-align: left;
+}
+
 .be_baustein {
     display: block;
     min-width: 100px;
     margin: 4px;
-    padding: 2px;
     border-radius: 6px;
     border: 1px dashed #ccc;
     position: relative;
@@ -332,25 +347,6 @@ select.form-control:not([multiple]) {
     font-size: 2.2rem;
     color: #555;
 }
-/*
-.be_bausteinSelector > div {
-    width: 40px;
-    height: 40px;
-    margin: auto;
-    font-weight: bold;
-    border: 2px solid gray;
-    border-radius: 360%;
-}
-.be_bausteinSelector > div > span {
-    display: block;
-    width: 14px;
-    margin: auto;
-    margin-top: 2px;
-    user-select: none;
-    font-size: 20px;
-    font-weight: bold;
-}
-*/
 
 .be_bausteinSelector_layer {
     background: white;
@@ -477,8 +473,8 @@ select.form-control:not([multiple]) {
     flex-wrap: wrap;
     padding: 5px;
     border-bottom: solid 1px #e0e0e0;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
     background: white;
 }
 .be_baustein.selected > .__toolbar {
