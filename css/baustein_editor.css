@@ -249,6 +249,13 @@ select.form-control:not([multiple]) {
     overflow-y: auto;
     overflow-x: hidden;
     text-align: left;
+    margin-top: 8px;
+}
+.be_preview_content.mobile { 
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .be_baustein {
