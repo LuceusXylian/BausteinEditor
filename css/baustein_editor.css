@@ -75,7 +75,7 @@ select.form-control:not([multiple]) {
 }
 .form-control-container.number .form-control { text-align: right; }
 
-/* TODO: implements __dialog for delete_baustein */
+/* dialog */
 .__dialog {
     position: fixed;
     top: 0;
@@ -141,6 +141,7 @@ select.form-control:not([multiple]) {
     background: none;
     border: none;
     cursor: pointer;
+    user-select: none;
 }
 .__dialog-body {
     overflow: auto;
@@ -178,6 +179,7 @@ select.form-control:not([multiple]) {
     border-radius: .25rem;
     transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
     cursor: pointer;
+    margin-right: 0.5rem;
 }
 .__dialog-btn-green { background: #649748; color: white; }
 .__dialog-btn-red   { background: #cc0000; color: white; }

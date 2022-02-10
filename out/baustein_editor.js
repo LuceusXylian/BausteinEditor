@@ -85,8 +85,8 @@ var BausteinEditor = (function () {
         this.data = {
             page: {
                 style: [
-                    { property: this.styleProperties.font_family, value: "" },
-                    { property: this.styleProperties.font_size, value: "" },
+                    { property: this.styleProperties.font_family, value: this.styleProperties.font_family.options[0] },
+                    { property: this.styleProperties.font_size, value: this.styleProperties.font_size.options[0] },
                 ]
             },
             bausteine: []
@@ -197,6 +197,7 @@ var BausteinEditor = (function () {
             { type: 0, title: this.types.table.title, icon: this.types.table.icon, items: [this.types.table] },
             { type: 1, title: "Sonstiges", icon: '<i class="fas fa-cubes"></i>', items: [this.types.html, this.types.script, this.types.shortcode] }
         ];
+        this.dialog_close_function = null;
         this.assets = {
             baustein_image_placeholder_url: "/img/baustein-image-placeholder.png"
         };
@@ -237,6 +238,16 @@ var BausteinEditor = (function () {
         }
         this.be_bausteinSelector_isOpen = false;
         this.apply_styles();
+        this.dom.dialog = this.dom.be.appendChild(this.createElement("div", this.dom_id + "_dialog", "__dialog"));
+        this.dom.dialog.style.display = "none";
+        this.dom.dialog_wrapper = this.dom.dialog.appendChild(this.createElement("div", this.dom_id + "_dialog_wrapper", "__dialog-wrapper"));
+        this.dom.dialog_content = this.dom.dialog_wrapper.appendChild(this.createElement("div", this.dom_id + "_dialog_content", "__dialog-content"));
+        this.dom.dialog_header = this.dom.dialog_content.appendChild(this.createElement("div", this.dom_id + "_dialog_header", "__dialog-header"));
+        this.dom.dialog_title = this.dom.dialog_header.appendChild(this.createElement("div", this.dom_id + "_dialog_title", "__dialog-title"));
+        this.dom.dialog_close = this.dom.dialog_header.appendChild(this.createElement("div", this.dom_id + "_dialog_close", "__dialog-close"));
+        this.dom.dialog_close.innerHTML = '&times;';
+        this.dom.dialog_body = this.dom.dialog_content.appendChild(this.createElement("div", this.dom_id + "_dialog_body", "__dialog-body"));
+        this.dom.dialog_footer = this.dom.dialog_content.appendChild(this.createElement("div", this.dom_id + "_dialog_footer", "__dialog-footer"));
         var self = this;
         this.dom.preview_button.addEventListener("click", function () {
             if (self.dom.preview_content.style.display === "none") {
@@ -941,10 +952,13 @@ var BausteinEditor = (function () {
                 self_1.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item].class = this.value;
             });
             baustein_delete_button.addEventListener("click", function () {
-                self_1.close_baustein_attributes();
-                console.log(self_1.data.bausteine);
-                self_1.deleteBaustein(position_const_1);
-                console.log(self_1.data.bausteine);
+                self_1.dialog("Baustein löschen", "Sind Sie sich sicher, dass Sie diesen Baustein löschen wollen?", null, "Löschen", "Abbrechen", null, function () {
+                    self_1.close_baustein_attributes();
+                    console.log(self_1.data.bausteine);
+                    self_1.deleteBaustein(position_const_1);
+                    console.log(self_1.data.bausteine);
+                    self_1.dialog_close();
+                });
             });
             this.dom.sidebar_content__site.style.display = "none";
             this.dom.sidebar_header_col__site.classList.remove("active");
@@ -980,6 +994,35 @@ var BausteinEditor = (function () {
         if (this.dom.preview_content.style.display === "") {
             this.dom.preview_content.innerHTML = this.export().html;
         }
+    };
+    BausteinEditor.prototype.dialog_close = function () { this.dom.dialog.style.display = "none"; };
+    BausteinEditor.prototype.dialog = function (title, body_text, action_ok_text, action_fail_text, action_close_text, action_ok, action_fail, action_close) {
+        if (action_ok === void 0) { action_ok = null; }
+        if (action_fail === void 0) { action_fail = null; }
+        if (action_close === void 0) { action_close = this.dialog_close; }
+        this.dom.dialog_title.innerHTML = title;
+        this.dom.dialog_body.innerHTML = body_text;
+        if (this.dialog_close_function !== null)
+            this.dom.dialog_close.removeEventListener("click", this.dialog_close_function);
+        this.dialog_close_function = action_close;
+        this.dom.dialog_close.addEventListener("click", this.dialog_close_function);
+        this.dom.dialog_footer.innerHTML = '';
+        if (action_ok_text !== null) {
+            var ok_button = this.dom.dialog_footer.appendChild(this.createElement("button", "", "__dialog-btn __dialog-btn-green"));
+            ok_button.innerHTML = action_ok_text;
+            ok_button.addEventListener("click", action_ok);
+        }
+        if (action_fail_text !== null) {
+            var ok_button = this.dom.dialog_footer.appendChild(this.createElement("button", "", "__dialog-btn __dialog-btn-red"));
+            ok_button.innerHTML = action_fail_text;
+            ok_button.addEventListener("click", action_fail);
+        }
+        if (action_close_text !== null) {
+            var ok_button = this.dom.dialog_footer.appendChild(this.createElement("button", "", "__dialog-btn __dialog-btn-gray"));
+            ok_button.innerHTML = action_close_text;
+            ok_button.addEventListener("click", this.dialog_close_function);
+        }
+        this.dom.dialog.style.display = "";
     };
     BausteinEditor.prototype.import = function (data) {
         this.data = data;

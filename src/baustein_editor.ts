@@ -128,8 +128,8 @@ class BausteinEditor {
 	public data: {page: {style: BausteinStyle[]}, bausteine: Baustein[][][]} = {
         page: {
             style: [
-                { property: this.styleProperties.font_family, value: "" },
-                { property: this.styleProperties.font_size, value: "" },
+                { property: this.styleProperties.font_family, value: this.styleProperties.font_family.options[0] },
+                { property: this.styleProperties.font_size, value: this.styleProperties.font_size.options[0] },
             ]
         },
         bausteine: []
@@ -247,6 +247,7 @@ class BausteinEditor {
 	public selected_baustein: HTMLElement | null;
 	public selected_baustein_position: Position | null;
 	public open_baustein_attributes__position: Position | null;
+	public dialog_close_function: Function | null = null;
     public assets = {
         baustein_image_placeholder_url: "/img/baustein-image-placeholder.png"
     };
@@ -343,11 +344,23 @@ class BausteinEditor {
             );
         }
 
-
         this.be_bausteinSelector_isOpen = false;
         this.apply_styles();
         
 
+        // Dialog
+        this.dom.dialog = this.dom.be.appendChild(this.createElement("div", this.dom_id+"_dialog", "__dialog"));
+        this.dom.dialog.style.display = "none";
+        this.dom.dialog_wrapper = this.dom.dialog.appendChild(this.createElement("div", this.dom_id+"_dialog_wrapper", "__dialog-wrapper"));
+        this.dom.dialog_content = this.dom.dialog_wrapper.appendChild(this.createElement("div", this.dom_id+"_dialog_content", "__dialog-content"));
+        this.dom.dialog_header = this.dom.dialog_content.appendChild(this.createElement("div", this.dom_id+"_dialog_header", "__dialog-header"));
+        this.dom.dialog_title = this.dom.dialog_header.appendChild(this.createElement("div", this.dom_id+"_dialog_title", "__dialog-title"));
+        this.dom.dialog_close = this.dom.dialog_header.appendChild(this.createElement("div", this.dom_id+"_dialog_close", "__dialog-close"));
+        this.dom.dialog_close.innerHTML = '&times;';
+        this.dom.dialog_body = this.dom.dialog_content.appendChild(this.createElement("div", this.dom_id+"_dialog_body", "__dialog-body"));
+        this.dom.dialog_footer = this.dom.dialog_content.appendChild(this.createElement("div", this.dom_id+"_dialog_footer", "__dialog-footer"));
+        
+        
         // Events
         const self = this;
 
@@ -1349,10 +1362,13 @@ class BausteinEditor {
             });
     
             baustein_delete_button.addEventListener("click", function() {
-                self.close_baustein_attributes();
-                console.log(self.data.bausteine);
-                self.deleteBaustein(position_const);
-                console.log(self.data.bausteine);
+                self.dialog("Baustein löschen", "Sind Sie sich sicher, dass Sie diesen Baustein löschen wollen?", null, "Löschen", "Abbrechen", null, function() {
+                    self.close_baustein_attributes();
+                    console.log(self.data.bausteine);
+                    self.deleteBaustein(position_const);
+                    console.log(self.data.bausteine);
+                    self.dialog_close();
+                });
             });
     
             this.dom.sidebar_content__site.style.display = "none";
@@ -1394,6 +1410,38 @@ class BausteinEditor {
         if (this.dom.preview_content.style.display === "") {
             this.dom.preview_content.innerHTML = this.export().html;
         }
+    }
+
+    dialog_close() { this.dom.dialog.style.display = "none"; }
+
+    dialog(title: string, body_text: string, action_ok_text: string | null, action_fail_text: string | null, action_close_text: string | null, action_ok: Function | null = null, action_fail: Function | null = null, action_close: Function = this.dialog_close) {
+        this.dom.dialog_title.innerHTML = title;
+        this.dom.dialog_body.innerHTML = body_text;
+        if(this.dialog_close_function !== null) this.dom.dialog_close.removeEventListener("click", this.dialog_close_function);
+        this.dialog_close_function = action_close;
+        this.dom.dialog_close.addEventListener("click", this.dialog_close_function);
+
+        this.dom.dialog_footer.innerHTML = '';
+        if (action_ok_text !== null) {
+            var ok_button = this.dom.dialog_footer.appendChild(this.createElement("button", "", "__dialog-btn __dialog-btn-green"))
+            ok_button.innerHTML = action_ok_text;
+            ok_button.addEventListener("click", action_ok);
+        }
+
+        if (action_fail_text !== null) {
+            var ok_button = this.dom.dialog_footer.appendChild(this.createElement("button", "", "__dialog-btn __dialog-btn-red"))
+            ok_button.innerHTML = action_fail_text;
+            ok_button.addEventListener("click", action_fail);
+        }
+
+        if (action_close_text !== null) {
+            var ok_button = this.dom.dialog_footer.appendChild(this.createElement("button", "", "__dialog-btn __dialog-btn-gray"))
+            ok_button.innerHTML = action_close_text;
+            ok_button.addEventListener("click", this.dialog_close_function);
+        }
+        
+
+        this.dom.dialog.style.display = "";
     }
 
 
