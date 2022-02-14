@@ -26,9 +26,9 @@ class BausteinStyleProperty {
 	public title: string;
 	public type: string;
 	public suffix: string;
-	public options: string[];
+	public options: HTMLOptionElement[];
 
-    constructor(name: string, title: string, type: string, suffix: string, options: string[]) {
+    constructor(name: string, title: string, type: string, suffix: string, options: HTMLOptionElement[]) {
         this.name = name;
         this.title = title;
         this.type = type;
@@ -84,16 +84,16 @@ class BausteinEditor {
 	public dom: any;
     
 	public styleProperties = {
-        font_family: { name: "font-family", title: "Schriftart", type: "string", suffix: "", options: ["Verdana, Arial, Helvetica, sans-serif"] },
-        font_size: { name: "font-size", title: "Schriftgröße", type: "number", suffix: "rem", options: ["1rem"] },
+        font_family: { name: "font-family", title: "Schriftart", type: "string", suffix: "", options:  [new Option("Verdana, Arial, Helvetica, sans-serif")] },
+        font_size: { name: "font-size", title: "Schriftgröße", type: "number", suffix: "rem", options: [new Option("1rem")] },
         font_weight: { name: "font-weight", title: "Textdicke", type: "select", suffix: ""
-            , options: [ new Option("Normal", "normal"), new Option("Fett", "bold"), new Option("Fetter", "bolder"), new Option("Leichter", "lighter") ] },
+            , options: [ new Option("Normal", ""), new Option("Fett", "bold"), new Option("Fetter", "bolder"), new Option("Leichter", "lighter") ] },
         text_decoration: { name: "text-decoration", title: "Textunterschreichung", type: "select", suffix: ""
-            , options: [ new Option("Normal", "normal"), new Option("underline", "underline"), new Option("dotted", "dotted") ] },
+            , options: [ new Option("Normal", ""), new Option("underline", "underline"), new Option("dotted", "dotted") ] },
         font_style: { name: "font-style", title: "Textkursion", type: "select", suffix: ""
-            , options: [ new Option("Normal", "normal"), new Option("italic", "italic"), new Option("oblique", "oblique") ] },
+            , options: [ new Option("Normal", ""), new Option("italic", "italic"), new Option("oblique", "oblique") ] },
         text_align: { name: "text-align", title: "Textausrichtung", type: "select", suffix: ""
-            , options: [ new Option("Normal", "initial"), new Option("left", "left"), new Option("center", "center"), new Option("right", "right") ] },
+            , options: [ new Option("Normal", ""), new Option("left", "left"), new Option("center", "center"), new Option("right", "right") ] },
 
         color: { name: "color", title: "Farbe", type: "color", suffix: "", options: [] },
         background_color: { name: "background-color", title: "Background Color", type: "color", suffix: "", options: [] },
@@ -114,7 +114,6 @@ class BausteinEditor {
         padding_bottom: { name: "padding-bottom", title: "Innenabstand Unten", type: "number", suffix: "px", options: [] },
         padding_left: { name: "padding-left", title: "Innenabstand Links", type: "number", suffix: "px", options: [] },
     };
-
     private stylePropertiesArray = Object.values(this.styleProperties);
     getStylePropertyByName(name: string): BausteinStyleProperty {
         for (var i = 0; i < this.stylePropertiesArray.length; i++) {
@@ -128,8 +127,8 @@ class BausteinEditor {
 	public data: {page: {style: BausteinStyle[]}, bausteine: Baustein[][][]} = {
         page: {
             style: [
-                { property: this.styleProperties.font_family, value: this.styleProperties.font_family.options[0] },
-                { property: this.styleProperties.font_size, value: this.styleProperties.font_size.options[0] },
+                { property: this.styleProperties.font_family, value: this.styleProperties.font_family.options[0].value },
+                { property: this.styleProperties.font_size, value: this.styleProperties.font_size.options[0].value },
             ]
         },
         bausteine: []
@@ -233,6 +232,15 @@ class BausteinEditor {
             { property: this.styleProperties.background_image, value:"" }, 
         ])
     };
+    private typesArray = Object.values(this.types);
+    getTypeById(id: string): Baustein {
+        for (var i = 0; i < this.typesArray.length; i++) {
+            if (this.typesArray[i].id === id) {
+                return <Baustein> this.typesArray[i];
+            }            
+        }
+        return new Baustein(id, "", "", "", -1, []);
+    }
 
 	public addBausteinSelectorItems = [
         { type: 1, title: "Überschriften", icon: '<i class="fas fa-heading"></i>', items: [ this.types.h1, this.types.h2, this.types.h3, this.types.h4, this.types.h5, this.types.h6 ] }
@@ -572,6 +580,13 @@ class BausteinEditor {
         var baustein_entry = new Baustein(
             type.id, type.title, type.icon, type.tag, type.renderType, type.style
         );
+
+        for (let i = 0; i < baustein_entry.style.length; i++) {
+            const style = baustein_entry.style[i];
+            if (style.value === "" && style.property.options.length > 0) {
+                style.value = style.property.options[0].value;
+            }
+        }
 
         if (position.depth === 0) {
             const row_max = this.data.bausteine.length;
@@ -1091,6 +1106,8 @@ class BausteinEditor {
                 }
             }
         }
+
+        this.preview_render();
     }
 
     /// create a forminput. first options item is default value
@@ -1367,7 +1384,11 @@ class BausteinEditor {
                     console.log(self.data.bausteine);
                     self.deleteBaustein(position_const);
                     console.log(self.data.bausteine);
-                    self.dialog_close();
+                    if (self.dialog_close_function === null) {
+                        console.error("baustein_delete_button tried to close dialog, but self.dialog_close_function is null");
+                    } else {
+                        self.dialog_close_function();
+                    }
                 });
             });
     
@@ -1397,6 +1418,16 @@ class BausteinEditor {
         }
         return null;
     }
+
+    // returns the index of the pointed array on condition OR null on fail
+    getValueFromItem(array: any, item: any): any {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i] === item) {
+                return i;
+            }
+        }
+        return null;
+    }
     
     close_baustein_attributes() {
         this.dom.sidebar_content__site.style.display = "";
@@ -1412,36 +1443,39 @@ class BausteinEditor {
         }
     }
 
-    dialog_close() { this.dom.dialog.style.display = "none"; }
+    dialog(title: string, body_text: string, action_ok_text: string | null, action_fail_text: string | null, action_close_text: string | null, action_ok: Function | null = null, action_fail: Function | null = null, action_close: Function | null = null) {
+        const self = this;
+        self.dom.dialog_title.innerHTML = title;
+        self.dom.dialog_body.innerHTML = body_text;
+        if(self.dialog_close_function !== null) self.dom.dialog_close.removeEventListener("click", self.dialog_close_function);
+        if (action_close === null) {
+            self.dialog_close_function = function() { self.dom.dialog.style.display = "none"; };
+        } else {
+            self.dialog_close_function = action_close;
+        }
+        self.dom.dialog_close.addEventListener("click", self.dialog_close_function);
 
-    dialog(title: string, body_text: string, action_ok_text: string | null, action_fail_text: string | null, action_close_text: string | null, action_ok: Function | null = null, action_fail: Function | null = null, action_close: Function = this.dialog_close) {
-        this.dom.dialog_title.innerHTML = title;
-        this.dom.dialog_body.innerHTML = body_text;
-        if(this.dialog_close_function !== null) this.dom.dialog_close.removeEventListener("click", this.dialog_close_function);
-        this.dialog_close_function = action_close;
-        this.dom.dialog_close.addEventListener("click", this.dialog_close_function);
-
-        this.dom.dialog_footer.innerHTML = '';
+        self.dom.dialog_footer.innerHTML = '';
         if (action_ok_text !== null) {
-            var ok_button = this.dom.dialog_footer.appendChild(this.createElement("button", "", "__dialog-btn __dialog-btn-green"))
+            var ok_button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-green"))
             ok_button.innerHTML = action_ok_text;
             ok_button.addEventListener("click", action_ok);
         }
 
         if (action_fail_text !== null) {
-            var ok_button = this.dom.dialog_footer.appendChild(this.createElement("button", "", "__dialog-btn __dialog-btn-red"))
+            var ok_button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-red"))
             ok_button.innerHTML = action_fail_text;
             ok_button.addEventListener("click", action_fail);
         }
 
         if (action_close_text !== null) {
-            var ok_button = this.dom.dialog_footer.appendChild(this.createElement("button", "", "__dialog-btn __dialog-btn-gray"))
+            var ok_button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-gray"))
             ok_button.innerHTML = action_close_text;
-            ok_button.addEventListener("click", this.dialog_close_function);
+            ok_button.addEventListener("click", self.dialog_close_function);
         }
         
 
-        this.dom.dialog.style.display = "";
+        self.dom.dialog.style.display = "";
     }
 
 
@@ -1461,12 +1495,32 @@ class BausteinEditor {
         }
 
         var bausteinElement = document.createElement(tag);
-        bausteinElement.className = "be-baustein be-baustein--"+id;
+        bausteinElement.className = "baustein baustein--"+id;
         if(baustein.class !== "") bausteinElement.className += " "+baustein.class;
-        for (var s = 0; s < this.data.page.style.length; s++) {
-            const style = this.data.page.style[s];
-            if (style.value !== "" && style.value !== "0" && style.value !== "auto" && (style.property.options.length === 0 && style.value !== style.property.options[0])) {
-                bausteinElement.style.setProperty(style.property.name, style.value);
+        for (var s = 0; s < baustein.style.length; s++) {
+            const style = baustein.style[s];
+            if (style.value !== "" && style.value !== "0" && style.value !== "auto" && style.value !== "initial" && style.value !== "normal" 
+                && (style.property.options.length === 0 || style.value !== style.property.options[0])
+            ) {
+                // get this.types[].style[] and check if it is not default value
+                var ok = true, test_type = this.getTypeById(id);
+                if (test_type !== null) {
+                    for (var b = 0; b < test_type.style.length; b++) {
+                        const test_style = test_type.style[b];
+                        if (test_style.property.name === style.property.name) {
+                            console.log(test_style.property.name, test_style.value, "|", style.property.name, style.value)
+                            if (test_style.value === style.value) {
+                                ok = false;
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                if (ok) {
+                    //console.log("setProperty()", style.property.name, style.value, "style.property.options", style.property.options)
+                    bausteinElement.style.setProperty(style.property.name, style.value);
+                }
             }
         }
         

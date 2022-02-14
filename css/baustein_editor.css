@@ -301,6 +301,7 @@ select.form-control:not([multiple]) {
     color: black;
     background: white;
     border: 1px dashed #ccc;
+    user-select: none;
 }
 
 .be_baustein.selected, .be_baustein.selected > .baustein_indicator {
@@ -422,6 +423,7 @@ select.form-control:not([multiple]) {
 .be_formrow {
     margin: 8px;
 }
+.be_formrow > label { user-select: none; }
 .be_formrow > label, .be_formrow > .form-control {
     display: inline-block; vertical-align: top;
 }
@@ -442,6 +444,7 @@ select.form-control:not([multiple]) {
     font-size: 0.7rem;
     padding: 2px 0 0 2px;
     z-index: 1;
+    user-select: none;
 }
 
 .be_layout_view_margin, .be_layout_view_border, .be_layout_view_padding, .be_layout_view_inner { position: relative; }
@@ -455,7 +458,7 @@ select.form-control:not([multiple]) {
 .be_layout_view_padding > .be_layout_view_indicator { top: 10px; left: 10px; }
 
 .be_layout_view_inner { background: #407aa4; border: 2px dotted #2692c7; text-align: center; padding: 24px 2px; }
-
+.be_layout_wh_delimiter { user-select: none; }
 
 .be_layout_view .be_formrow { display: inline-block; position: absolute; z-index: 1; line-height: 1.2; border-radius: 2px; margin: 0; }
 .be_layout_view_inner > .be_formrow { position: relative; }
