@@ -1080,7 +1080,7 @@ var BausteinEditor = (function () {
         for (var s = 0; s < baustein.style.length; s++) {
             var style = baustein.style[s];
             if (style.value !== "" && style.value !== "0" && style.value !== "auto" && style.value !== "initial" && style.value !== "normal"
-                && (style.property.options.length === 0 || style.value !== style.property.options[0])) {
+                && (style.property.options.length === 0 || style.value !== style.property.options[0].value)) {
                 var ok = true, test_type = this.getTypeById(id);
                 if (test_type !== null) {
                     for (var b = 0; b < test_type.style.length; b++) {

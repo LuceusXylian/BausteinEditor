@@ -1500,7 +1500,7 @@ class BausteinEditor {
         for (var s = 0; s < baustein.style.length; s++) {
             const style = baustein.style[s];
             if (style.value !== "" && style.value !== "0" && style.value !== "auto" && style.value !== "initial" && style.value !== "normal" 
-                && (style.property.options.length === 0 || style.value !== style.property.options[0])
+                && (style.property.options.length === 0 || style.value !== style.property.options[0].value)
             ) {
                 // get this.types[].style[] and check if it is not default value
                 var ok = true, test_type = this.getTypeById(id);
