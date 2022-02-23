@@ -13,6 +13,7 @@ button:focus {
     outline: 0;
 }
 input::-moz-focus-inner { border: 0; }
+html, body { padding: 0; margin: 0; font-size: 1rem; }
 
 .form-control {
     width: 100%; width: -moz-available; width: -webkit-fill-available;
@@ -262,7 +263,7 @@ select.form-control:not([multiple]) {
 
 .be_baustein {
     display: block;
-    min-width: 100px;
+    min-width: 101px;
     margin: 4px;
     border-radius: 6px;
     border: 1px dashed #ccc;
@@ -292,7 +293,7 @@ select.form-control:not([multiple]) {
 .baustein_indicator {
     display: block;
     position: absolute;
-    top: -10px;
+    top: -14px;
     left: 4px;
     font-size: 0.6rem;
     font-weight: normal;
@@ -302,6 +303,44 @@ select.form-control:not([multiple]) {
     background: white;
     border: 1px dashed #ccc;
     user-select: none;
+}
+
+.baustein_indicator_position {
+    display: inline-block;
+    vertical-align: top;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    width: 16px;
+    text-align: center;
+    font-weight: bold;
+    margin-right: 4px;
+    margin-top: 1px;
+    margin-left: 2px;
+}
+
+.baustein_indicator_title {
+    display: inline-block;
+    vertical-align: top;
+    font-size: 13px;
+    padding-right: 4px;
+}
+
+.baustein_indicator_changer {
+    display: inline-block;
+    vertical-align: top;
+    background: transparent;
+    border: 0;
+    width: auto;
+    padding: 0; padding-right: 4px;
+    margin: 0;
+    font-size: 13px;
+
+    background: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E") right .75rem center no-repeat #fff;
+    background-size: auto;
+    background-size: 8px 10px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
 .be_baustein.selected, .be_baustein.selected > .baustein_indicator {

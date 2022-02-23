@@ -1,24 +1,25 @@
 /// <reference path="tinyeditor.ts"/>
 
-var baustein_counter = 0;
 const bausteinRenderType = {
     layout: 0,
     table: 1,
-    tableRow: 2,
-    plaintext: 3,
-    richtext: 4,
-    image: 5,
+    plaintext: 2,
+    richtext: 3,
+    image: 4,
 };
 
 class Position {
-    public parent: number | null;
-    public sort: number;
+    public row: number;
+    public depth: number;
+    public item: number;
 
-    constructor(parent: number | null, sort: number) {
-        this.parent = parent;
-        this.sort = sort;
+    constructor(row: number, depth: number, item: number) {
+        this.row = row;
+        this.depth = depth;
+        this.item = item;
     }
 }
+
 
 class BausteinStyleProperty {
 	public name: string;
@@ -26,15 +27,13 @@ class BausteinStyleProperty {
 	public type: string;
 	public suffix: string;
 	public options: HTMLOptionElement[];
-	public useAsClass: boolean;
 
-    constructor(name: string, title: string, type: string, suffix: string, options: HTMLOptionElement[], useAsClass: boolean) {
+    constructor(name: string, title: string, type: string, suffix: string, options: HTMLOptionElement[]) {
         this.name = name;
         this.title = title;
         this.type = type;
         this.suffix = suffix;
         this.options = options;
-        this.useAsClass = useAsClass;
     }
 }
 
@@ -49,9 +48,7 @@ class BausteinStyle {
 }
 
 class Baustein {
-	public id: number;
-	public position: Position;
-	public type: string;
+	public id: string;
 	public title: string;
 	public icon: string;
 	public tag: string;
@@ -59,11 +56,10 @@ class Baustein {
 	public style: BausteinStyle[];
 	public content: string;
 	public class: string;
+	public position: Position;
 
-    constructor(id: number, position: Position, type: string, title: string, icon: string, tag: string, renderType: number, style: any) {
+    constructor(id: string, title: string, icon: string, tag: string, renderType: number, style: any) {
         this.id = id;
-        this.position = position;
-        this.type = type;
         this.title = title;
         this.icon = icon;
         this.tag = tag;
@@ -75,44 +71,48 @@ class Baustein {
         }
         this.content = "";
         this.class = "";
+        this.position = {
+            row: -1,
+            depth: -1,
+            item: -1,
+        };
     }
 }
 
 class BausteinEditor {
 	public dom_id: any;
 	public dom: any;
-	public baustein_id_counter: number = 0;
     
 	public styleProperties = {
-        //font_family: { name: "font-family", title: "Schriftart", type: "string", suffix: "", options:  [new Option("Verdana, Arial, Helvetica, sans-serif")] },
-        font_size: { name: "font-size", title: "Schriftgröße", type: "select", suffix: "", options: [new Option("Normal", ""), new Option("Kleiner (~10px)", "smaller"), new Option("Klein (~11px)", "small"), new Option("Medium (~14px)", "medium"), new Option("Groß (~17px)", "large"), new Option("Größer (~20px)", "larger")], useAsClass: true },
+        font_family: { name: "font-family", title: "Schriftart", type: "string", suffix: "", options:  [new Option("Verdana, Arial, Helvetica, sans-serif")] },
+        font_size: { name: "font-size", title: "Schriftgröße", type: "number", suffix: "rem", options: [new Option("1rem")] },
         font_weight: { name: "font-weight", title: "Textdicke", type: "select", suffix: ""
-            , options: [ new Option("Normal", ""), new Option("Fett", "bold"), new Option("Fetter", "bolder"), new Option("Leichter", "lighter") ], useAsClass: false },
+            , options: [ new Option("Normal", ""), new Option("Fett", "bold"), new Option("Fetter", "bolder"), new Option("Leichter", "lighter") ] },
         text_decoration: { name: "text-decoration", title: "Textunterschreichung", type: "select", suffix: ""
-            , options: [ new Option("Normal", ""), new Option("underline", "underline"), new Option("dotted", "dotted") ], useAsClass: false },
+            , options: [ new Option("Normal", ""), new Option("underline", "underline"), new Option("dotted", "dotted") ] },
         font_style: { name: "font-style", title: "Textkursion", type: "select", suffix: ""
-            , options: [ new Option("Normal", ""), new Option("italic", "italic"), new Option("oblique", "oblique") ], useAsClass: false },
+            , options: [ new Option("Normal", ""), new Option("italic", "italic"), new Option("oblique", "oblique") ] },
         text_align: { name: "text-align", title: "Textausrichtung", type: "select", suffix: ""
-            , options: [ new Option("Normal", ""), new Option("left", "left"), new Option("center", "center"), new Option("right", "right") ], useAsClass: false },
+            , options: [ new Option("Normal", ""), new Option("left", "left"), new Option("center", "center"), new Option("right", "right") ] },
 
-        color: { name: "color", title: "Farbe", type: "color", suffix: "", options: [], useAsClass: false },
-        background_color: { name: "background-color", title: "Background Color", type: "color", suffix: "", options: [], useAsClass: false },
-        background_image: { name: "background-image", title: "Background Image", type: "string", suffix: "", options: [], useAsClass: false },
+        color: { name: "color", title: "Farbe", type: "color", suffix: "", options: [] },
+        background_color: { name: "background-color", title: "Background Color", type: "color", suffix: "", options: [] },
+        background_image: { name: "background-image", title: "Background Image", type: "string", suffix: "", options: [] },
 
-        width: { name: "width", title: "Breite", type: "number", suffix: "px", options: [], useAsClass: false },
-        height: { name: "height", title: "Höhe", type: "number", suffix: "px", options: [], useAsClass: false },
-        max_width: { name: "max-width", title: "Maximale Breite", type: "number", suffix: "px", options: [], useAsClass: false },
-        max_height: { name: "max-height", title: "Maximale Höhe", type: "number", suffix: "px", options: [], useAsClass: false },
+        width: { name: "width", title: "Breite", type: "number", suffix: "px", options: [] },
+        height: { name: "height", title: "Höhe", type: "number", suffix: "px", options: [] },
+        max_width: { name: "max-width", title: "Maximale Breite", type: "number", suffix: "px", options: [] },
+        max_height: { name: "max-height", title: "Maximale Höhe", type: "number", suffix: "px", options: [] },
 
-        margin_top: { name: "margin-top", title: "Außenabstand Oben", type: "number", suffix: "px", options: [], useAsClass: false },
-        margin_right: { name: "margin-right", title: "Außenabstand Rechts", type: "number", suffix: "px", options: [], useAsClass: false },
-        margin_bottom: { name: "margin-bottom", title: "Außenabstand Unten", type: "number", suffix: "px", options: [], useAsClass: false },
-        margin_left: { name: "margin-left", title: "Außenabstand Links", type: "number", suffix: "px", options: [], useAsClass: false },
+        margin_top: { name: "margin-top", title: "Außenabstand Oben", type: "number", suffix: "px", options: [] },
+        margin_right: { name: "margin-right", title: "Außenabstand Rechts", type: "number", suffix: "px", options: [] },
+        margin_bottom: { name: "margin-bottom", title: "Außenabstand Unten", type: "number", suffix: "px", options: [] },
+        margin_left: { name: "margin-left", title: "Außenabstand Links", type: "number", suffix: "px", options: [] },
 
-        padding_top: { name: "padding-top", title: "Innenabstand Oben", type: "number", suffix: "px", options: [], useAsClass: false },
-        padding_right: { name: "padding-right", title: "Innenabstand Rechts", type: "number", suffix: "px", options: [], useAsClass: false },
-        padding_bottom: { name: "padding-bottom", title: "Innenabstand Unten", type: "number", suffix: "px", options: [], useAsClass: false },
-        padding_left: { name: "padding-left", title: "Innenabstand Links", type: "number", suffix: "px", options: [], useAsClass: false },
+        padding_top: { name: "padding-top", title: "Innenabstand Oben", type: "number", suffix: "px", options: [] },
+        padding_right: { name: "padding-right", title: "Innenabstand Rechts", type: "number", suffix: "px", options: [] },
+        padding_bottom: { name: "padding-bottom", title: "Innenabstand Unten", type: "number", suffix: "px", options: [] },
+        padding_left: { name: "padding-left", title: "Innenabstand Links", type: "number", suffix: "px", options: [] },
     };
     private stylePropertiesArray = Object.values(this.styleProperties);
     getStylePropertyByName(name: string): BausteinStyleProperty {
@@ -121,15 +121,13 @@ class BausteinEditor {
                 return <BausteinStyleProperty> this.stylePropertiesArray[i];
             }            
         }
-        return new BausteinStyleProperty(name, "", "", "", [], false);
+        return new BausteinStyleProperty(name, "", "", "", []);
     }
 
-	public data: {page: {style: BausteinStyle[], styleClasses: BausteinStyle[]}, bausteine: Baustein[]} = {
+	public data: {page: {style: BausteinStyle[]}, bausteine: Baustein[][][]} = {
         page: {
             style: [
-                //{ property: this.styleProperties.font_family, value: this.styleProperties.font_family.options[0].value },
-            ],
-            styleClasses: [
+                { property: this.styleProperties.font_family, value: this.styleProperties.font_family.options[0].value },
                 { property: this.styleProperties.font_size, value: this.styleProperties.font_size.options[0].value },
             ]
         },
@@ -137,9 +135,9 @@ class BausteinEditor {
     };
 
 	public types = {
-        h1: new Baustein(-1, new Position(null, -1), "h1", "Überschrift 1", '<b>H1</b>', "h1", bausteinRenderType.richtext, [
-                //{ property: this.styleProperties.font_family, value:"" },
-                { property: this.styleProperties.font_size, value:"" },
+        h1: new Baustein("h1", "Überschrift 1", '<b>H1</b>', "h1", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_family, value:"" },
+                { property: this.styleProperties.font_size, value:"1.375rem" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"bold" },
                 { property: this.styleProperties.text_decoration, value:"" },
@@ -147,9 +145,9 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
                 { property: this.styleProperties.background_color, value:"" }, 
             ])
-        ,h2: new Baustein(-1, new Position(null, -1), "h2", "Überschrift 2", '<b>H2</b>', "h2", bausteinRenderType.richtext, [
-                //{ property: this.styleProperties.font_family, value:"" },
-                { property: this.styleProperties.font_size, value:"" },
+        ,h2: new Baustein("h2", "Überschrift 2", '<b>H2</b>', "h2", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_family, value:"" },
+                { property: this.styleProperties.font_size, value:"1.25rem" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"bold" },
                 { property: this.styleProperties.text_decoration, value:"" },
@@ -157,9 +155,9 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
                 { property: this.styleProperties.background_color, value:"" }, 
             ])
-        ,h3: new Baustein(-1, new Position(null, -1), "h3", "Überschrift 3", '<b>H3</b>', "h3", bausteinRenderType.richtext, [
-                //{ property: this.styleProperties.font_family, value:"" },
-                { property: this.styleProperties.font_size, value:"" },
+        ,h3: new Baustein("h3", "Überschrift 3", '<b>H3</b>', "h3", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_family, value:"" },
+                { property: this.styleProperties.font_size, value:"1.125rem" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"bold" },
                 { property: this.styleProperties.text_decoration, value:"" },
@@ -167,9 +165,9 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
                 { property: this.styleProperties.background_color, value:"" }, 
             ])
-        ,h4: new Baustein(-1, new Position(null, -1), "h4", "Überschrift 4", '<b>H4</b>', "h4", bausteinRenderType.richtext, [
-                //{ property: this.styleProperties.font_family, value:"" },
-                { property: this.styleProperties.font_size, value:"" },
+        ,h4: new Baustein("h4", "Überschrift 4", '<b>H4</b>', "h4", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_family, value:"" },
+                { property: this.styleProperties.font_size, value:"1.1rem" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"bold" },
                 { property: this.styleProperties.text_decoration, value:"" },
@@ -177,9 +175,9 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
                 { property: this.styleProperties.background_color, value:"" }, 
             ])
-        ,h5: new Baustein(-1, new Position(null, -1), "h5", "Überschrift 5", '<b>H5</b>', "h5", bausteinRenderType.richtext, [
-                //{ property: this.styleProperties.font_family, value:"" },
-                { property: this.styleProperties.font_size, value:"" },
+        ,h5: new Baustein("h5", "Überschrift 5", '<b>H5</b>', "h5", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_family, value:"" },
+                { property: this.styleProperties.font_size, value:"1rem" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"bold" },
                 { property: this.styleProperties.text_decoration, value:"" },
@@ -187,9 +185,9 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
                 { property: this.styleProperties.background_color, value:"" }, 
             ])
-        ,h6: new Baustein(-1, new Position(null, -1), "h6", "Überschrift 6", '<b>H6</b>', "h6", bausteinRenderType.richtext, [
-                //{ property: this.styleProperties.font_family, value:"" },
-                { property: this.styleProperties.font_size, value:"" },
+        ,h6: new Baustein("h6", "Überschrift 6", '<b>H6</b>', "h6", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_family, value:"" },
+                { property: this.styleProperties.font_size, value:"0.9rem" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"bold" },
                 { property: this.styleProperties.text_decoration, value:"" },
@@ -197,8 +195,8 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
                 { property: this.styleProperties.background_color, value:"" }, 
             ])
-        ,text: new Baustein(-1, new Position(null, -1), "text", "Paragraph (Text)", '<i class="fas fa-paragraph"></i>', "p", bausteinRenderType.richtext, [
-                //{ property: this.styleProperties.font_family, value:"" },
+        ,text: new Baustein("text", "Paragraph (Text)", '<i class="fas fa-paragraph"></i>', "p", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_family, value:"" },
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"" },
@@ -208,41 +206,40 @@ class BausteinEditor {
                 { property: this.styleProperties.background_color, value:"" }, 
                 { property: this.styleProperties.background_image, value:"" }, 
             ])
-        ,html: new Baustein(-1, new Position(null, -1), "html", "HTML", '<i class="fab fa-html5"></i>', "div", bausteinRenderType.plaintext, [
-                //{ property: this.styleProperties.font_family, value:"" },
+        ,html: new Baustein("html", "HTML", '<i class="fab fa-html5"></i>', "div", bausteinRenderType.plaintext, [
+                { property: this.styleProperties.font_family, value:"" },
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.text_decoration, value:"" },
                 { property: this.styleProperties.font_style, value:"" },
                 { property: this.styleProperties.color, value:"" },
             ])
-        ,script: new Baustein(-1, new Position(null, -1), "script", "Script", '<i class="fas fa-code"></i>', "script", bausteinRenderType.plaintext, [])
-        ,shortcode: new Baustein(-1, new Position(null, -1), "shortcode", "Shortcode []", '<i class="fas fa-code"></i>', "span", bausteinRenderType.plaintext, [])
-        ,image: new Baustein(-1, new Position(null, -1), "image", "Bild", '<i class="fas fa-image"></i>', "img", bausteinRenderType.image, [])
-        ,layout: new Baustein(-1, new Position(null, -1), "layout", "Layout", '<i class="fas fa-layer-group" style="transform: rotate(90deg);"></i>', "div", bausteinRenderType.layout, [ 
+        ,script: new Baustein("script", "Script", '<i class="fas fa-code"></i>', "script", bausteinRenderType.plaintext, [])
+        ,shortcode: new Baustein("shortcode", "Shortcode []", '<i class="fas fa-code"></i>', "span", bausteinRenderType.plaintext, [])
+        ,image: new Baustein("image", "Bild", '<i class="fas fa-image"></i>', "img", bausteinRenderType.image, [])
+        ,layout: new Baustein("layout", "Layout", '<i class="fas fa-layer-group" style="transform: rotate(90deg);"></i>', "div", bausteinRenderType.layout, [ 
             { property: this.styleProperties.max_width, value:"" }, 
             { property: this.styleProperties.max_height, value:"" }, 
             { property: this.styleProperties.color, value:"" },
             { property: this.styleProperties.background_color, value:"" }, 
             { property: this.styleProperties.background_image, value:"" }, 
         ])
-        ,table: new Baustein(-1, new Position(null, -1), "table", "Tabelle", '<i class="fas fa-table"></i>', "table", bausteinRenderType.table, [ 
+        ,table: new Baustein("table", "Tabelle", '<i class="fas fa-table"></i>', "table", bausteinRenderType.table, [ 
             { property: this.styleProperties.max_width, value:"" }, 
             { property: this.styleProperties.max_height, value:"" }, 
             { property: this.styleProperties.color, value:"" },
             { property: this.styleProperties.background_color, value:"" }, 
             { property: this.styleProperties.background_image, value:"" }, 
         ])
-        ,tableRow: new Baustein(-1, new Position(null, -1), "tableRow", "Tabellenzeile", '<i class="fas fa-table"></i>', "tr", bausteinRenderType.tableRow, [])
     };
     private typesArray = Object.values(this.types);
-    getBausteinType(type: string): Baustein {
+    getTypeById(id: string): Baustein {
         for (var i = 0; i < this.typesArray.length; i++) {
-            if (this.typesArray[i].type === type) {
+            if (this.typesArray[i].id === id) {
                 return <Baustein> this.typesArray[i];
             }            
         }
-        return new Baustein(-1, new Position(null, -1), type, "", "", "", -1, []);
+        return new Baustein(id, "", "", "", -1, []);
     }
 
 	public addBausteinSelectorItems = [
@@ -256,8 +253,8 @@ class BausteinEditor {
 
 	public be_bausteinSelector_isOpen: any;
 	public selected_baustein: HTMLElement | null;
-	public selected_baustein_id: number | null;
-	public open_baustein_attributes__baustein_id: number | null;
+	public selected_baustein_position: Position | null;
+	public open_baustein_attributes__position: Position | null;
 	public dialog_close_function: Function | null = null;
     public assets = {
         baustein_image_placeholder_url: "/img/baustein-image-placeholder.png"
@@ -273,8 +270,8 @@ class BausteinEditor {
     constructor(dom_id: string) {
         this.dom_id = dom_id;
         this.selected_baustein = null;
-        this.selected_baustein_id = null;
-        this.open_baustein_attributes__baustein_id = null;
+        this.selected_baustein_position = null;
+        this.open_baustein_attributes__position = null;
 
 
         // DOM
@@ -346,14 +343,6 @@ class BausteinEditor {
             this.createElement("div", this.dom_id+"_sidebar_header_col__baustein", "be_sidebar_header_col disabled")
         );
         this.dom.sidebar_header_col__baustein.innerHTML = "Baustein";
-
-        for (var i = 0; i < this.data.page.styleClasses.length; i++) {
-            const element = this.data.page.styleClasses[i];
-            this.dom.sidebar_content__site.appendChild(
-                this.formcontrol("page-sc", element.property.type, element.property.name, element.property.title, 
-                    element.value, element.property.suffix, element.property.options)
-            );
-        }
 
         for (var i = 0; i < this.data.page.style.length; i++) {
             const element = this.data.page.style[i];
@@ -433,22 +422,21 @@ class BausteinEditor {
         this.render();
 
         /* test construction */
-        //this.addBaustein(this.types.table, new Position(0,0,0));
-        //this.addBaustein(this.types.h1, new Position(0,1,0));
-        //this.addBaustein(this.types.h2, new Position(0,1,1));
-        //this.addBaustein(this.types.h1, new Position(0,2,0));
-        //this.addBaustein(this.types.h2, new Position(0,2,1));
-        
-        //this.addBaustein(this.types.layout, new Position(null, 1));
-        //this.addBaustein(this.types.h1, new Position(0, 1));
-        //this.addBaustein(this.types.h2, new Position(0, 2));
+        this.addBaustein(this.types.table, new Position(0,0,0));
+        this.addBaustein(this.types.h1, new Position(0,1,0));
+        this.addBaustein(this.types.h2, new Position(0,1,1));
+        this.addBaustein(this.types.h1, new Position(0,2,0));
+        this.addBaustein(this.types.h2, new Position(0,2,1));
+        //this.addBaustein(this.types.h1, new Position(1,0,0));
+        //this.addBaustein(this.types.h2, new Position(2,0,0));
     }
     
     addBausteinSelector(position: Position, hide: boolean, showLayoutItems: boolean) {
         const self = this;
-        const selector_dom_id = this.dom_id + "_" + position;
-        const const_parent = position.parent;
-        const const_sort = position.sort;
+        const row_const = position.row;
+        const depth_const = position.depth;
+        const item_const = position.item;
+        const selector_dom_id = this.dom_id + "_" + row_const + "_" + depth_const + "_" + item_const;
 
         var clz = "be_bausteinSelector_container";
         if (hide) {
@@ -500,7 +488,7 @@ class BausteinEditor {
             );
             be_bausteinSelector_layer_item.type = "button";
             be_bausteinSelector_layer_item.dataset.category = i.toString();
-            if (itemset.type === 0) be_bausteinSelector_layer_item.dataset.type = itemset.items[0].type.toString();
+            if (itemset.type === 0) be_bausteinSelector_layer_item.dataset.type = itemset.items[0].id.toString();
 
             var title1 = be_bausteinSelector_layer_item.appendChild(
                 this.createElement("div", "", "be_bausteinSelector_layer_item_title1")
@@ -522,7 +510,7 @@ class BausteinEditor {
             const category = i;
             be_bausteinSelector_layer_item.addEventListener("click", function() {
                 if(self.addBausteinSelectorItems[category].type === 0) {
-                    self.addBaustein(self.addBausteinSelectorItems[category].items[0], new Position(position.parent, position.sort));
+                    self.addBaustein(self.addBausteinSelectorItems[category].items[0], {row: row_const, depth: depth_const, item: item_const});
                     self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
                 } else {
                     const types_array = self.addBausteinSelectorItems[category].items;
@@ -533,14 +521,14 @@ class BausteinEditor {
                             self.createElement("button", "", "be_bausteinSelector_layer_item")
                         );
                         be_bausteinSelector_layer_item.type  = "button";
-                        be_bausteinSelector_layer_item.dataset.type  = types_array[b].type;
+                        be_bausteinSelector_layer_item.dataset.type  = types_array[b].id;
                         be_bausteinSelector_layer_item.innerHTML = 
                               '<div class="be_bausteinSelector_layer_item_title1">'+types_array[b].icon+'</div>'
                             + '<div class="be_bausteinSelector_layer_item_title2">'+types_array[b].title+'</div>';
 
                         const types_array_row = b;
                         be_bausteinSelector_layer_item.addEventListener("click", function() {
-                            self.addBaustein(types_array[types_array_row], new Position(position.parent, position.sort));
+                            self.addBaustein(types_array[types_array_row], {row: row_const, depth: depth_const, item: item_const});
                             self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
                         });
                     }
@@ -565,11 +553,16 @@ class BausteinEditor {
             if (e.dataTransfer === null) {
                 console.error("be_bausteinSelector.addEventListener('drop'): e.dataTransfer is null");
             } else {
-                var old_baustein_id = parseInt(e.dataTransfer.getData("baustein_id"));
-                var new_position = { parent: const_parent, sort: const_sort };
-                console.log("drop on addBausteinSelector: old_baustein_id", old_baustein_id);
+                var old_position: Position = {
+                    row: parseInt(e.dataTransfer.getData("row")), 
+                    depth: parseInt(e.dataTransfer.getData("depth")), 
+                    item: parseInt(e.dataTransfer.getData("item")), 
+                };
+
+                var new_position = { row: row_const, depth: depth_const, item: item_const };
+                console.log("drop on addBausteinSelector: old position", old_position);
                 console.log("drop on addBausteinSelector: new position", new_position);
-                self.moveBaustein(old_baustein_id, new_position);
+                self.moveBaustein(old_position, new_position);
             }
         });
             
@@ -577,107 +570,121 @@ class BausteinEditor {
     }
     
 
-    addBaustein(baustein_type: Baustein, position: Position) {
-        console.log("addBaustein( type:", baustein_type.type, ", position:", position, " )");
-        
-        const baustein_id = this.baustein_id_counter;
-        var baustein = new Baustein(
-            baustein_id, position, baustein_type.type, baustein_type.title, baustein_type.icon, baustein_type.tag, baustein_type.renderType, baustein_type.style
-        );
-        this.baustein_id_counter += 1;
+    addBaustein(type: Baustein, position: Position) {
+        console.log("addBaustein( type:", type, ", position:", position, " )");
 
-        for (let i = 0; i < baustein.style.length; i++) {
-            const style = baustein.style[i];
+        // Objects are reference types, we need to use clone here
+        var baustein_entry = new Baustein(
+            type.id, type.title, type.icon, type.tag, type.renderType, type.style
+        );
+
+        for (let i = 0; i < baustein_entry.style.length; i++) {
+            const style = baustein_entry.style[i];
             if (style.value === "" && style.property.options.length > 0) {
                 style.value = style.property.options[0].value;
             }
         }
 
-        
-        
-        // any baustein with equel or greater then position.sort += 1
-        for (var r = 0; r < this.data.bausteine.length; r++) {
-            if (this.data.bausteine[r].position.sort >= position.sort) {
-                this.data.bausteine[r].position.sort++;
+        if (position.depth === 0) {
+            const row_max = this.data.bausteine.length;
+            baustein_entry.position = position;
+            this.data.bausteine[row_max] = [[ baustein_entry ]];
+
+            console.log("addBaustein() this.data.bausteine", this.data.bausteine);
+            
+            // any baustein with equel or greater then position.row will be changed to +1, but not the newest
+            const to = this.data.bausteine.length -1;
+            for (var i = 0; i < to; i++) {
+                if (this.data.bausteine[i][0][0].position.row >= position.row) {
+                    this.data.bausteine[i][0][0].position.row++;
+                }
             }
+        } else {
+            if (this.data.bausteine[position.row].length -1 < position.depth) {
+                this.data.bausteine[position.row][position.depth] = [];
+            }
+            const item_max = this.data.bausteine[position.row][position.depth].length;
+            baustein_entry.position = position;
+            this.data.bausteine[position.row][position.depth][item_max] = baustein_entry;
+
+            console.log("addBaustein() this.data.bausteine", this.data.bausteine);
+            
+            
+            // any baustein with equel or greater then position.row will be changed to +1, but not the newest
+            /*
+            const to = this.data.bausteine.length -1;
+            for (var r = 0; r < to; r++) {
+                if (this.data.bausteine[r][0][0].position.row >= position.row) {
+                    this.data.bausteine[r][0][0].position.row++;
+                }
+                const to2 = this.data.bausteine.length -1;
+                for (var d = 0; d < to2; d++) {
+                    if (this.data.bausteine[r][d][0].position.depth >= position.depth) {
+                        this.data.bausteine[r][d][0].position.depth++;
+                    }
+                }
+            }
+            */
         }
 
-        this.data.bausteine[this.data.bausteine.length] = baustein;
-
+        
         this.render();
-        this.selectBaustein(baustein_id);
-        // add tableRow
-        if (baustein.renderType === bausteinRenderType.table) {
-            this.addBaustein(this.types.tableRow, new Position(baustein_id, this.getPositionSort(false)))        
-        }
+        this.selectBaustein(position);
         console.log("addBaustein() this.data.bausteine", this.data.bausteine);
     }
 
-    selectBaustein(baustein_id: number) {
+    selectBaustein(position: Position) {
         this.dom.content.querySelectorAll(".be_baustein").forEach(function(be_baustein: HTMLElement) { be_baustein.classList.remove("selected"); });
-        this.selected_baustein = document.getElementById(this.dom_id+'_be_baustein_item'+baustein_id);
+        this.selected_baustein = document.getElementById(this.dom_id+'_be_baustein_item'+position.row+'_'+position.depth+'_'+position.item);
         this.selected_baustein?.classList.add("selected");
-        this.selected_baustein_id = baustein_id;
-        this.open_baustein_attributes(baustein_id);
+        this.selected_baustein_position = position;
+        this.open_baustein_attributes(position, this.data.bausteine[position.row][position.depth][position.item].renderType);
     }
 
-    getBaustein(baustein_id: number): Baustein {
-        for (var i = 0; i < this.data.bausteine.length; i++) {
-            if (this.data.bausteine[i].id === baustein_id) {
-                return this.data.bausteine[i];
-            }
-        }
-        throw new Error("getBaustein() can not get Baustein with id: "+baustein_id);
-    }
-
-    getPositionSort(getFirst: boolean): number {
-        var positionSort = 1;
-        if (getFirst) {
-            for (var i = 0; i < this.data.bausteine.length; i++) {
-                if (this.data.bausteine[i].position.sort < positionSort) {
-                    positionSort =  this.data.bausteine[i].position.sort;
-                }
-            }
-    
-            return positionSort -1;
-        } else {
-            for (var i = 0; i < this.data.bausteine.length; i++) {
-                if (this.data.bausteine[i].position.sort > positionSort) {
-                    positionSort =  this.data.bausteine[i].position.sort;
-                }
-            }
-    
-            return positionSort +1;
-        }
-    }
-
-    getBausteineArray(parent: number | null): Baustein[] {
-        var bausteine = [];
-        for (var i = 0; i < this.data.bausteine.length; i++) {
-            if (this.data.bausteine[i].position.parent === parent) {
-                bausteine[bausteine.length] = this.data.bausteine[i];
-            }
-        }
-        return bausteine.sort(function(a: any, b: any) {
-            return a.position.sort > b.position.sort? 1 : 0;
-        });
-    }
-
-    deleteBaustein(baustein_id: number) {
-        console.log("deleteBaustein() baustein_id", baustein_id)
+    //TODO: FIX deleteBaustein
+    deleteBaustein(position: Position) {
+        console.log("deleteBaustein() position", position)
         var bausteine: any = [];
 
         for (var row = 0; row < this.data.bausteine.length; row++) {
-            if (this.data.bausteine[row].id !== baustein_id) {
-                bausteine[bausteine.length] = this.data.bausteine[row];
+            const new_row: number = bausteine.length;
+
+            for (var depth = 0; depth < this.data.bausteine[row].length; depth++) {
+                for (var item = 0; item < this.data.bausteine[row][depth].length; item++) {
+                    
+                    //if (position.row === row && ((position.depth === depth && position.item === item) || position.depth === 0)) {
+                    if (position.row === row && position.depth === depth && position.item === item) {
+                        console.log("deleteBaustein deleted:", "row", row, "depth", depth, "item", item)
+                    } else {
+                        var new_depth: number;
+                        if (new_row === 0 || typeof bausteine[new_row] === "undefined") {
+                            bausteine[new_row] = [[]];
+                            new_depth = 0;
+                        } else {
+                            new_depth = bausteine[new_row].length;
+                        }
+
+                        var new_item: number;
+                        if (new_depth === 0 || typeof bausteine[new_row][new_depth] === "undefined") {
+                            bausteine[new_row][new_depth] = [];
+                            new_item = 0;
+                        } else {
+                            new_item = bausteine[new_row][new_depth].length;
+                        }
+
+                        console.log("this.data.bausteine[row]", this.data.bausteine[row])
+                        
+                        bausteine[new_row][new_depth][new_item] = this.data.bausteine[row][depth][item];
+                    }
+                }
             }
         }
 
         console.log("this.data.bausteine", this.data.bausteine)
         
         this.data.bausteine = bausteine;
-        this.selected_baustein_id = null;
-        this.open_baustein_attributes__baustein_id = null;
+        this.selected_baustein_position = null;
+        this.open_baustein_attributes__position = null;
         this.render();
         window.focus();
         if (document.activeElement === null) {
@@ -688,169 +695,165 @@ class BausteinEditor {
         }
     }
 
-    moveBaustein(baustein_id: number, position_new: Position) {
-        const baustein = this.getBaustein(baustein_id);
-        baustein.position.parent = position_new.parent;
-        baustein.position.sort = position_new.sort;
+    //TODO: FIX moveBaustein
+    moveBaustein(position: Position, position_new: Position) {
+        if (position.row !== position_new.row || position.depth !== position_new.depth || position.item !== position_new.item) {
+            const position_new_const__row = position_new.row; // need to clone because magic
+            const position_new_const__depth = position_new.depth; // need to clone because magic
+            const position_new_const__item = position_new.item; // need to clone because magic
+            console.log("moveBaustein", "\nposition", position, "\nposition_new", position_new);
+            console.log("moveBaustein BEFORE position", this.data.bausteine[position_new_const__row][position_new_const__depth][position_new_const__item].position)
+            
+            /*if (position.row > position_new.row) {
+                // jeden Baustein row, der größer als position_new.row ist, row +1
+                for (var r = position_new.row; r < this.data.bausteine.length; r++) {
+                    for (var d = 0; d < this.data.bausteine[r].length; d++) {
+                        for (var i = 0; i < this.data.bausteine[r][d].length; i++) {
+                            this.data.bausteine[r][d][i].position.row += 1;
+                        }
+                    }
+                }
+            }*/
 
-        // any baustein with equel or greater then position.sort += 1
-        for (var r = 0; r < this.data.bausteine.length; r++) {
-            if (this.data.bausteine[r].id !== baustein_id && this.data.bausteine[r].position.sort >= baustein.position.sort) {
-                this.data.bausteine[r].position.sort++;
-            }
+
+            // clone object -> delete old -> add new
+            const baustein = this.data.bausteine[position.row][position.depth][position.item];
+            this.deleteBaustein(position);
+            //this.addBaustein(baustein, position_new);
+
+            
+            //console.log("moveBaustein AFTER_1 position", this.data.bausteine[position_new_const__row][position_new_const__depth][position_new_const__item].position)
+            //this.data.bausteine[position.row][position.depth][position.item].position.row = position_new_const__row;
+            //this.data.bausteine[position.row][position.depth][position.item].position.depth = position_new_const__depth;
+            //this.data.bausteine[position.row][position.depth][position.item].position.item = position_new_const__item;
+            this.render();
+            //console.log("moveBaustein AFTER_2 position", this.data.bausteine[position_new_const__row][position_new_const__depth][position_new_const__item].position)
         }
-
-        this.render();
-    }
-
-    changeBaustein(baustein_id: number, type: string) {
-        const baustein = this.getBaustein(baustein_id);
-        const new_baustein = this.getBausteinType(type);
-        baustein.icon = new_baustein.icon;
-        baustein.renderType = new_baustein.renderType;
-        baustein.tag = new_baustein.tag;
-        baustein.title = new_baustein.title;
-        baustein.type = new_baustein.type;
-
-        this.render();
-    }
-
-    getChangeBausteinOptions(current_renderType: number, current_type: string): HTMLOptionElement[] {
-        var options: HTMLOptionElement[] = [];
-        for (var i = 0; i < this.typesArray.length; i++) {
-            const element = this.typesArray[i];
-            if (element.renderType === current_renderType && element.type !== current_type) {
-                var b = options.length;
-                options[b] = <HTMLOptionElement> this.createElement("option", "", "");
-                options[b].value = element.type; 
-                options[b].innerHTML = element.icon + " " + element.title;
-            }
-        }
-
-        return options;
     }
     
+    /// nachdem es sortiert wurde, überschreibt es die Position, entsprechend dem Index
+    getBausteine() {
+        // Row
+        var bausteine: any = this.data.bausteine.sort(function(a: any, b: any) {
+            return a[0][0].position.row > b[0][0].position.row? 1 : 0;
+        });
 
-    renderBaustein(baustein: Baustein, position: Position): HTMLElement {
-        const self = this;
-        const baustein_id = baustein.id;
-        const const_parent = position.parent;
-        const const_sort = position.sort;
-        const baustein_dom_id = this.dom_id+'_be_baustein_item'+baustein_id;
-        const baustein_editor_id = baustein_dom_id+'_editor';
-        
-        var baustein_dom = this.createElement("div", baustein_dom_id, "be_baustein");
-        baustein_dom.dataset.type = baustein.type;
-        baustein_dom.draggable = false;
-        var dragstart_elements: HTMLElement[] = [baustein_dom];
+        console.log("getBausteine bausteine", bausteine);
+        // Row POST & Depth
+        for (var r = 0; r < bausteine.length; r++) {
+            // Row POST
+            for (var d = 0; d < bausteine[r].length; d++) {
+                for (var i = 0; i < bausteine[r][d].length; i++) {
+                    bausteine[r][d][i].position.row = r;
+                }
+            }
 
-        if (this.selected_baustein_id !== null && this.selected_baustein_id === baustein_id) {
-            baustein_dom.classList.add("selected")
+            // Depth
+            bausteine[r] = bausteine[r].sort(function(a: any, b: any) {
+                return a[0].position.depth > b[0].position.depth? 1 : 0;
+            });
         }
 
-        for (var a = 0; a < baustein.style.length; a++) {
-            const element = baustein.style[a];
+        // Depth POST & Item
+        for (var r = 0; r < bausteine.length; r++) {
+            for (var d = 0; d < bausteine[r].length; d++) {
+                // Depth POST
+                for (var i = 0; i < bausteine[r][d].length; i++) {
+                    bausteine[r][d][i].position.depth = d;
+                }
+
+                // Item
+                console.log("bausteine["+r+"]["+d+"]", bausteine[r][d])
+                bausteine[r][d] = bausteine[r][d].sort(function(a: any, b: any) {
+                    return a.position.row > b.position.row? 1 : 0;
+                });
+            }
+        }
+
+        // Item POST
+        for (var r = 0; r < bausteine.length; r++) {
+            for (var d = 0; d < bausteine[r].length; d++) {
+                for (var i = 0; i < bausteine[r][d].length; i++) {
+                    bausteine[r][d][i].position.item = i;
+                }
+            }
+        }
+        
+        return bausteine;
+    }
+
+    renderBaustein(baustein_entry: Baustein, position: Position): HTMLElement {
+        const self = this;
+        const row_const = position.row;
+        const depth_const = position.depth;
+        const item_const = position.item;
+        const baustein_id = this.dom_id+'_be_baustein_item'+position.row+'_'+position.depth+'_'+position.item;
+        const baustein_editor_id = baustein_id+'_editor';
+        
+        var be_baustein = this.createElement("div", baustein_id, "be_baustein");
+        be_baustein.dataset.type = baustein_entry.id;
+        be_baustein.draggable = false;
+        var dragstart_elements: HTMLElement[] = [be_baustein];
+
+        if (this.selected_baustein_position !== null 
+            && this.selected_baustein_position.row === position.row
+            && this.selected_baustein_position.depth === position.depth
+            && this.selected_baustein_position.item === position.item
+        ) {
+            be_baustein.classList.add("selected")
+        }
+
+        for (var a = 0; a < baustein_entry.style.length; a++) {
+            const element = baustein_entry.style[a];
             if (element.value !== "") {
                 var property_name: any = element.property.name;
-                baustein_dom.style[property_name] = element.value;
+                be_baustein.style[property_name] = element.value;
             }
         }
 
         
         // Baustein indicator
-        var baustein_indicator: HTMLLabelElement = <HTMLLabelElement> baustein_dom.appendChild(
-            this.createElement("label", baustein_dom_id+"_indicator", "baustein_indicator")
+        var baustein_indicator: HTMLLabelElement = <HTMLLabelElement> be_baustein.appendChild(
+            this.createElement("label", "", "baustein_indicator")
         );
+        baustein_indicator.innerHTML = baustein_entry.icon + " " + baustein_entry.title;
         baustein_indicator.addEventListener("click", function() {
-            self.selectBaustein(baustein_id);
+            self.selectBaustein({row: row_const, depth: depth_const, item: item_const, });
         }, false);
         dragstart_elements[dragstart_elements.length] = baustein_indicator;
 
-        if (const_parent === null) {
-            var baustein_indicator_position: HTMLElement = <HTMLElement> baustein_indicator.appendChild(
-                this.createElement("span", "", "baustein_indicator_position")
-            );
-            baustein_indicator_position.innerHTML = baustein_counter.toString();
-            baustein_counter++;
-        }
-
-        var changeBausteinOptions = this.getChangeBausteinOptions(baustein.renderType, baustein.type);
-        if (changeBausteinOptions.length === 0) {
-            var baustein_indicator_title: HTMLLabelElement = <HTMLLabelElement> baustein_indicator.appendChild(
-                this.createElement("span", "", "baustein_indicator_title")
-            );
-            baustein_indicator_title.innerHTML = baustein.icon + " " + baustein.title;
-        } else {
-            var baustein_indicator_changer: HTMLSelectElement = <HTMLSelectElement> baustein_indicator.appendChild(
-                this.createElement("select", "", "baustein_indicator_changer")
-            );
-            baustein_indicator_changer.addEventListener("change", function() {
-                self.changeBaustein(baustein_id, this.value);
-            });
-    
-            var baustein_indicator_option: HTMLOptionElement = <HTMLOptionElement> baustein_indicator_changer.appendChild(
-                this.createElement("option", "", "")
-            );
-            baustein_indicator_option.value = baustein.type; 
-            baustein_indicator_option.innerHTML = baustein.icon + " " + baustein.title;
-            baustein_indicator_option.selected = true;
-            baustein_indicator_option.style.display = "none";
-
-            for (var i = 0; i < changeBausteinOptions.length; i++) {
-                baustein_indicator_changer.appendChild(changeBausteinOptions[i]);
-            }
-        }
-
-
-        switch (baustein.renderType) {
-            case bausteinRenderType.layout:
-            case bausteinRenderType.table: 
-            case bausteinRenderType.tableRow: 
-                var bausteine_inner = this.getBausteineArray(baustein.id);
-                for (var row = 0; row < bausteine_inner.length; row++) {
-                    const baustein_inner = bausteine_inner[row];
-                    baustein_dom.appendChild( 
-                        this.addBausteinSelector(new Position(baustein_id, baustein_inner.position.sort), false, true)
-                    );
-        
-                    baustein_dom.appendChild( 
-                        this.renderBaustein(baustein_inner, new Position(baustein_id, baustein_inner.position.sort))
-                    );
-                }
-        
-                baustein_dom.appendChild(
-                    this.addBausteinSelector(new Position(baustein_id, this.getPositionSort(false)), false, true)
-                );
-                break;
+        switch (baustein_entry.renderType) {
+            case bausteinRenderType.layout: break;
+            case bausteinRenderType.table: break;
                 
             case bausteinRenderType.image:
-                var image: HTMLImageElement = <HTMLImageElement> baustein_dom.appendChild(
+                var image: HTMLImageElement = <HTMLImageElement> be_baustein.appendChild(
                     this.createElement("img", baustein_editor_id, "be_baustein_item")
                 );
                 // WENN dataset.src empty ist, dann ist nur der Placeholder vorhanden
-                image.dataset.src = baustein.content;
-                if (baustein.content === "") {
+                image.dataset.src = baustein_entry.content;
+                if (baustein_entry.content === "") {
                     image.src = this.assets.baustein_image_placeholder_url;
                 } else {
-                    image.src = baustein.content;
+                    image.src = baustein_entry.content;
                 }
 
                 image.style.maxWidth = "100%";
 
                 image.addEventListener("click", function() {
-                    self.selectBaustein(baustein_id);
+                    self.selectBaustein({row: row_const, depth: depth_const, item: item_const, });
                 });
                 dragstart_elements[dragstart_elements.length] = image;
                 break;
 
             default:
                 var editor: any;
-                switch (baustein.renderType) {
+                switch (baustein_entry.renderType) {
                     case bausteinRenderType.richtext:
-                        editor = baustein_dom.appendChild(
+                        editor = be_baustein.appendChild(
                             this.createElement("div", baustein_editor_id, "be_baustein_item")
                         );
-                        editor.innerHTML = baustein.content;
+                        editor.innerHTML = baustein_entry.content;
                         editor.style.minHeight = "100px";
         
                         /*
@@ -882,37 +885,37 @@ class BausteinEditor {
                         editor.addEventListener("input", function() {
                             editor.style.height = '1px';
                             editor.style.height = editor.scrollHeight + 'px';
-                            baustein.content = editor.innerHTML;
+                            self.data.bausteine[row_const][depth_const][item_const].content = editor.innerHTML;
                         });
                         
-                        dragstart_elements[dragstart_elements.length] = <HTMLElement> baustein_dom.getElementsByClassName("__toolbar")[0];
+                        dragstart_elements[dragstart_elements.length] = <HTMLElement> be_baustein.getElementsByClassName("__toolbar")[0];
                         break;
                     
                     default:
-                        editor = baustein_dom.appendChild(
+                        editor = be_baustein.appendChild(
                             this.createElement("textarea", baustein_editor_id, "be_baustein_item")
                         );
-                        editor.innerHTML = baustein.content;
+                        editor.innerHTML = baustein_entry.content;
                         editor.focus();
                         
-                        baustein_dom.addEventListener("input", function() {
+                        be_baustein.addEventListener("input", function() {
                             editor.style.height = '1px';
                             editor.style.height = editor.scrollHeight + 'px';
-                            baustein.content = editor.value.split("<").join("&lt;").split(">").join("&gt;");
+                            self.data.bausteine[row_const][depth_const][item_const].content = editor.value.split("<").join("&lt;").split(">").join("&gt;");
                         });
                         break;
                 }
                 
                 editor.draggable = false;
                 editor.addEventListener("focusin", function() {
-                    self.selectBaustein(baustein_id);
+                    self.selectBaustein({row: row_const, depth: depth_const, item: item_const, });
                 });
                 break;
         }
 
-        baustein_dom.addEventListener("click", function(e: any) {
-            if (e.target.id === baustein_dom_id) {
-                self.selectBaustein(baustein_id);
+        be_baustein.addEventListener("click", function(e: any) {
+            if (e.target.id === baustein_id) {
+                self.selectBaustein({row: row_const, depth: depth_const, item: item_const, });
             } else {
                 return false;
             }
@@ -923,51 +926,135 @@ class BausteinEditor {
         dragstart_elements.forEach(function(element) {
             element.draggable = true;
             element.addEventListener("dragstart", function(e: any) {
-                console.log(e)
                 if (e.dataTransfer === null) {
                     console.error("baustein_item.addEventListener('dragstart'): e.dataTransfer is null");
-                } else if (e.target.id === element.id) {
-                    console.log("dragstart baustein_id", baustein_id)
+                } else {
                     e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData("baustein_id", baustein_id.toString());
+                    e.dataTransfer.setData("row", row_const.toString());
+                    e.dataTransfer.setData("depth", depth_const.toString());
+                    e.dataTransfer.setData("item", item_const.toString());
                 }
             });
         });
 
         // handle draggable condition
-        new ClickHoldDrag(baustein_dom);
-        baustein_dom.addEventListener("dragend", function() {
-            baustein_dom.draggable = false;
+        new ClickHoldDrag(be_baustein);
+        be_baustein.addEventListener("dragend", function() {
+            be_baustein.draggable = false;
         });
 
-        return baustein_dom;
+        // target
+        /*
+        be_baustein.addEventListener("dragover", function(e: any) {
+            e.preventDefault();
+        });
+        
+        be_baustein.addEventListener("drop", function(e: any) {
+            e.preventDefault();
+            if (e.dataTransfer === null) {
+                console.error("baustein_item.addEventListener('drop'): e.dataTransfer is null");
+            } else {
+                var old_position: Position = {
+                    row: parseInt(e.dataTransfer.getData("row")), 
+                    depth: parseInt(e.dataTransfer.getData("depth")), 
+                    item: parseInt(e.dataTransfer.getData("item")), 
+                };
+
+                var new_position = self.data.bausteine[row_const][depth_const][item_const].position;
+                if (old_position.row !== new_position.row) {
+                    self.moveBaustein(old_position, new_position);
+                }
+            }
+        });
+        */
+
+        return be_baustein;
     }
     
     
     render() {
         this.dom.content.innerHTML = "";
-        baustein_counter = 0;
+        this.data.bausteine = this.getBausteine();
 
-        /*  Bausteine Recursive Graph Array
-            this.data.bausteine[row] :: .parent :: .position
+        /*  Bausteine 3D Graph Array
+            this.data.bausteine[row][depth][item]
         */
-        var bausteine = this.getBausteineArray(null);
-        for (var row = 0; row < bausteine.length; row++) {
-            const baustein = bausteine[row];
+        for (var row = 0; row < this.data.bausteine.length; row++) {
+            var depth = 0, item = 0;
+            const baustein_entry = this.data.bausteine[row][depth][item];
             this.dom.content.appendChild( 
-                this.addBausteinSelector(new Position(null, baustein.position.sort), true, true)
+                this.addBausteinSelector({row: row, depth: depth, item: item}, true, true)
             );
+                
+                
+            if (baustein_entry.renderType === bausteinRenderType.layout || baustein_entry.renderType === bausteinRenderType.table) {
+                // Baustein Layout start
+                var be_baustein: HTMLElement = this.dom.content.appendChild( 
+                    this.renderBaustein(baustein_entry, {row: row, depth: depth, item: item})
+                );
+                
+                depth = 1;
+                console.log("baustein_entry.renderType", baustein_entry.renderType)
+                if (baustein_entry.renderType === bausteinRenderType.table) {
+                    // Baustein Layout: Table
+                    if (this.data.bausteine[row].length > 1) {
+                        var be_baustein_table = be_baustein.appendChild(this.createElement("table", "", ""));
+                        for (var depth = 1; depth < this.data.bausteine[row].length; depth++) {
+                            var be_baustein_row = be_baustein_table.appendChild(this.createElement("tr", "", ""));
+                            for (var item = 0; item < this.data.bausteine[row][depth].length; item++) {
 
-            this.dom.content.appendChild( 
-                this.renderBaustein(baustein, new Position(null, baustein.position.sort))
-            );
+                                var be_baustein_td1 = be_baustein_row.appendChild(this.createElement("td", "", ""));
+                                be_baustein_td1.appendChild(
+                                    this.addBausteinSelector({row: row, depth: depth, item: item}, false, false)
+                                );
+                                
+                                var be_baustein_td2 = be_baustein_row.appendChild(this.createElement("td", "", ""));
+                                const baustein_item = this.data.bausteine[row][depth][item];
+                                be_baustein_td2.appendChild(
+                                    this.renderBaustein(baustein_item, {row: row, depth: depth, item: item})
+                                );
+                            }
+
+                            var be_baustein_td3 = be_baustein_row.appendChild(this.createElement("td", "", ""));
+                            be_baustein_td3.appendChild(
+                                this.addBausteinSelector({row: row, depth: depth, item: item}, false, false)
+                            );
+                        }
+                    }
+
+                    be_baustein.appendChild(
+                        this.addBausteinSelector({row: row, depth: depth, item: 0}, false, false)
+                    );
+                } else {
+                    // Baustein Layout: Layout
+                    if (this.data.bausteine[row].length > 1) {
+                        for (var item = 0; item < this.data.bausteine[row][depth].length; item++) {
+                            be_baustein.appendChild(
+                                this.addBausteinSelector({row: row, depth: depth, item: item}, false, false)
+                            );
+
+                            const baustein_item = this.data.bausteine[row][depth][item];
+                            be_baustein.appendChild(
+                                this.renderBaustein(baustein_item, {row: row, depth: depth, item: item})
+                            );
+                        }
+                    }
+                    be_baustein.appendChild(
+                        this.addBausteinSelector({row: row, depth: depth, item: item}, false, false)
+                    );
+                }
+            } else {
+                this.dom.content.appendChild(
+                    this.renderBaustein(baustein_entry, {row: row, depth: depth, item: item})
+                );
+            }
         }
 
+        var row: number = this.data.bausteine.length;
         this.dom.content.appendChild(
-            this.addBausteinSelector(new Position(null, (bausteine.length === 0? 0 : bausteine[bausteine.length -1].position.sort +1)), false, true)
+            this.addBausteinSelector({row: row, depth: 0, item: 0}, false, true)
         );
 
-                
         this.preview_render();
     }
     
@@ -994,7 +1081,6 @@ class BausteinEditor {
     
     apply_styles() { 
         // Apply Page Styles
-        /*
         var style_string = ".be_baustein  {";
 
         for (var i = 0; i < this.data.page.style.length; i++) {
@@ -1004,11 +1090,10 @@ class BausteinEditor {
         }
         style_string += '}';
         this.dom.page_styles.innerHTML = style_string;
-        */
 
         // Apply Baustein Styles
-        if (this.selected_baustein !== null && this.selected_baustein_id !== null) {
-            const baustein = this.getBaustein(this.selected_baustein_id);
+        if (this.selected_baustein !== null && this.selected_baustein_position !== null) {
+            const baustein = this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item];
             var selected_baustein_editor: HTMLElement = <HTMLElement> this.selected_baustein.lastChild;
             
             var nodes = this.dom.sidebar_content__baustein_styles.querySelectorAll(".be_formrow .form-control");
@@ -1033,21 +1118,10 @@ class BausteinEditor {
 
                 baustein.style[baustein_style_index].value = value;
                 
-                var target;
                 if (baustein.renderType === bausteinRenderType.layout) {
-                    target = this.selected_baustein;
+                    this.selected_baustein.style.setProperty(baustein.style[baustein_style_index].property.name, baustein.style[baustein_style_index].value);
                 } else {
-                    target = selected_baustein_editor;
-                }
-
-                if (baustein.style[baustein_style_index].property.useAsClass) {
-                    for (let h = 0; h < baustein.style[baustein_style_index].property.options.length; h++) {
-                        const class_value = baustein.style[baustein_style_index].property.options[h].value;
-                        if(target.classList.contains(class_value)) target.classList.remove(baustein.style[baustein_style_index].property.options[h].value);
-                    }
-                    if(baustein.style[baustein_style_index].value !== "") target.classList.add(baustein.style[baustein_style_index].value);
-                } else {
-                    target.style.setProperty(baustein.style[baustein_style_index].property.name, baustein.style[baustein_style_index].value);
+                    selected_baustein_editor.style.setProperty(baustein.style[baustein_style_index].property.name, baustein.style[baustein_style_index].value);
                 }
             }
         }
@@ -1202,13 +1276,18 @@ class BausteinEditor {
         return be_layout_fc__margin_top;
     }
 
-    open_baustein_attributes(baustein_id: number) {
-        if (this.open_baustein_attributes__baustein_id === null || this.open_baustein_attributes__baustein_id !== baustein_id) {
-            const current_baustein = this.getBaustein(baustein_id);
-            this.open_baustein_attributes__baustein_id = baustein_id;
+    open_baustein_attributes(position: Position, renderType: number) {
+        if (this.open_baustein_attributes__position === null 
+                || (this.open_baustein_attributes__position.row !== position.row
+                    || this.open_baustein_attributes__position.depth !== position.depth
+                    || this.open_baustein_attributes__position.item !== position.item
+            )) {
+            const position_const = { row: position.row, depth: position.depth, item: position.item };
+            this.open_baustein_attributes__position = position_const;
             const self = this;
+            const current_baustein = this.data.bausteine[position_const.row][position_const.depth][position_const.item];
 
-            console.log("open_baustein_attributes baustein_id", baustein_id)
+            console.log("open_baustein_attributes position_const", position_const)
             this.dom.sidebar_content__baustein_styles.innerHTML = "";
             this.dom.sidebar_content__baustein_misc.innerHTML = "";
 
@@ -1270,7 +1349,7 @@ class BausteinEditor {
             ///////////////////////////////////////////////////////
 
 
-            if (current_baustein.renderType === bausteinRenderType.image) {
+            if (renderType === bausteinRenderType.image) {
                 var baustein_image_row = this.dom.sidebar_content__baustein_styles.appendChild(
                     this.formcontrol(
                         "baustein_image", "text", "image"
@@ -1281,7 +1360,7 @@ class BausteinEditor {
 
                 const baustein_image_form_control: HTMLFormElement = <HTMLFormElement> baustein_image_row.getElementsByClassName('form-control')[0];
                 baustein_image_form_control.addEventListener("change", function() {
-                    current_baustein.content = this.value;
+                    self.data.bausteine[position_const.row][position_const.depth][position_const.item].content = this.value;
                     if(self.selected_baustein !== null) {
                         const selected_baustein_item = <HTMLImageElement> self.selected_baustein.querySelector(".be_baustein_item");
                         selected_baustein_item.src  = this.value;
@@ -1314,14 +1393,14 @@ class BausteinEditor {
     
             const baustein_class_form_control: HTMLFormElement = <HTMLFormElement> baustein_class_row.getElementsByClassName('form-control')[0];
             baustein_class_form_control.addEventListener("change", function() {
-                current_baustein.class = this.value;
+                self.data.bausteine[position_const.row][position_const.depth][position_const.item].class = this.value;
             });
     
             baustein_delete_button.addEventListener("click", function() {
                 self.dialog("Baustein löschen", "Sind Sie sich sicher, dass Sie diesen Baustein löschen wollen?", null, "Löschen", "Abbrechen", null, function() {
                     self.close_baustein_attributes();
                     console.log(self.data.bausteine);
-                    self.deleteBaustein(baustein_id);
+                    self.deleteBaustein(position_const);
                     console.log(self.data.bausteine);
                     if (self.dialog_close_function === null) {
                         console.error("baustein_delete_button tried to close dialog, but self.dialog_close_function is null");
@@ -1419,22 +1498,15 @@ class BausteinEditor {
 
 
     import(data: any) {
-        // set baustein_id_counter from data
-        for (var i = 0; i < data.bausteine.length; i++) {
-            if (data.bausteine[i].id > this.baustein_id_counter) {
-                this.baustein_id_counter = data.bausteine[i].id +1;
-            }
-        }
-
         this.data = data;
         this.render();
     }
 
-    export_createBausteinElement(baustein: Baustein, position: Position, tag_override: string | null = null) {
+    export_createBausteinElement(baustein: Baustein, tag_override: string | null = null) {
         var tag, id;
         if (tag_override === null) {
             tag = baustein.tag;
-            id = baustein.type;
+            id = baustein.id;
         } else {
             tag = tag_override;
             id = tag_override;
@@ -1449,12 +1521,10 @@ class BausteinEditor {
                 && (style.property.options.length === 0 || style.value !== style.property.options[0].value)
             ) {
                 // get this.types[].style[] and check if it is not default value
-                var ok = true, test_type = this.getBausteinType(id), test_type_index = -1;
+                var ok = true, test_type = this.getTypeById(id);
                 if (test_type !== null) {
                     for (var b = 0; b < test_type.style.length; b++) {
                         const test_style = test_type.style[b];
-                        test_type_index = b;
-
                         if (test_style.property.name === style.property.name) {
                             console.log(test_style.property.name, test_style.value, "|", style.property.name, style.value)
                             if (test_style.value === style.value) {
@@ -1467,11 +1537,7 @@ class BausteinEditor {
 
                 if (ok) {
                     //console.log("setProperty()", style.property.name, style.value, "style.property.options", style.property.options)
-                    if (test_type.style[test_type_index].property.useAsClass) {
-                        bausteinElement.classList.add(style.value);
-                    } else {
-                        bausteinElement.style.setProperty(style.property.name, style.value);
-                    }
+                    bausteinElement.style.setProperty(style.property.name, style.value);
                 }
             }
         }
@@ -1497,14 +1563,43 @@ class BausteinEditor {
             }
         }
 
-        var bausteine = this.getBausteineArray(null);
-        for (var row = 0; row < bausteine.length; row++) {
-            const baustein = bausteine[row];
-            export_html_dom.appendChild( 
-                this.export_createBausteinElement(baustein, new Position(null, baustein.position.sort))
-            );
-        }
+        for (var r = 0; r < this.data.bausteine.length; r++) {
+            const baustein_row = this.data.bausteine[r][0][0];
 
+            if (baustein_row.renderType === bausteinRenderType.table) {
+                var dom_baustein_row = export_html_dom.appendChild(this.export_createBausteinElement(baustein_row, "table"));
+    
+                for (var d = 1; d < this.data.bausteine[r].length; d++) {
+                    const baustein_depth = this.data.bausteine[r][d][0];
+                    var dom_baustein_depth = dom_baustein_row.appendChild(this.export_createBausteinElement(baustein_depth, "tr"));
+                    for (var i = 0; i < this.data.bausteine[r][d].length; i++) {
+                        const baustein_item = this.data.bausteine[r][d][i];
+                        var dom_baustein_item = dom_baustein_depth.appendChild(this.export_createBausteinElement(baustein_item, "td"));
+                        var dom_baustein_item2 = dom_baustein_item.appendChild(this.export_createBausteinElement(baustein_item));
+                    }
+                }
+            } else {
+                var dom_baustein_row = export_html_dom.appendChild(this.export_createBausteinElement(baustein_row));
+    
+                for (var d = 1; d < this.data.bausteine[r].length; d++) {
+                    const baustein_depth = this.data.bausteine[r][d][0];
+                    if (baustein_row.renderType === bausteinRenderType.layout) {
+                        for (var i = 0; i < this.data.bausteine[r][d].length; i++) {
+                            const baustein_item = this.data.bausteine[r][d][i];
+                            var dom_baustein_item = dom_baustein_row.appendChild(this.export_createBausteinElement(baustein_item));
+                            dom_baustein_item.style.display = "inline-block";
+                            dom_baustein_item.style.verticalAlign = "top";
+                        }
+                    } else {
+                        var dom_baustein_depth = dom_baustein_row.appendChild(this.export_createBausteinElement(baustein_depth));
+                        for (var i = 1; i < this.data.bausteine[r][d].length; i++) {
+                            const baustein_item = this.data.bausteine[r][d][i];
+                            var dom_baustein_item = dom_baustein_depth.appendChild(this.export_createBausteinElement(baustein_item));
+                        }
+                    }
+                }
+            }
+        }
         
         return {
             data: this.data,

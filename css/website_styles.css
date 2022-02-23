@@ -1,0 +1,39 @@
+/* Styles required to work on production */
+smaller,.smaller {font-size:0.625rem; overflow: hidden;}
+small,.small {font-size:0.888rem; overflow: hidden;}
+medium,.medium {font-size:1rem; overflow: hidden;}
+large,.large {font-size:1.163rem; overflow: hidden;}
+larger,.larger {font-size:1.35rem; overflow: hidden;}
+
+h1,
+h2,
+h3 {
+	line-height: 1.5;
+	margin-top: 0;
+	padding-top: 0;
+}
+h1 { font-size: 1.375rem; }
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1.125rem; }
+
+
+/* Responsive Table */
+.rsp-table { display: table; }
+.rsp-table tr { display: table-row; }
+.rsp-table th { display: table-cell; font-weight: bold; }
+.rsp-table th, .rsp-table td { display: table-cell; padding-right: 10px; padding-bottom: 10px; }
+
+@media (max-width: 720px) {
+    .rsp-table { display: block; }
+    .rsp-table tbody, .rsp-table tr { display: block; }
+    .rsp-table th { display: none; }
+    .rsp-table td { display: block; padding: 0px; }
+
+    .rsp-table td::before {
+        display: block;
+        content: attr(data-label);
+        font-weight: bold;
+        margin-bottom: 4px;
+        width: 100% !important;
+    }
+}

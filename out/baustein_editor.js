@@ -1,26 +1,28 @@
 "use strict";
+var baustein_counter = 0;
 var bausteinRenderType = {
     layout: 0,
     table: 1,
-    plaintext: 2,
-    richtext: 3,
-    image: 4,
+    tableRow: 2,
+    plaintext: 3,
+    richtext: 4,
+    image: 5,
 };
 var Position = (function () {
-    function Position(row, depth, item) {
-        this.row = row;
-        this.depth = depth;
-        this.item = item;
+    function Position(parent, sort) {
+        this.parent = parent;
+        this.sort = sort;
     }
     return Position;
 }());
 var BausteinStyleProperty = (function () {
-    function BausteinStyleProperty(name, title, type, suffix, options) {
+    function BausteinStyleProperty(name, title, type, suffix, options, useAsClass) {
         this.name = name;
         this.title = title;
         this.type = type;
         this.suffix = suffix;
         this.options = options;
+        this.useAsClass = useAsClass;
     }
     return BausteinStyleProperty;
 }());
@@ -32,8 +34,10 @@ var BausteinStyle = (function () {
     return BausteinStyle;
 }());
 var Baustein = (function () {
-    function Baustein(id, title, icon, tag, renderType, style) {
+    function Baustein(id, position, type, title, icon, tag, renderType, style) {
         this.id = id;
+        this.position = position;
+        this.type = type;
         this.title = title;
         this.icon = icon;
         this.tag = tag;
@@ -44,57 +48,51 @@ var Baustein = (function () {
         }
         this.content = "";
         this.class = "";
-        this.position = {
-            row: -1,
-            depth: -1,
-            item: -1,
-        };
     }
     return Baustein;
 }());
 var BausteinEditor = (function () {
     function BausteinEditor(dom_id) {
+        this.baustein_id_counter = 0;
         this.styleProperties = {
-            font_family: { name: "font-family", title: "Schriftart", type: "string", suffix: "", options: [new Option("Verdana, Arial, Helvetica, sans-serif")] },
-            font_size: { name: "font-size", title: "Schriftgröße", type: "number", suffix: "rem", options: [new Option("1rem")] },
+            font_size: { name: "font-size", title: "Schriftgröße", type: "select", suffix: "", options: [new Option("Normal", ""), new Option("Kleiner (~10px)", "smaller"), new Option("Klein (~11px)", "small"), new Option("Medium (~14px)", "medium"), new Option("Groß (~17px)", "large"), new Option("Größer (~20px)", "larger")], useAsClass: true },
             font_weight: { name: "font-weight", title: "Textdicke", type: "select", suffix: "",
-                options: [new Option("Normal", ""), new Option("Fett", "bold"), new Option("Fetter", "bolder"), new Option("Leichter", "lighter")] },
+                options: [new Option("Normal", ""), new Option("Fett", "bold"), new Option("Fetter", "bolder"), new Option("Leichter", "lighter")], useAsClass: false },
             text_decoration: { name: "text-decoration", title: "Textunterschreichung", type: "select", suffix: "",
-                options: [new Option("Normal", ""), new Option("underline", "underline"), new Option("dotted", "dotted")] },
+                options: [new Option("Normal", ""), new Option("underline", "underline"), new Option("dotted", "dotted")], useAsClass: false },
             font_style: { name: "font-style", title: "Textkursion", type: "select", suffix: "",
-                options: [new Option("Normal", ""), new Option("italic", "italic"), new Option("oblique", "oblique")] },
+                options: [new Option("Normal", ""), new Option("italic", "italic"), new Option("oblique", "oblique")], useAsClass: false },
             text_align: { name: "text-align", title: "Textausrichtung", type: "select", suffix: "",
-                options: [new Option("Normal", ""), new Option("left", "left"), new Option("center", "center"), new Option("right", "right")] },
-            color: { name: "color", title: "Farbe", type: "color", suffix: "", options: [] },
-            background_color: { name: "background-color", title: "Background Color", type: "color", suffix: "", options: [] },
-            background_image: { name: "background-image", title: "Background Image", type: "string", suffix: "", options: [] },
-            width: { name: "width", title: "Breite", type: "number", suffix: "px", options: [] },
-            height: { name: "height", title: "Höhe", type: "number", suffix: "px", options: [] },
-            max_width: { name: "max-width", title: "Maximale Breite", type: "number", suffix: "px", options: [] },
-            max_height: { name: "max-height", title: "Maximale Höhe", type: "number", suffix: "px", options: [] },
-            margin_top: { name: "margin-top", title: "Außenabstand Oben", type: "number", suffix: "px", options: [] },
-            margin_right: { name: "margin-right", title: "Außenabstand Rechts", type: "number", suffix: "px", options: [] },
-            margin_bottom: { name: "margin-bottom", title: "Außenabstand Unten", type: "number", suffix: "px", options: [] },
-            margin_left: { name: "margin-left", title: "Außenabstand Links", type: "number", suffix: "px", options: [] },
-            padding_top: { name: "padding-top", title: "Innenabstand Oben", type: "number", suffix: "px", options: [] },
-            padding_right: { name: "padding-right", title: "Innenabstand Rechts", type: "number", suffix: "px", options: [] },
-            padding_bottom: { name: "padding-bottom", title: "Innenabstand Unten", type: "number", suffix: "px", options: [] },
-            padding_left: { name: "padding-left", title: "Innenabstand Links", type: "number", suffix: "px", options: [] },
+                options: [new Option("Normal", ""), new Option("left", "left"), new Option("center", "center"), new Option("right", "right")], useAsClass: false },
+            color: { name: "color", title: "Farbe", type: "color", suffix: "", options: [], useAsClass: false },
+            background_color: { name: "background-color", title: "Background Color", type: "color", suffix: "", options: [], useAsClass: false },
+            background_image: { name: "background-image", title: "Background Image", type: "string", suffix: "", options: [], useAsClass: false },
+            width: { name: "width", title: "Breite", type: "number", suffix: "px", options: [], useAsClass: false },
+            height: { name: "height", title: "Höhe", type: "number", suffix: "px", options: [], useAsClass: false },
+            max_width: { name: "max-width", title: "Maximale Breite", type: "number", suffix: "px", options: [], useAsClass: false },
+            max_height: { name: "max-height", title: "Maximale Höhe", type: "number", suffix: "px", options: [], useAsClass: false },
+            margin_top: { name: "margin-top", title: "Außenabstand Oben", type: "number", suffix: "px", options: [], useAsClass: false },
+            margin_right: { name: "margin-right", title: "Außenabstand Rechts", type: "number", suffix: "px", options: [], useAsClass: false },
+            margin_bottom: { name: "margin-bottom", title: "Außenabstand Unten", type: "number", suffix: "px", options: [], useAsClass: false },
+            margin_left: { name: "margin-left", title: "Außenabstand Links", type: "number", suffix: "px", options: [], useAsClass: false },
+            padding_top: { name: "padding-top", title: "Innenabstand Oben", type: "number", suffix: "px", options: [], useAsClass: false },
+            padding_right: { name: "padding-right", title: "Innenabstand Rechts", type: "number", suffix: "px", options: [], useAsClass: false },
+            padding_bottom: { name: "padding-bottom", title: "Innenabstand Unten", type: "number", suffix: "px", options: [], useAsClass: false },
+            padding_left: { name: "padding-left", title: "Innenabstand Links", type: "number", suffix: "px", options: [], useAsClass: false },
         };
         this.stylePropertiesArray = Object.values(this.styleProperties);
         this.data = {
             page: {
-                style: [
-                    { property: this.styleProperties.font_family, value: this.styleProperties.font_family.options[0].value },
+                style: [],
+                styleClasses: [
                     { property: this.styleProperties.font_size, value: this.styleProperties.font_size.options[0].value },
                 ]
             },
             bausteine: []
         };
         this.types = {
-            h1: new Baustein("h1", "Überschrift 1", '<b>H1</b>', "h1", bausteinRenderType.richtext, [
-                { property: this.styleProperties.font_family, value: "" },
-                { property: this.styleProperties.font_size, value: "1.375rem" },
+            h1: new Baustein(-1, new Position(null, -1), "h1", "Überschrift 1", '<b>H1</b>', "h1", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_size, value: "" },
                 { property: this.styleProperties.text_align, value: "" },
                 { property: this.styleProperties.font_weight, value: "bold" },
                 { property: this.styleProperties.text_decoration, value: "" },
@@ -102,9 +100,8 @@ var BausteinEditor = (function () {
                 { property: this.styleProperties.color, value: "" },
                 { property: this.styleProperties.background_color, value: "" },
             ]),
-            h2: new Baustein("h2", "Überschrift 2", '<b>H2</b>', "h2", bausteinRenderType.richtext, [
-                { property: this.styleProperties.font_family, value: "" },
-                { property: this.styleProperties.font_size, value: "1.25rem" },
+            h2: new Baustein(-1, new Position(null, -1), "h2", "Überschrift 2", '<b>H2</b>', "h2", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_size, value: "" },
                 { property: this.styleProperties.text_align, value: "" },
                 { property: this.styleProperties.font_weight, value: "bold" },
                 { property: this.styleProperties.text_decoration, value: "" },
@@ -112,9 +109,8 @@ var BausteinEditor = (function () {
                 { property: this.styleProperties.color, value: "" },
                 { property: this.styleProperties.background_color, value: "" },
             ]),
-            h3: new Baustein("h3", "Überschrift 3", '<b>H3</b>', "h3", bausteinRenderType.richtext, [
-                { property: this.styleProperties.font_family, value: "" },
-                { property: this.styleProperties.font_size, value: "1.125rem" },
+            h3: new Baustein(-1, new Position(null, -1), "h3", "Überschrift 3", '<b>H3</b>', "h3", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_size, value: "" },
                 { property: this.styleProperties.text_align, value: "" },
                 { property: this.styleProperties.font_weight, value: "bold" },
                 { property: this.styleProperties.text_decoration, value: "" },
@@ -122,9 +118,8 @@ var BausteinEditor = (function () {
                 { property: this.styleProperties.color, value: "" },
                 { property: this.styleProperties.background_color, value: "" },
             ]),
-            h4: new Baustein("h4", "Überschrift 4", '<b>H4</b>', "h4", bausteinRenderType.richtext, [
-                { property: this.styleProperties.font_family, value: "" },
-                { property: this.styleProperties.font_size, value: "1.1rem" },
+            h4: new Baustein(-1, new Position(null, -1), "h4", "Überschrift 4", '<b>H4</b>', "h4", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_size, value: "" },
                 { property: this.styleProperties.text_align, value: "" },
                 { property: this.styleProperties.font_weight, value: "bold" },
                 { property: this.styleProperties.text_decoration, value: "" },
@@ -132,9 +127,8 @@ var BausteinEditor = (function () {
                 { property: this.styleProperties.color, value: "" },
                 { property: this.styleProperties.background_color, value: "" },
             ]),
-            h5: new Baustein("h5", "Überschrift 5", '<b>H5</b>', "h5", bausteinRenderType.richtext, [
-                { property: this.styleProperties.font_family, value: "" },
-                { property: this.styleProperties.font_size, value: "1rem" },
+            h5: new Baustein(-1, new Position(null, -1), "h5", "Überschrift 5", '<b>H5</b>', "h5", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_size, value: "" },
                 { property: this.styleProperties.text_align, value: "" },
                 { property: this.styleProperties.font_weight, value: "bold" },
                 { property: this.styleProperties.text_decoration, value: "" },
@@ -142,9 +136,8 @@ var BausteinEditor = (function () {
                 { property: this.styleProperties.color, value: "" },
                 { property: this.styleProperties.background_color, value: "" },
             ]),
-            h6: new Baustein("h6", "Überschrift 6", '<b>H6</b>', "h6", bausteinRenderType.richtext, [
-                { property: this.styleProperties.font_family, value: "" },
-                { property: this.styleProperties.font_size, value: "0.9rem" },
+            h6: new Baustein(-1, new Position(null, -1), "h6", "Überschrift 6", '<b>H6</b>', "h6", bausteinRenderType.richtext, [
+                { property: this.styleProperties.font_size, value: "" },
                 { property: this.styleProperties.text_align, value: "" },
                 { property: this.styleProperties.font_weight, value: "bold" },
                 { property: this.styleProperties.text_decoration, value: "" },
@@ -152,8 +145,7 @@ var BausteinEditor = (function () {
                 { property: this.styleProperties.color, value: "" },
                 { property: this.styleProperties.background_color, value: "" },
             ]),
-            text: new Baustein("text", "Paragraph (Text)", '<i class="fas fa-paragraph"></i>', "p", bausteinRenderType.richtext, [
-                { property: this.styleProperties.font_family, value: "" },
+            text: new Baustein(-1, new Position(null, -1), "text", "Paragraph (Text)", '<i class="fas fa-paragraph"></i>', "p", bausteinRenderType.richtext, [
                 { property: this.styleProperties.font_size, value: "" },
                 { property: this.styleProperties.text_align, value: "" },
                 { property: this.styleProperties.font_weight, value: "" },
@@ -163,31 +155,31 @@ var BausteinEditor = (function () {
                 { property: this.styleProperties.background_color, value: "" },
                 { property: this.styleProperties.background_image, value: "" },
             ]),
-            html: new Baustein("html", "HTML", '<i class="fab fa-html5"></i>', "div", bausteinRenderType.plaintext, [
-                { property: this.styleProperties.font_family, value: "" },
+            html: new Baustein(-1, new Position(null, -1), "html", "HTML", '<i class="fab fa-html5"></i>', "div", bausteinRenderType.plaintext, [
                 { property: this.styleProperties.font_size, value: "" },
                 { property: this.styleProperties.text_align, value: "" },
                 { property: this.styleProperties.text_decoration, value: "" },
                 { property: this.styleProperties.font_style, value: "" },
                 { property: this.styleProperties.color, value: "" },
             ]),
-            script: new Baustein("script", "Script", '<i class="fas fa-code"></i>', "script", bausteinRenderType.plaintext, []),
-            shortcode: new Baustein("shortcode", "Shortcode []", '<i class="fas fa-code"></i>', "span", bausteinRenderType.plaintext, []),
-            image: new Baustein("image", "Bild", '<i class="fas fa-image"></i>', "img", bausteinRenderType.image, []),
-            layout: new Baustein("layout", "Layout", '<i class="fas fa-layer-group" style="transform: rotate(90deg);"></i>', "div", bausteinRenderType.layout, [
+            script: new Baustein(-1, new Position(null, -1), "script", "Script", '<i class="fas fa-code"></i>', "script", bausteinRenderType.plaintext, []),
+            shortcode: new Baustein(-1, new Position(null, -1), "shortcode", "Shortcode []", '<i class="fas fa-code"></i>', "span", bausteinRenderType.plaintext, []),
+            image: new Baustein(-1, new Position(null, -1), "image", "Bild", '<i class="fas fa-image"></i>', "img", bausteinRenderType.image, []),
+            layout: new Baustein(-1, new Position(null, -1), "layout", "Layout", '<i class="fas fa-layer-group" style="transform: rotate(90deg);"></i>', "div", bausteinRenderType.layout, [
                 { property: this.styleProperties.max_width, value: "" },
                 { property: this.styleProperties.max_height, value: "" },
                 { property: this.styleProperties.color, value: "" },
                 { property: this.styleProperties.background_color, value: "" },
                 { property: this.styleProperties.background_image, value: "" },
             ]),
-            table: new Baustein("table", "Tabelle", '<i class="fas fa-table"></i>', "table", bausteinRenderType.table, [
+            table: new Baustein(-1, new Position(null, -1), "table", "Tabelle", '<i class="fas fa-table"></i>', "table", bausteinRenderType.table, [
                 { property: this.styleProperties.max_width, value: "" },
                 { property: this.styleProperties.max_height, value: "" },
                 { property: this.styleProperties.color, value: "" },
                 { property: this.styleProperties.background_color, value: "" },
                 { property: this.styleProperties.background_image, value: "" },
-            ])
+            ]),
+            tableRow: new Baustein(-1, new Position(null, -1), "tableRow", "Tabellenzeile", '<i class="fas fa-table"></i>', "tr", bausteinRenderType.tableRow, [])
         };
         this.typesArray = Object.values(this.types);
         this.addBausteinSelectorItems = [
@@ -204,8 +196,8 @@ var BausteinEditor = (function () {
         };
         this.dom_id = dom_id;
         this.selected_baustein = null;
-        this.selected_baustein_position = null;
-        this.open_baustein_attributes__position = null;
+        this.selected_baustein_id = null;
+        this.open_baustein_attributes__baustein_id = null;
         this.dom = {};
         this.dom.be = document.getElementById(this.dom_id);
         this.dom.page_styles = this.dom.be.appendChild(this.createElement("style", this.dom_id + '_page_styles', ""));
@@ -233,6 +225,10 @@ var BausteinEditor = (function () {
         this.dom.sidebar_header_col__site.innerHTML = "Artikel";
         this.dom.sidebar_header_col__baustein = this.dom.sidebar_header.appendChild(this.createElement("div", this.dom_id + "_sidebar_header_col__baustein", "be_sidebar_header_col disabled"));
         this.dom.sidebar_header_col__baustein.innerHTML = "Baustein";
+        for (var i = 0; i < this.data.page.styleClasses.length; i++) {
+            var element = this.data.page.styleClasses[i];
+            this.dom.sidebar_content__site.appendChild(this.formcontrol("page-sc", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options));
+        }
         for (var i = 0; i < this.data.page.style.length; i++) {
             var element = this.data.page.style[i];
             this.dom.sidebar_content__site.appendChild(this.formcontrol("page", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options));
@@ -254,7 +250,6 @@ var BausteinEditor = (function () {
             if (self.dom.preview_content.style.display === "none") {
                 self.dom.preview_content.style.display = "";
                 self.preview_render();
-                console.log('self.dom.preview_content', self.dom.preview_content);
                 self.dom.preview_content.style.height = "400px";
                 self.dom.content.style.height = "calc(100% - 50px - " + self.dom.preview_content.style.height + ")";
                 self.dom.preview_button_mobile.style.display = "";
@@ -295,13 +290,6 @@ var BausteinEditor = (function () {
             }
         });
         this.render();
-        this.addBaustein(this.types.h1, new Position(0, 0, 0));
-        this.addBaustein(this.types.h2, new Position(1, 0, 0));
-        this.addBaustein(this.types.table, new Position(2, 0, 0));
-        this.addBaustein(this.types.h1, new Position(2, 1, 0));
-        this.addBaustein(this.types.h2, new Position(2, 1, 1));
-        this.addBaustein(this.types.h1, new Position(2, 2, 0));
-        this.addBaustein(this.types.h2, new Position(2, 2, 1));
     }
     BausteinEditor.prototype.getStylePropertyByName = function (name) {
         for (var i = 0; i < this.stylePropertiesArray.length; i++) {
@@ -309,15 +297,15 @@ var BausteinEditor = (function () {
                 return this.stylePropertiesArray[i];
             }
         }
-        return new BausteinStyleProperty(name, "", "", "", []);
+        return new BausteinStyleProperty(name, "", "", "", [], false);
     };
-    BausteinEditor.prototype.getTypeById = function (id) {
+    BausteinEditor.prototype.getBausteinType = function (type) {
         for (var i = 0; i < this.typesArray.length; i++) {
-            if (this.typesArray[i].id === id) {
+            if (this.typesArray[i].type === type) {
                 return this.typesArray[i];
             }
         }
-        return new Baustein(id, "", "", "", -1, []);
+        return new Baustein(-1, new Position(null, -1), type, "", "", "", -1, []);
     };
     BausteinEditor.prototype.createElement = function (_type, _id, _class) {
         var element = document.createElement(_type);
@@ -329,10 +317,9 @@ var BausteinEditor = (function () {
     };
     BausteinEditor.prototype.addBausteinSelector = function (position, hide, showLayoutItems) {
         var self = this;
-        var row_const = position.row;
-        var depth_const = position.depth;
-        var item_const = position.item;
-        var selector_dom_id = this.dom_id + "_" + row_const + "_" + depth_const + "_" + item_const;
+        var selector_dom_id = this.dom_id + "_" + position;
+        var const_parent = position.parent;
+        var const_sort = position.sort;
         var clz = "be_bausteinSelector_container";
         if (hide) {
             clz += " hidden";
@@ -359,7 +346,7 @@ var BausteinEditor = (function () {
             be_bausteinSelector_layer_item.type = "button";
             be_bausteinSelector_layer_item.dataset.category = i.toString();
             if (itemset.type === 0)
-                be_bausteinSelector_layer_item.dataset.type = itemset.items[0].id.toString();
+                be_bausteinSelector_layer_item.dataset.type = itemset.items[0].type.toString();
             title1 = be_bausteinSelector_layer_item.appendChild(this_1.createElement("div", "", "be_bausteinSelector_layer_item_title1"));
             title2 = be_bausteinSelector_layer_item.appendChild(this_1.createElement("div", "", "be_bausteinSelector_layer_item_title2"));
             if (itemset.type === 0) {
@@ -373,7 +360,7 @@ var BausteinEditor = (function () {
             var category = i;
             be_bausteinSelector_layer_item.addEventListener("click", function () {
                 if (self.addBausteinSelectorItems[category].type === 0) {
-                    self.addBaustein(self.addBausteinSelectorItems[category].items[0], { row: row_const, depth: depth_const, item: item_const });
+                    self.addBaustein(self.addBausteinSelectorItems[category].items[0], new Position(position.parent, position.sort));
                     self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
                 }
                 else {
@@ -382,13 +369,13 @@ var BausteinEditor = (function () {
                     var _loop_2 = function () {
                         be_bausteinSelector_layer_item = be_bausteinSelector_layer_item_container2.appendChild(self.createElement("button", "", "be_bausteinSelector_layer_item"));
                         be_bausteinSelector_layer_item.type = "button";
-                        be_bausteinSelector_layer_item.dataset.type = types_array_1[b].id;
+                        be_bausteinSelector_layer_item.dataset.type = types_array_1[b].type;
                         be_bausteinSelector_layer_item.innerHTML =
                             '<div class="be_bausteinSelector_layer_item_title1">' + types_array_1[b].icon + '</div>'
                                 + '<div class="be_bausteinSelector_layer_item_title2">' + types_array_1[b].title + '</div>';
                         var types_array_row = b;
                         be_bausteinSelector_layer_item.addEventListener("click", function () {
-                            self.addBaustein(types_array_1[types_array_row], { row: row_const, depth: depth_const, item: item_const });
+                            self.addBaustein(types_array_1[types_array_row], new Position(position.parent, position.sort));
                             self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
                         });
                     };
@@ -416,99 +403,97 @@ var BausteinEditor = (function () {
                 console.error("be_bausteinSelector.addEventListener('drop'): e.dataTransfer is null");
             }
             else {
-                var old_position = {
-                    row: parseInt(e.dataTransfer.getData("row")),
-                    depth: parseInt(e.dataTransfer.getData("depth")),
-                    item: parseInt(e.dataTransfer.getData("item")),
-                };
-                var new_position = { row: row_const, depth: depth_const, item: item_const };
-                console.log("drop on addBausteinSelector: old position", old_position);
+                var old_baustein_id = parseInt(e.dataTransfer.getData("baustein_id"));
+                var new_position = { parent: const_parent, sort: const_sort };
+                console.log("drop on addBausteinSelector: old_baustein_id", old_baustein_id);
                 console.log("drop on addBausteinSelector: new position", new_position);
-                if (old_position.row !== new_position.row || old_position.depth !== new_position.depth || old_position.item !== new_position.item) {
-                    self.moveBaustein(old_position, new_position);
-                }
+                self.moveBaustein(old_baustein_id, new_position);
             }
         });
         return be_bausteinSelector_container;
     };
-    BausteinEditor.prototype.addBaustein = function (type, position) {
-        console.log("addBaustein( type:", type, ", position:", position, " )");
-        var baustein_entry = new Baustein(type.id, type.title, type.icon, type.tag, type.renderType, type.style);
-        for (var i_1 = 0; i_1 < baustein_entry.style.length; i_1++) {
-            var style = baustein_entry.style[i_1];
+    BausteinEditor.prototype.addBaustein = function (baustein_type, position) {
+        console.log("addBaustein( type:", baustein_type.type, ", position:", position, " )");
+        var baustein_id = this.baustein_id_counter;
+        var baustein = new Baustein(baustein_id, position, baustein_type.type, baustein_type.title, baustein_type.icon, baustein_type.tag, baustein_type.renderType, baustein_type.style);
+        this.baustein_id_counter += 1;
+        for (var i = 0; i < baustein.style.length; i++) {
+            var style = baustein.style[i];
             if (style.value === "" && style.property.options.length > 0) {
                 style.value = style.property.options[0].value;
             }
         }
-        if (position.depth === 0) {
-            var row_max = this.data.bausteine.length;
-            baustein_entry.position = position;
-            this.data.bausteine[row_max] = [[baustein_entry]];
-            console.log("addBaustein() this.data.bausteine", this.data.bausteine);
-            var to = this.data.bausteine.length - 1;
-            for (var i = 0; i < to; i++) {
-                if (this.data.bausteine[i][0][0].position.row >= position.row) {
-                    this.data.bausteine[i][0][0].position.row++;
-                }
+        for (var r = 0; r < this.data.bausteine.length; r++) {
+            if (this.data.bausteine[r].position.sort >= position.sort) {
+                this.data.bausteine[r].position.sort++;
             }
         }
-        else {
-            if (this.data.bausteine[position.row].length - 1 < position.depth) {
-                this.data.bausteine[position.row][position.depth] = [];
-            }
-            var item_max = this.data.bausteine[position.row][position.depth].length;
-            baustein_entry.position = position;
-            this.data.bausteine[position.row][position.depth][item_max] = baustein_entry;
-            console.log("addBaustein() this.data.bausteine", this.data.bausteine);
-        }
+        this.data.bausteine[this.data.bausteine.length] = baustein;
         this.render();
-        this.selectBaustein(position);
+        this.selectBaustein(baustein_id);
+        if (baustein.renderType === bausteinRenderType.table) {
+            this.addBaustein(this.types.tableRow, new Position(baustein_id, this.getPositionSort(false)));
+        }
         console.log("addBaustein() this.data.bausteine", this.data.bausteine);
     };
-    BausteinEditor.prototype.selectBaustein = function (position) {
+    BausteinEditor.prototype.selectBaustein = function (baustein_id) {
         var _a;
         this.dom.content.querySelectorAll(".be_baustein").forEach(function (be_baustein) { be_baustein.classList.remove("selected"); });
-        this.selected_baustein = document.getElementById(this.dom_id + '_be_baustein_item' + position.row + '_' + position.depth + '_' + position.item);
+        this.selected_baustein = document.getElementById(this.dom_id + '_be_baustein_item' + baustein_id);
         (_a = this.selected_baustein) === null || _a === void 0 ? void 0 : _a.classList.add("selected");
-        this.selected_baustein_position = position;
-        this.open_baustein_attributes(position, this.data.bausteine[position.row][position.depth][position.item].renderType);
+        this.selected_baustein_id = baustein_id;
+        this.open_baustein_attributes(baustein_id);
     };
-    BausteinEditor.prototype.deleteBaustein = function (position) {
-        console.log("deleteBaustein() position", position);
-        var bausteine = [];
-        for (var row = 0; row < this.data.bausteine.length; row++) {
-            var new_row = bausteine.length;
-            for (var depth = 0; depth < this.data.bausteine[row].length; depth++) {
-                for (var item = 0; item < this.data.bausteine[row][depth].length; item++) {
-                    if (position.row === row && ((position.depth === depth && position.item === item) || position.depth === 0)) {
-                        console.log("deleteBaustein", "row", row, "depth", depth, "item", item);
-                    }
-                    else {
-                        var new_depth;
-                        if (new_row === 0 || typeof bausteine[new_row] === "undefined") {
-                            bausteine[new_row] = [[]];
-                            new_depth = 0;
-                        }
-                        else {
-                            new_depth = bausteine[new_row].length;
-                        }
-                        var new_item;
-                        if (new_depth === 0 || typeof bausteine[new_row][new_depth] === "undefined") {
-                            bausteine[new_row][new_depth] = [];
-                            new_item = 0;
-                        }
-                        else {
-                            new_item = bausteine[new_row][new_depth].length;
-                        }
-                        console.log("this.data.bausteine[row]", this.data.bausteine[row]);
-                        bausteine[new_row][new_depth][new_item] = this.data.bausteine[row][depth][item];
-                    }
-                }
+    BausteinEditor.prototype.getBaustein = function (baustein_id) {
+        for (var i = 0; i < this.data.bausteine.length; i++) {
+            if (this.data.bausteine[i].id === baustein_id) {
+                return this.data.bausteine[i];
             }
         }
+        throw new Error("getBaustein() can not get Baustein with id: " + baustein_id);
+    };
+    BausteinEditor.prototype.getPositionSort = function (getFirst) {
+        var positionSort = 1;
+        if (getFirst) {
+            for (var i = 0; i < this.data.bausteine.length; i++) {
+                if (this.data.bausteine[i].position.sort < positionSort) {
+                    positionSort = this.data.bausteine[i].position.sort;
+                }
+            }
+            return positionSort - 1;
+        }
+        else {
+            for (var i = 0; i < this.data.bausteine.length; i++) {
+                if (this.data.bausteine[i].position.sort > positionSort) {
+                    positionSort = this.data.bausteine[i].position.sort;
+                }
+            }
+            return positionSort + 1;
+        }
+    };
+    BausteinEditor.prototype.getBausteineArray = function (parent) {
+        var bausteine = [];
+        for (var i = 0; i < this.data.bausteine.length; i++) {
+            if (this.data.bausteine[i].position.parent === parent) {
+                bausteine[bausteine.length] = this.data.bausteine[i];
+            }
+        }
+        return bausteine.sort(function (a, b) {
+            return a.position.sort > b.position.sort ? 1 : 0;
+        });
+    };
+    BausteinEditor.prototype.deleteBaustein = function (baustein_id) {
+        console.log("deleteBaustein() baustein_id", baustein_id);
+        var bausteine = [];
+        for (var row = 0; row < this.data.bausteine.length; row++) {
+            if (this.data.bausteine[row].id !== baustein_id) {
+                bausteine[bausteine.length] = this.data.bausteine[row];
+            }
+        }
+        console.log("this.data.bausteine", this.data.bausteine);
         this.data.bausteine = bausteine;
-        this.selected_baustein_position = null;
-        this.open_baustein_attributes__position = null;
+        this.selected_baustein_id = null;
+        this.open_baustein_attributes__baustein_id = null;
         this.render();
         window.focus();
         if (document.activeElement === null) {
@@ -519,117 +504,123 @@ var BausteinEditor = (function () {
             activeElement.blur();
         }
     };
-    BausteinEditor.prototype.moveBaustein = function (position, position_new) {
-        var position_new_const__row = position_new.row;
-        console.log("moveBaustein()", "\nposition", position, "\nposition_new", position_new);
-        console.log("0 moveBaustein() this.data.bausteine[0][0][0].position", this.data.bausteine[0][0][0].position);
-        console.log("0 moveBaustein() this.data.bausteine[1][0][0].position", this.data.bausteine[1][0][0].position);
-        if (position.row > position_new.row) {
-            for (var r = position_new.row; r < this.data.bausteine.length; r++) {
-                for (var d = 0; d < this.data.bausteine[r].length; d++) {
-                    for (var i = 0; i < this.data.bausteine[r][d].length; i++) {
-                        this.data.bausteine[r][d][i].position.row += 1;
-                    }
-                }
+    BausteinEditor.prototype.moveBaustein = function (baustein_id, position_new) {
+        var baustein = this.getBaustein(baustein_id);
+        baustein.position.parent = position_new.parent;
+        baustein.position.sort = position_new.sort;
+        for (var r = 0; r < this.data.bausteine.length; r++) {
+            if (this.data.bausteine[r].id !== baustein_id && this.data.bausteine[r].position.sort >= baustein.position.sort) {
+                this.data.bausteine[r].position.sort++;
             }
         }
-        console.info("position_new_const__row", position_new_const__row);
-        this.data.bausteine[position.row][position.depth][position.item].position.row = position_new_const__row;
-        console.log("1 moveBaustein() this.data.bausteine[0][0][0].position", this.data.bausteine[0][0][0].position);
-        console.log("1 moveBaustein() this.data.bausteine[1][0][0].position", this.data.bausteine[1][0][0].position);
         this.render();
-        console.log("2 this.data.bausteine", this.data.bausteine);
-        console.log("2 moveBaustein() this.data.bausteine[0][0][0].position", this.data.bausteine[0][0][0].position);
-        console.log("2 moveBaustein() this.data.bausteine[1][0][0].position", this.data.bausteine[1][0][0].position);
     };
-    BausteinEditor.prototype.getBausteine = function () {
-        var bausteine = this.data.bausteine.sort(function (a, b) {
-            return a[0][0].position.row > b[0][0].position.row ? 1 : 0;
-        });
-        console.log("getBausteine bausteine", bausteine);
-        for (var r = 0; r < bausteine.length; r++) {
-            for (var d = 0; d < bausteine[r].length; d++) {
-                for (var i = 0; i < bausteine[r][d].length; i++) {
-                    bausteine[r][d][i].position.row = r;
-                }
-            }
-            bausteine[r] = bausteine[r].sort(function (a, b) {
-                return a[0].position.depth > b[0].position.depth ? 1 : 0;
-            });
-        }
-        for (var r = 0; r < bausteine.length; r++) {
-            for (var d = 0; d < bausteine[r].length; d++) {
-                for (var i = 0; i < bausteine[r][d].length; i++) {
-                    bausteine[r][d][i].position.depth = d;
-                }
-                console.log("bausteine[" + r + "][" + d + "]", bausteine[r][d]);
-                bausteine[r][d] = bausteine[r][d].sort(function (a, b) {
-                    return a.position.row > b.position.row ? 1 : 0;
-                });
-            }
-        }
-        for (var r = 0; r < bausteine.length; r++) {
-            for (var d = 0; d < bausteine[r].length; d++) {
-                for (var i = 0; i < bausteine[r][d].length; i++) {
-                    bausteine[r][d][i].position.item = i;
-                }
-            }
-        }
-        return bausteine;
+    BausteinEditor.prototype.changeBaustein = function (baustein_id, type) {
+        var baustein = this.getBaustein(baustein_id);
+        var new_baustein = this.getBausteinType(type);
+        baustein.icon = new_baustein.icon;
+        baustein.renderType = new_baustein.renderType;
+        baustein.tag = new_baustein.tag;
+        baustein.title = new_baustein.title;
+        baustein.type = new_baustein.type;
+        this.render();
     };
-    BausteinEditor.prototype.renderBaustein = function (baustein_entry, position) {
+    BausteinEditor.prototype.getChangeBausteinOptions = function (current_renderType, current_type) {
+        var options = [];
+        for (var i = 0; i < this.typesArray.length; i++) {
+            var element = this.typesArray[i];
+            if (element.renderType === current_renderType && element.type !== current_type) {
+                var b = options.length;
+                options[b] = this.createElement("option", "", "");
+                options[b].value = element.type;
+                options[b].innerHTML = element.icon + " " + element.title;
+            }
+        }
+        return options;
+    };
+    BausteinEditor.prototype.renderBaustein = function (baustein, position) {
         var self = this;
-        var row_const = position.row;
-        var depth_const = position.depth;
-        var item_const = position.item;
-        var baustein_id = this.dom_id + '_be_baustein_item' + position.row + '_' + position.depth + '_' + position.item;
-        var baustein_editor_id = baustein_id + '_editor';
-        var be_baustein = this.createElement("div", baustein_id, "be_baustein");
-        be_baustein.dataset.type = baustein_entry.id;
-        be_baustein.draggable = true;
-        console.log("this.selected_baustein_position", this.selected_baustein_position);
-        console.log("position", position);
-        if (this.selected_baustein_position !== null
-            && this.selected_baustein_position.row === position.row
-            && this.selected_baustein_position.depth === position.depth
-            && this.selected_baustein_position.item === position.item) {
-            be_baustein.classList.add("selected");
+        var baustein_id = baustein.id;
+        var const_parent = position.parent;
+        var const_sort = position.sort;
+        var baustein_dom_id = this.dom_id + '_be_baustein_item' + baustein_id;
+        var baustein_editor_id = baustein_dom_id + '_editor';
+        var baustein_dom = this.createElement("div", baustein_dom_id, "be_baustein");
+        baustein_dom.dataset.type = baustein.type;
+        baustein_dom.draggable = false;
+        var dragstart_elements = [baustein_dom];
+        if (this.selected_baustein_id !== null && this.selected_baustein_id === baustein_id) {
+            baustein_dom.classList.add("selected");
         }
-        for (var a = 0; a < baustein_entry.style.length; a++) {
-            var element = baustein_entry.style[a];
+        for (var a = 0; a < baustein.style.length; a++) {
+            var element = baustein.style[a];
             if (element.value !== "") {
                 var property_name = element.property.name;
-                be_baustein.style[property_name] = element.value;
+                baustein_dom.style[property_name] = element.value;
             }
         }
-        var baustein_indicator = be_baustein.appendChild(this.createElement("label", "", "baustein_indicator"));
-        baustein_indicator.innerHTML = baustein_entry.icon + " " + baustein_entry.title;
+        var baustein_indicator = baustein_dom.appendChild(this.createElement("label", baustein_dom_id + "_indicator", "baustein_indicator"));
         baustein_indicator.addEventListener("click", function () {
-            self.selectBaustein({ row: row_const, depth: depth_const, item: item_const, });
+            self.selectBaustein(baustein_id);
         }, false);
-        switch (baustein_entry.renderType) {
-            case bausteinRenderType.layout: break;
-            case bausteinRenderType.table: break;
+        dragstart_elements[dragstart_elements.length] = baustein_indicator;
+        if (const_parent === null) {
+            var baustein_indicator_position = baustein_indicator.appendChild(this.createElement("span", "", "baustein_indicator_position"));
+            baustein_indicator_position.innerHTML = baustein_counter.toString();
+            baustein_counter++;
+        }
+        var changeBausteinOptions = this.getChangeBausteinOptions(baustein.renderType, baustein.type);
+        if (changeBausteinOptions.length === 0) {
+            var baustein_indicator_title = baustein_indicator.appendChild(this.createElement("span", "", "baustein_indicator_title"));
+            baustein_indicator_title.innerHTML = baustein.icon + " " + baustein.title;
+        }
+        else {
+            var baustein_indicator_changer = baustein_indicator.appendChild(this.createElement("select", "", "baustein_indicator_changer"));
+            baustein_indicator_changer.addEventListener("change", function () {
+                self.changeBaustein(baustein_id, this.value);
+            });
+            var baustein_indicator_option = baustein_indicator_changer.appendChild(this.createElement("option", "", ""));
+            baustein_indicator_option.value = baustein.type;
+            baustein_indicator_option.innerHTML = baustein.icon + " " + baustein.title;
+            baustein_indicator_option.selected = true;
+            baustein_indicator_option.style.display = "none";
+            for (var i = 0; i < changeBausteinOptions.length; i++) {
+                baustein_indicator_changer.appendChild(changeBausteinOptions[i]);
+            }
+        }
+        switch (baustein.renderType) {
+            case bausteinRenderType.layout:
+            case bausteinRenderType.table:
+            case bausteinRenderType.tableRow:
+                var bausteine_inner = this.getBausteineArray(baustein.id);
+                for (var row = 0; row < bausteine_inner.length; row++) {
+                    var baustein_inner = bausteine_inner[row];
+                    baustein_dom.appendChild(this.addBausteinSelector(new Position(baustein_id, baustein_inner.position.sort), false, true));
+                    baustein_dom.appendChild(this.renderBaustein(baustein_inner, new Position(baustein_id, baustein_inner.position.sort)));
+                }
+                baustein_dom.appendChild(this.addBausteinSelector(new Position(baustein_id, this.getPositionSort(false)), false, true));
+                break;
             case bausteinRenderType.image:
-                var image = be_baustein.appendChild(this.createElement("img", baustein_editor_id, "be_baustein_item"));
-                image.dataset.src = baustein_entry.content;
-                if (baustein_entry.content === "") {
+                var image = baustein_dom.appendChild(this.createElement("img", baustein_editor_id, "be_baustein_item"));
+                image.dataset.src = baustein.content;
+                if (baustein.content === "") {
                     image.src = this.assets.baustein_image_placeholder_url;
                 }
                 else {
-                    image.src = baustein_entry.content;
+                    image.src = baustein.content;
                 }
                 image.style.maxWidth = "100%";
                 image.addEventListener("click", function () {
-                    self.selectBaustein({ row: row_const, depth: depth_const, item: item_const, });
+                    self.selectBaustein(baustein_id);
                 });
+                dragstart_elements[dragstart_elements.length] = image;
                 break;
             default:
                 var editor;
-                switch (baustein_entry.renderType) {
+                switch (baustein.renderType) {
                     case bausteinRenderType.richtext:
-                        editor = be_baustein.appendChild(this.createElement("div", baustein_editor_id, "be_baustein_item"));
-                        editor.innerHTML = baustein_entry.content;
+                        editor = baustein_dom.appendChild(this.createElement("div", baustein_editor_id, "be_baustein_item"));
+                        editor.innerHTML = baustein.content;
                         editor.style.minHeight = "100px";
                         editor.dataset.formatblock = "0";
                         editor.dataset.fontname = "0";
@@ -644,92 +635,65 @@ var BausteinEditor = (function () {
                         editor.addEventListener("input", function () {
                             editor.style.height = '1px';
                             editor.style.height = editor.scrollHeight + 'px';
-                            self.data.bausteine[row_const][depth_const][item_const].content = editor.innerHTML;
+                            baustein.content = editor.innerHTML;
                         });
+                        dragstart_elements[dragstart_elements.length] = baustein_dom.getElementsByClassName("__toolbar")[0];
                         break;
                     default:
-                        editor = be_baustein.appendChild(this.createElement("textarea", baustein_editor_id, "be_baustein_item"));
-                        editor.innerHTML = baustein_entry.content;
+                        editor = baustein_dom.appendChild(this.createElement("textarea", baustein_editor_id, "be_baustein_item"));
+                        editor.innerHTML = baustein.content;
                         editor.focus();
-                        be_baustein.addEventListener("input", function () {
+                        baustein_dom.addEventListener("input", function () {
                             editor.style.height = '1px';
                             editor.style.height = editor.scrollHeight + 'px';
-                            self.data.bausteine[row_const][depth_const][item_const].content = editor.value.split("<").join("&lt;").split(">").join("&gt;");
+                            baustein.content = editor.value.split("<").join("&lt;").split(">").join("&gt;");
                         });
                         break;
                 }
+                editor.draggable = false;
                 editor.addEventListener("focusin", function () {
-                    self.selectBaustein({ row: row_const, depth: depth_const, item: item_const, });
+                    self.selectBaustein(baustein_id);
                 });
                 break;
         }
-        be_baustein.addEventListener("click", function (e) {
-            if (e.target.id === baustein_id) {
-                self.selectBaustein({ row: row_const, depth: depth_const, item: item_const, });
+        baustein_dom.addEventListener("click", function (e) {
+            if (e.target.id === baustein_dom_id) {
+                self.selectBaustein(baustein_id);
             }
             else {
                 return false;
             }
         }, false);
-        be_baustein.addEventListener("dragstart", function (e) {
-            if (e.dataTransfer === null) {
-                console.error("baustein_item.addEventListener('dragstart'): e.dataTransfer is null");
-            }
-            else {
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData("row", row_const.toString());
-                e.dataTransfer.setData("depth", depth_const.toString());
-                e.dataTransfer.setData("item", item_const.toString());
-            }
+        dragstart_elements.forEach(function (element) {
+            element.draggable = true;
+            element.addEventListener("dragstart", function (e) {
+                console.log(e);
+                if (e.dataTransfer === null) {
+                    console.error("baustein_item.addEventListener('dragstart'): e.dataTransfer is null");
+                }
+                else if (e.target.id === element.id) {
+                    console.log("dragstart baustein_id", baustein_id);
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData("baustein_id", baustein_id.toString());
+                }
+            });
         });
-        return be_baustein;
+        new ClickHoldDrag(baustein_dom);
+        baustein_dom.addEventListener("dragend", function () {
+            baustein_dom.draggable = false;
+        });
+        return baustein_dom;
     };
     BausteinEditor.prototype.render = function () {
         this.dom.content.innerHTML = "";
-        this.data.bausteine = this.getBausteine();
-        for (var row = 0; row < this.data.bausteine.length; row++) {
-            var depth = 0, item = 0;
-            var baustein_entry = this.data.bausteine[row][depth][item];
-            this.dom.content.appendChild(this.addBausteinSelector({ row: row, depth: depth, item: item }, true, true));
-            if (baustein_entry.renderType === bausteinRenderType.layout || baustein_entry.renderType === bausteinRenderType.table) {
-                var be_baustein = this.dom.content.appendChild(this.renderBaustein(baustein_entry, { row: row, depth: depth, item: item }));
-                depth = 1;
-                console.log("baustein_entry.renderType", baustein_entry.renderType);
-                if (baustein_entry.renderType === bausteinRenderType.table) {
-                    if (this.data.bausteine[row].length > 1) {
-                        var be_baustein_table = be_baustein.appendChild(this.createElement("table", "", ""));
-                        for (var depth = 1; depth < this.data.bausteine[row].length; depth++) {
-                            var be_baustein_row = be_baustein_table.appendChild(this.createElement("tr", "", ""));
-                            for (var item = 0; item < this.data.bausteine[row][depth].length; item++) {
-                                var be_baustein_td1 = be_baustein_row.appendChild(this.createElement("td", "", ""));
-                                be_baustein_td1.appendChild(this.addBausteinSelector({ row: row, depth: depth, item: item }, false, false));
-                                var be_baustein_td2 = be_baustein_row.appendChild(this.createElement("td", "", ""));
-                                var baustein_item = this.data.bausteine[row][depth][item];
-                                be_baustein_td2.appendChild(this.renderBaustein(baustein_item, { row: row, depth: depth, item: item }));
-                            }
-                            var be_baustein_td3 = be_baustein_row.appendChild(this.createElement("td", "", ""));
-                            be_baustein_td3.appendChild(this.addBausteinSelector({ row: row, depth: depth, item: item }, false, false));
-                        }
-                    }
-                    be_baustein.appendChild(this.addBausteinSelector({ row: row, depth: depth, item: 0 }, false, false));
-                }
-                else {
-                    if (this.data.bausteine[row].length > 1) {
-                        for (var item = 0; item < this.data.bausteine[row][depth].length; item++) {
-                            be_baustein.appendChild(this.addBausteinSelector({ row: row, depth: depth, item: item }, false, false));
-                            var baustein_item = this.data.bausteine[row][depth][item];
-                            be_baustein.appendChild(this.renderBaustein(baustein_item, { row: row, depth: depth, item: item }));
-                        }
-                    }
-                    be_baustein.appendChild(this.addBausteinSelector({ row: row, depth: depth, item: item }, false, false));
-                }
-            }
-            else {
-                this.dom.content.appendChild(this.renderBaustein(baustein_entry, { row: row, depth: depth, item: item }));
-            }
+        baustein_counter = 0;
+        var bausteine = this.getBausteineArray(null);
+        for (var row = 0; row < bausteine.length; row++) {
+            var baustein = bausteine[row];
+            this.dom.content.appendChild(this.addBausteinSelector(new Position(null, baustein.position.sort), true, true));
+            this.dom.content.appendChild(this.renderBaustein(baustein, new Position(null, baustein.position.sort)));
         }
-        var row = this.data.bausteine.length;
-        this.dom.content.appendChild(this.addBausteinSelector({ row: row, depth: 0, item: 0 }, false, true));
+        this.dom.content.appendChild(this.addBausteinSelector(new Position(null, (bausteine.length === 0 ? 0 : bausteine[bausteine.length - 1].position.sort + 1)), false, true));
         this.preview_render();
     };
     BausteinEditor.prototype.bausteinSelector_open = function (be_bausteinSelector, be_bausteinSelector_layer, be_bausteinSelector_layer_item_container1, be_bausteinSelector_layer_item_container2) {
@@ -753,16 +717,8 @@ var BausteinEditor = (function () {
         }
     };
     BausteinEditor.prototype.apply_styles = function () {
-        var style_string = ".be_baustein  {";
-        for (var i = 0; i < this.data.page.style.length; i++) {
-            var formfield = document.getElementById(this.dom_id + "_page_fc_" + this.data.page.style[i].property.name);
-            this.data.page.style[i].value = formfield.value;
-            style_string += this.data.page.style[i].property.name + ':' + this.data.page.style[i].value + ';';
-        }
-        style_string += '}';
-        this.dom.page_styles.innerHTML = style_string;
-        if (this.selected_baustein !== null && this.selected_baustein_position !== null) {
-            var baustein = this.data.bausteine[this.selected_baustein_position.row][this.selected_baustein_position.depth][this.selected_baustein_position.item];
+        if (this.selected_baustein !== null && this.selected_baustein_id !== null) {
+            var baustein = this.getBaustein(this.selected_baustein_id);
             var selected_baustein_editor = this.selected_baustein.lastChild;
             var nodes = this.dom.sidebar_content__baustein_styles.querySelectorAll(".be_formrow .form-control");
             for (var i = 0; i < nodes.length; i++) {
@@ -784,11 +740,24 @@ var BausteinEditor = (function () {
                     baustein.style[baustein_style_index] = new_style;
                 }
                 baustein.style[baustein_style_index].value = value;
+                var target;
                 if (baustein.renderType === bausteinRenderType.layout) {
-                    this.selected_baustein.style.setProperty(baustein.style[baustein_style_index].property.name, baustein.style[baustein_style_index].value);
+                    target = this.selected_baustein;
                 }
                 else {
-                    selected_baustein_editor.style.setProperty(baustein.style[baustein_style_index].property.name, baustein.style[baustein_style_index].value);
+                    target = selected_baustein_editor;
+                }
+                if (baustein.style[baustein_style_index].property.useAsClass) {
+                    for (var h = 0; h < baustein.style[baustein_style_index].property.options.length; h++) {
+                        var class_value = baustein.style[baustein_style_index].property.options[h].value;
+                        if (target.classList.contains(class_value))
+                            target.classList.remove(baustein.style[baustein_style_index].property.options[h].value);
+                    }
+                    if (baustein.style[baustein_style_index].value !== "")
+                        target.classList.add(baustein.style[baustein_style_index].value);
+                }
+                else {
+                    target.style.setProperty(baustein.style[baustein_style_index].property.name, baustein.style[baustein_style_index].value);
                 }
             }
         }
@@ -905,73 +874,68 @@ var BausteinEditor = (function () {
             be_layout_fc__margin_top.style.right = right === "" ? "calc(50% - (" + be_layout_fc__margin_top.style.width + " / 2))" : right;
         return be_layout_fc__margin_top;
     };
-    BausteinEditor.prototype.open_baustein_attributes = function (position, renderType) {
-        if (this.open_baustein_attributes__position === null
-            || (this.open_baustein_attributes__position.row !== position.row
-                || this.open_baustein_attributes__position.depth !== position.depth
-                || this.open_baustein_attributes__position.item !== position.item)) {
-            var position_const_1 = { row: position.row, depth: position.depth, item: position.item };
-            this.open_baustein_attributes__position = position_const_1;
+    BausteinEditor.prototype.open_baustein_attributes = function (baustein_id) {
+        if (this.open_baustein_attributes__baustein_id === null || this.open_baustein_attributes__baustein_id !== baustein_id) {
+            var current_baustein_1 = this.getBaustein(baustein_id);
+            this.open_baustein_attributes__baustein_id = baustein_id;
             var self_1 = this;
-            var current_baustein = this.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item];
-            console.log("open_baustein_attributes position_const", position_const_1);
+            console.log("open_baustein_attributes baustein_id", baustein_id);
             this.dom.sidebar_content__baustein_styles.innerHTML = "";
             this.dom.sidebar_content__baustein_misc.innerHTML = "";
             var be_layout_view = this.dom.sidebar_content__baustein_styles.appendChild(this.createElement("div", "", "be_layout_view"));
             var be_layout_view_margin = be_layout_view.appendChild(this.createElement("div", "", "be_layout_view_margin"));
             var be_layout_view_margin_indicator = be_layout_view_margin.appendChild(this.createElement("div", "", "be_layout_view_indicator"));
             be_layout_view_margin_indicator.innerHTML = "margin";
-            be_layout_view_margin.appendChild(this.layout_fc("margin-top", this.getItemFromArray(current_baustein.style, "margin-top", "0"), "-6px", null, null, ""));
-            be_layout_view_margin.appendChild(this.layout_fc("margin-bottom", this.getItemFromArray(current_baustein.style, "margin-bottom", "0"), null, null, "-6px", ""));
-            be_layout_view_margin.appendChild(this.layout_fc("margin-left", this.getItemFromArray(current_baustein.style, "margin-left", "0"), "", null, null, "-6px"));
-            be_layout_view_margin.appendChild(this.layout_fc("margin-right", this.getItemFromArray(current_baustein.style, "margin-right", "0"), "", "-6px", null, null));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-top", this.getItemFromArray(current_baustein_1.style, "margin-top", "0"), "-6px", null, null, ""));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-bottom", this.getItemFromArray(current_baustein_1.style, "margin-bottom", "0"), null, null, "-6px", ""));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-left", this.getItemFromArray(current_baustein_1.style, "margin-left", "0"), "", null, null, "-6px"));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-right", this.getItemFromArray(current_baustein_1.style, "margin-right", "0"), "", "-6px", null, null));
             var be_layout_view_border = be_layout_view_margin.appendChild(this.createElement("div", "", "be_layout_view_border"));
             var be_layout_view_border_indicator = be_layout_view_border.appendChild(this.createElement("div", "", "be_layout_view_indicator"));
             be_layout_view_border_indicator.innerHTML = "border";
-            be_layout_view_border.appendChild(this.layout_fc("border-top", this.getItemFromArray(current_baustein.style, "border-top", "0"), "-13px", null, null, ""));
-            be_layout_view_border.appendChild(this.layout_fc("border-bottom", this.getItemFromArray(current_baustein.style, "border-bottom", "0"), null, null, "-13px", ""));
-            be_layout_view_border.appendChild(this.layout_fc("border-left", this.getItemFromArray(current_baustein.style, "border-left", "0"), "", null, null, "-14px"));
-            be_layout_view_border.appendChild(this.layout_fc("border-right", this.getItemFromArray(current_baustein.style, "border-right", "0"), "", "-14px", null, null));
+            be_layout_view_border.appendChild(this.layout_fc("border-top", this.getItemFromArray(current_baustein_1.style, "border-top", "0"), "-13px", null, null, ""));
+            be_layout_view_border.appendChild(this.layout_fc("border-bottom", this.getItemFromArray(current_baustein_1.style, "border-bottom", "0"), null, null, "-13px", ""));
+            be_layout_view_border.appendChild(this.layout_fc("border-left", this.getItemFromArray(current_baustein_1.style, "border-left", "0"), "", null, null, "-14px"));
+            be_layout_view_border.appendChild(this.layout_fc("border-right", this.getItemFromArray(current_baustein_1.style, "border-right", "0"), "", "-14px", null, null));
             var be_layout_view_padding = be_layout_view_border.appendChild(this.createElement("div", "", "be_layout_view_padding"));
             var be_layout_view_padding_indicator = be_layout_view_padding.appendChild(this.createElement("div", "", "be_layout_view_indicator"));
             be_layout_view_padding_indicator.innerHTML = "padding";
-            be_layout_view_padding.appendChild(this.layout_fc("padding-top", this.getItemFromArray(current_baustein.style, "padding-top", "0"), "0px", null, null, ""));
-            be_layout_view_padding.appendChild(this.layout_fc("padding-bottom", this.getItemFromArray(current_baustein.style, "padding-bottom", "0"), null, null, "0px", ""));
-            be_layout_view_padding.appendChild(this.layout_fc("padding-left", this.getItemFromArray(current_baustein.style, "padding-left", "0"), "", null, null, "8px"));
-            be_layout_view_padding.appendChild(this.layout_fc("padding-right", this.getItemFromArray(current_baustein.style, "padding-right", "0"), "", "8px", null, null));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-top", this.getItemFromArray(current_baustein_1.style, "padding-top", "0"), "0px", null, null, ""));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-bottom", this.getItemFromArray(current_baustein_1.style, "padding-bottom", "0"), null, null, "0px", ""));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-left", this.getItemFromArray(current_baustein_1.style, "padding-left", "0"), "", null, null, "8px"));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-right", this.getItemFromArray(current_baustein_1.style, "padding-right", "0"), "", "8px", null, null));
             var be_layout_view_inner = be_layout_view_padding.appendChild(this.createElement("div", "", "be_layout_view_inner"));
-            be_layout_view_inner.appendChild(this.layout_fc("max-width", this.getItemFromArray(current_baustein.style, "max-width", "auto"), null, null, null, null));
+            be_layout_view_inner.appendChild(this.layout_fc("max-width", this.getItemFromArray(current_baustein_1.style, "max-width", "auto"), null, null, null, null));
             be_layout_view_inner.appendChild(this.createElement("span", "", "be_layout_wh_delimiter")).innerHTML = " &times; ";
-            be_layout_view_inner.appendChild(this.layout_fc("max-height", this.getItemFromArray(current_baustein.style, "max-height", "auto"), null, null, null, null));
-            if (renderType === bausteinRenderType.image) {
-                var baustein_image_row = this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein_image", "text", "image", 'Bildquelle (URL)', current_baustein.content, "", []));
+            be_layout_view_inner.appendChild(this.layout_fc("max-height", this.getItemFromArray(current_baustein_1.style, "max-height", "auto"), null, null, null, null));
+            if (current_baustein_1.renderType === bausteinRenderType.image) {
+                var baustein_image_row = this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein_image", "text", "image", 'Bildquelle (URL)', current_baustein_1.content, "", []));
                 var baustein_image_form_control = baustein_image_row.getElementsByClassName('form-control')[0];
                 baustein_image_form_control.addEventListener("change", function () {
-                    self_1.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item].content = this.value;
+                    current_baustein_1.content = this.value;
                     if (self_1.selected_baustein !== null) {
                         var selected_baustein_item = self_1.selected_baustein.querySelector(".be_baustein_item");
                         selected_baustein_item.src = this.value;
                     }
                 });
             }
-            for (var i = 0; i < current_baustein.style.length; i++) {
-                var element = current_baustein.style[i];
+            for (var i = 0; i < current_baustein_1.style.length; i++) {
+                var element = current_baustein_1.style[i];
                 this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options));
             }
-            var baustein_class_row = this.dom.sidebar_content__baustein_misc.appendChild(this.formcontrol("baustein_class", "text", "class", 'CSS Klasse <div style="font-size: 11px; margin-bottom: 2px;">(für Fortgeschrittene Nutzer)</div>', current_baustein.class, "", []));
-            console.log("baustein_class_row", baustein_class_row);
+            var baustein_class_row = this.dom.sidebar_content__baustein_misc.appendChild(this.formcontrol("baustein_class", "text", "class", 'CSS Klasse <div style="font-size: 11px; margin-bottom: 2px;">(für Fortgeschrittene Nutzer)</div>', current_baustein_1.class, "", []));
             var baustein_delete_button = this.dom.sidebar_content__baustein_misc.appendChild(this.createElement("button", this.dom_id + '_deleteBaustein', "form-control bautstein-delete"));
             baustein_delete_button.innerHTML = "Baustein löschen";
             baustein_delete_button.type = "button";
             var baustein_class_form_control = baustein_class_row.getElementsByClassName('form-control')[0];
             baustein_class_form_control.addEventListener("change", function () {
-                self_1.data.bausteine[position_const_1.row][position_const_1.depth][position_const_1.item].class = this.value;
+                current_baustein_1.class = this.value;
             });
             baustein_delete_button.addEventListener("click", function () {
                 self_1.dialog("Baustein löschen", "Sind Sie sich sicher, dass Sie diesen Baustein löschen wollen?", null, "Löschen", "Abbrechen", null, function () {
                     self_1.close_baustein_attributes();
                     console.log(self_1.data.bausteine);
-                    self_1.deleteBaustein(position_const_1);
+                    self_1.deleteBaustein(baustein_id);
                     console.log(self_1.data.bausteine);
                     if (self_1.dialog_close_function === null) {
                         console.error("baustein_delete_button tried to close dialog, but self.dialog_close_function is null");
@@ -1059,15 +1023,20 @@ var BausteinEditor = (function () {
         self.dom.dialog.style.display = "";
     };
     BausteinEditor.prototype.import = function (data) {
+        for (var i = 0; i < data.bausteine.length; i++) {
+            if (data.bausteine[i].id > this.baustein_id_counter) {
+                this.baustein_id_counter = data.bausteine[i].id + 1;
+            }
+        }
         this.data = data;
         this.render();
     };
-    BausteinEditor.prototype.export_createBausteinElement = function (baustein, tag_override) {
+    BausteinEditor.prototype.export_createBausteinElement = function (baustein, position, tag_override) {
         if (tag_override === void 0) { tag_override = null; }
         var tag, id;
         if (tag_override === null) {
             tag = baustein.tag;
-            id = baustein.id;
+            id = baustein.type;
         }
         else {
             tag = tag_override;
@@ -1081,10 +1050,11 @@ var BausteinEditor = (function () {
             var style = baustein.style[s];
             if (style.value !== "" && style.value !== "0" && style.value !== "auto" && style.value !== "initial" && style.value !== "normal"
                 && (style.property.options.length === 0 || style.value !== style.property.options[0].value)) {
-                var ok = true, test_type = this.getTypeById(id);
+                var ok = true, test_type = this.getBausteinType(id), test_type_index = -1;
                 if (test_type !== null) {
                     for (var b = 0; b < test_type.style.length; b++) {
                         var test_style = test_type.style[b];
+                        test_type_index = b;
                         if (test_style.property.name === style.property.name) {
                             console.log(test_style.property.name, test_style.value, "|", style.property.name, style.value);
                             if (test_style.value === style.value) {
@@ -1095,7 +1065,12 @@ var BausteinEditor = (function () {
                     }
                 }
                 if (ok) {
-                    bausteinElement.style.setProperty(style.property.name, style.value);
+                    if (test_type.style[test_type_index].property.useAsClass) {
+                        bausteinElement.classList.add(style.value);
+                    }
+                    else {
+                        bausteinElement.style.setProperty(style.property.name, style.value);
+                    }
                 }
             }
         }
@@ -1119,41 +1094,10 @@ var BausteinEditor = (function () {
                 export_html_dom.style.setProperty(style.property.name, style.value);
             }
         }
-        for (var r = 0; r < this.data.bausteine.length; r++) {
-            var baustein_row = this.data.bausteine[r][0][0];
-            if (baustein_row.renderType === bausteinRenderType.table) {
-                var dom_baustein_row = export_html_dom.appendChild(this.export_createBausteinElement(baustein_row, "table"));
-                for (var d = 1; d < this.data.bausteine[r].length; d++) {
-                    var baustein_depth = this.data.bausteine[r][d][0];
-                    var dom_baustein_depth = dom_baustein_row.appendChild(this.export_createBausteinElement(baustein_depth, "tr"));
-                    for (var i = 0; i < this.data.bausteine[r][d].length; i++) {
-                        var baustein_item = this.data.bausteine[r][d][i];
-                        var dom_baustein_item = dom_baustein_depth.appendChild(this.export_createBausteinElement(baustein_item, "td"));
-                        var dom_baustein_item2 = dom_baustein_item.appendChild(this.export_createBausteinElement(baustein_item));
-                    }
-                }
-            }
-            else {
-                var dom_baustein_row = export_html_dom.appendChild(this.export_createBausteinElement(baustein_row));
-                for (var d = 1; d < this.data.bausteine[r].length; d++) {
-                    var baustein_depth = this.data.bausteine[r][d][0];
-                    if (baustein_row.renderType === bausteinRenderType.layout) {
-                        for (var i = 0; i < this.data.bausteine[r][d].length; i++) {
-                            var baustein_item = this.data.bausteine[r][d][i];
-                            var dom_baustein_item = dom_baustein_row.appendChild(this.export_createBausteinElement(baustein_item));
-                            dom_baustein_item.style.display = "inline-block";
-                            dom_baustein_item.style.verticalAlign = "top";
-                        }
-                    }
-                    else {
-                        var dom_baustein_depth = dom_baustein_row.appendChild(this.export_createBausteinElement(baustein_depth));
-                        for (var i = 1; i < this.data.bausteine[r][d].length; i++) {
-                            var baustein_item = this.data.bausteine[r][d][i];
-                            var dom_baustein_item = dom_baustein_depth.appendChild(this.export_createBausteinElement(baustein_item));
-                        }
-                    }
-                }
-            }
+        var bausteine = this.getBausteineArray(null);
+        for (var row = 0; row < bausteine.length; row++) {
+            var baustein = bausteine[row];
+            export_html_dom.appendChild(this.export_createBausteinElement(baustein, new Position(null, baustein.position.sort)));
         }
         return {
             data: this.data,
@@ -1161,5 +1105,41 @@ var BausteinEditor = (function () {
         };
     };
     return BausteinEditor;
+}());
+var ClickHoldDrag = (function () {
+    function ClickHoldDrag(target) {
+        var _this = this;
+        this.target = target;
+        this.isHeld = false;
+        this.timeoutId = 0;
+        ["mousedown", "mousestart"].forEach(function (type) {
+            _this.target.addEventListener(type, _this.onHoldStart.bind(_this));
+        });
+        ["mouseup", "mouseleave", "mouseout", "touchend", "touchcancel"].forEach(function (type) {
+            _this.target.addEventListener(type, _this.onHoldEnd.bind(_this));
+        });
+    }
+    ClickHoldDrag.prototype.onHoldStart = function () {
+        var _this = this;
+        this.isHeld = true;
+        this.timeoutId = setTimeout(function () {
+            if (_this.isHeld) {
+                _this.target.draggable = true;
+                _this.target.style.userSelect = "none";
+            }
+        }, 1);
+    };
+    ClickHoldDrag.prototype.onHoldEnd = function () {
+        var _this = this;
+        this.isHeld = false;
+        clearTimeout(this.timeoutId);
+        setTimeout(function () {
+            if (!_this.isHeld) {
+                _this.target.draggable = false;
+                _this.target.style.userSelect = "";
+            }
+        }, 500);
+    };
+    return ClickHoldDrag;
 }());
 //# sourceMappingURL=baustein_editor.js.map
