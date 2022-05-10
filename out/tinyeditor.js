@@ -121,6 +121,9 @@ var TinyEditor = {
         if (options.indent != 0) {
             toolbar.insertAdjacentElement("beforeend", this.createButton('indent', 'Increase indent', this.createIcon('fas fa-indent'), execCommand));
         }
+        if (options.hyperlink != 0) {
+            toolbar.insertAdjacentElement("beforeend", this.createButton('createLink', 'Create Hyperlink', this.createIcon('fas fa-link'), execCommand));
+        }
         if (options.removeFormat != 0) {
             toolbar.insertAdjacentElement("beforeend", this.createButton('removeFormat', 'Clear formatting', this.createIcon('fas fa-eraser'), execCommand));
         }

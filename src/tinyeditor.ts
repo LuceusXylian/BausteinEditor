@@ -100,9 +100,7 @@ const TinyEditor = {
                 { value: 'h6', text: 'Title 6' },
                 { value: 'p', text: 'Paragraph', selected: true },
                 { value: 'pre', text: 'Preformatted' }
-                ],
-                execCommand
-            )
+                ], execCommand)
             );
         }
     
@@ -119,25 +117,23 @@ const TinyEditor = {
                 { value: 'monospace', text: 'Monospace' },
                 { value: 'cursive', text: 'Cursive' },
                 { value: 'fantasy', text: 'Fantasy' }
-                ],
-                execCommand
-            )
+                ], execCommand)
             );
         }
     
         // Bold
         if (options.bold != 0) {
             toolbar.insertAdjacentElement(
-            "beforeend",
-            this.createButton('bold', 'Bold', this.createIcon('fas fa-bold'), execCommand)
+                "beforeend",
+                this.createButton('bold', 'Bold', this.createIcon('fas fa-bold'), execCommand)
             );
         }
     
         // Italic
         if (options.italic != 0) {
             toolbar.insertAdjacentElement(
-            "beforeend",
-            this.createButton('italic', 'Italic', this.createIcon('fas fa-italic'), execCommand)
+                "beforeend",
+                this.createButton('italic', 'Italic', this.createIcon('fas fa-italic'), execCommand)
             );
         }
     
@@ -148,9 +144,7 @@ const TinyEditor = {
             this.createButton(
                 'underline',
                 'Underline',
-                this.createIcon('fas fa-underline'),
-                execCommand
-            )
+                this.createIcon('fas fa-underline'), execCommand)
             );
         }
     
@@ -172,9 +166,7 @@ const TinyEditor = {
             this.createButton(
                 'justifyleft',
                 'Left align',
-                this.createIcon('fas fa-align-left'),
-                execCommand
-            )
+                this.createIcon('fas fa-align-left'), execCommand)
             );
         }
     
@@ -185,9 +177,7 @@ const TinyEditor = {
             this.createButton(
                 'justifycenter',
                 'Center align',
-                this.createIcon('fas fa-align-center'),
-                execCommand
-            )
+                this.createIcon('fas fa-align-center'), execCommand)
             );
         }
     
@@ -198,9 +188,7 @@ const TinyEditor = {
             this.createButton(
                 'justifyright',
                 'Right align',
-                this.createIcon('fas fa-align-right'),
-                execCommand
-            )
+                this.createIcon('fas fa-align-right'), execCommand)
             );
         }
     
@@ -214,9 +202,7 @@ const TinyEditor = {
             this.createButton(
                 'insertorderedlist',
                 'Numbered list',
-                this.createIcon('fas fa-list-ol'),
-                execCommand
-            )
+                this.createIcon('fas fa-list-ol'), execCommand)
             );
         }
     
@@ -227,9 +213,7 @@ const TinyEditor = {
             this.createButton(
                 'insertunorderedlist',
                 'Bulleted list',
-                this.createIcon('fas fa-list-ul'),
-                execCommand
-            )
+                this.createIcon('fas fa-list-ul'), execCommand)
             );
         }
     
@@ -240,9 +224,7 @@ const TinyEditor = {
             this.createButton(
                 'outdent',
                 'Decrease indent',
-                this.createIcon('fas fa-indent fa-flip-horizontal'),
-                execCommand
-            )
+                this.createIcon('fas fa-indent fa-flip-horizontal'), execCommand)
             );
         }
     
@@ -253,14 +235,23 @@ const TinyEditor = {
             this.createButton(
                 'indent',
                 'Increase indent',
-                this.createIcon('fas fa-indent'),
-                execCommand
-            )
+                this.createIcon('fas fa-indent'), execCommand)
             );
         }
     
         // Separator
         //toolbar.insertAdjacentElement("beforeend", this.createSeparator());
+    
+        // Create Hyperlink
+        if (options.hyperlink != 0) {
+            toolbar.insertAdjacentElement(
+            "beforeend",
+            this.createButton(
+                'createLink',
+                'Create Hyperlink',
+                this.createIcon('fas fa-link'), execCommand)
+            );
+        }
     
         // Clear formatting
         if (options.removeFormat != 0) {
@@ -269,9 +260,7 @@ const TinyEditor = {
             this.createButton(
                 'removeFormat',
                 'Clear formatting',
-                this.createIcon('fas fa-eraser'),
-                execCommand
-            )
+                this.createIcon('fas fa-eraser'), execCommand)
             );
         }
     

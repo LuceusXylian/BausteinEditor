@@ -1,6 +1,5 @@
 /// <reference path="tinyeditor.ts"/>
 
-var baustein_counter = 0;
 const bausteinRenderType = {
     layout: 0,
     table: 1,
@@ -53,14 +52,14 @@ class Baustein {
 	public position: Position;
 	public type: string;
 	public title: string;
-	public icon: string;
+	public icon: string | undefined;
 	public tag: string;
 	public renderType: any;
 	public style: BausteinStyle[];
 	public content: string;
 	public class: string;
 
-    constructor(id: number, position: Position, type: string, title: string, icon: string, tag: string, renderType: number, style: any) {
+    constructor(id: number, position: Position, type: string, title: string, icon: string | undefined, tag: string, renderType: number, style: any) {
         this.id = id;
         this.position = position;
         this.type = type;
@@ -81,6 +80,7 @@ class Baustein {
 class BausteinEditor {
 	public dom_id: any;
 	public dom: any;
+	public baustein_counter: number = 0;
 	public baustein_id_counter: number = 0;
     
 	public styleProperties = {
@@ -124,14 +124,14 @@ class BausteinEditor {
         return new BausteinStyleProperty(name, "", "", "", [], false);
     }
 
-	public data: {page: {style: BausteinStyle[], styleClasses: BausteinStyle[]}, bausteine: Baustein[]} = {
+	public data: {page: {style: BausteinStyle[]}, bausteine: Baustein[]} = {
         page: {
             style: [
                 //{ property: this.styleProperties.font_family, value: this.styleProperties.font_family.options[0].value },
             ],
-            styleClasses: [
-                { property: this.styleProperties.font_size, value: this.styleProperties.font_size.options[0].value },
-            ]
+            //styleClasses: [
+            //    { property: this.styleProperties.font_size, value: this.styleProperties.font_size.options[0].value },
+            //]
         },
         bausteine: []
     };
@@ -260,7 +260,11 @@ class BausteinEditor {
 	public open_baustein_attributes__baustein_id: number | null;
 	public dialog_close_function: Function | null = null;
     public assets = {
-        baustein_image_placeholder_url: "/img/baustein-image-placeholder.png"
+        baustein_image_placeholder: "/img/baustein-image-placeholder.png"
+    };
+    public api_endpoints = {
+        image_search: "",
+        image_register: "",
     };
 
     createElement(_type: string, _id: string, _class: string): HTMLElement {
@@ -301,19 +305,21 @@ class BausteinEditor {
             this.createElement("div", this.dom_id+"_preview", "be_preview")
         );
         
-        this.dom.preview_button_desktop = this.dom.preview.appendChild(
+        this.dom.preview_button_desktop = <HTMLButtonElement> this.dom.preview.appendChild(
             this.createElement("button", this.dom_id+"_preview_button_desktop", "be_preview_button_desktop")
         );
         this.dom.preview_button_desktop.innerHTML = '<i class="fas fa-desktop"></i> Desktop';
         this.dom.preview_button_desktop.style.display = "none";
+        this.dom.preview_button_desktop.type = "button";
         
-        this.dom.preview_button_mobile = this.dom.preview.appendChild(
+        this.dom.preview_button_mobile = <HTMLButtonElement> this.dom.preview.appendChild(
             this.createElement("button", this.dom_id+"_preview_button_mobile", "be_preview_button_mobile")
         );
         this.dom.preview_button_mobile.innerHTML = '<i class="fas fa-mobile-alt"></i> Mobile';
         this.dom.preview_button_mobile.style.display = "none";
+        this.dom.preview_button_desktop.type = "button";
 
-        this.dom.preview_button = this.dom.preview.appendChild(
+        this.dom.preview_button = <HTMLButtonElement> this.dom.preview.appendChild(
             this.createElement("button", this.dom_id+"_preview_button", "be_preview_button")
         );
         this.dom.preview_button.innerHTML = '<i class="fas fa-eye"></i> Vorschau';
@@ -321,6 +327,7 @@ class BausteinEditor {
             this.createElement("div", this.dom_id+"_preview_content", "be_preview_content")
         );
         this.dom.preview_content.style.display = "none";
+        this.dom.preview_button_desktop.type = "button";
 
         this.dom.sidebar_header = this.dom.sidebar.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_header", "be_sidebar_header")
@@ -347,13 +354,13 @@ class BausteinEditor {
         );
         this.dom.sidebar_header_col__baustein.innerHTML = "Baustein";
 
-        for (var i = 0; i < this.data.page.styleClasses.length; i++) {
-            const element = this.data.page.styleClasses[i];
-            this.dom.sidebar_content__site.appendChild(
-                this.formcontrol("page-sc", element.property.type, element.property.name, element.property.title, 
-                    element.value, element.property.suffix, element.property.options)
-            );
-        }
+        //for (var i = 0; i < this.data.page.styleClasses.length; i++) {
+        //    const element = this.data.page.styleClasses[i];
+        //    this.dom.sidebar_content__site.appendChild(
+        //        this.formcontrol("page-sc", element.property.type, element.property.name, element.property.title, 
+        //            element.value, element.property.suffix, element.property.options)
+        //    );
+        //}
 
         for (var i = 0; i < this.data.page.style.length; i++) {
             const element = this.data.page.style[i];
@@ -433,22 +440,19 @@ class BausteinEditor {
         this.render();
 
         /* test construction */
-        //this.addBaustein(this.types.table, new Position(0,0,0));
-        //this.addBaustein(this.types.h1, new Position(0,1,0));
-        //this.addBaustein(this.types.h2, new Position(0,1,1));
-        //this.addBaustein(this.types.h1, new Position(0,2,0));
-        //this.addBaustein(this.types.h2, new Position(0,2,1));
-        
-        //this.addBaustein(this.types.layout, new Position(null, 1));
-        //this.addBaustein(this.types.h1, new Position(0, 1));
-        //this.addBaustein(this.types.h2, new Position(0, 2));
+        //this.addBaustein(this.types.h1, new Position(null, 1));
+        //this.addBaustein(this.types.layout, new Position(null, 2));
+        //this.addBaustein(this.types.text, new Position(0, 1));
+        //this.addBaustein(this.types.text, new Position(0, 2));
+        //this.addBaustein(this.types.h2, new Position(null, 3));
+        //this.addBaustein(this.types.text, new Position(null, 4));
     }
     
     addBausteinSelector(position: Position, hide: boolean, showLayoutItems: boolean) {
         const self = this;
-        const selector_dom_id = this.dom_id + "_" + position;
-        const const_parent = position.parent;
-        const const_sort = position.sort;
+        const selector_dom_id = this.dom_id + "_" + position.parent + "_" + position.sort;
+        const position_parent = position.parent;
+        const position_sort = position.sort;
 
         var clz = "be_bausteinSelector_container";
         if (hide) {
@@ -456,6 +460,9 @@ class BausteinEditor {
         }
 
         var be_bausteinSelector_container = this.createElement("div", "", clz);
+        be_bausteinSelector_container.dataset.position_parent = position_parent+"";
+        be_bausteinSelector_container.dataset.position_sort = position_sort+"";
+
         var be_bausteinSelector = be_bausteinSelector_container.appendChild(
             this.createElement("div", selector_dom_id+'_bausteinSelector', "be_bausteinSelector")
         );
@@ -511,10 +518,10 @@ class BausteinEditor {
             );
 
             if (itemset.type === 0) {
-                title1.innerHTML = itemset.items[0].icon;
+                if(itemset.items[0].icon !== undefined) title1.innerHTML = itemset.items[0].icon;
                 title2.innerHTML = itemset.items[0].title;
             } else {
-                title1.innerHTML = itemset.icon;
+                if(itemset.icon !== undefined) title1.innerHTML = itemset.icon;
                 title2.innerHTML = itemset.title;
             }
 
@@ -566,7 +573,7 @@ class BausteinEditor {
                 console.error("be_bausteinSelector.addEventListener('drop'): e.dataTransfer is null");
             } else {
                 var old_baustein_id = parseInt(e.dataTransfer.getData("baustein_id"));
-                var new_position = { parent: const_parent, sort: const_sort };
+                var new_position = { parent: position_parent, sort: position_sort };
                 console.log("drop on addBausteinSelector: old_baustein_id", old_baustein_id);
                 console.log("drop on addBausteinSelector: new position", new_position);
                 self.moveBaustein(old_baustein_id, new_position);
@@ -734,14 +741,15 @@ class BausteinEditor {
     renderBaustein(baustein: Baustein, position: Position): HTMLElement {
         const self = this;
         const baustein_id = baustein.id;
-        const const_parent = position.parent;
-        const const_sort = position.sort;
+        const position_parent = position.parent;
+        const position_sort = position.sort;
         const baustein_dom_id = this.dom_id+'_be_baustein_item'+baustein_id;
         const baustein_editor_id = baustein_dom_id+'_editor';
         
         var baustein_dom = this.createElement("div", baustein_dom_id, "be_baustein");
         baustein_dom.dataset.type = baustein.type;
-        baustein_dom.draggable = false;
+        baustein_dom.dataset.position_parent = position_parent+"";
+        baustein_dom.dataset.position_sort = position_sort+"";
         var dragstart_elements: HTMLElement[] = [baustein_dom];
 
         if (this.selected_baustein_id !== null && this.selected_baustein_id === baustein_id) {
@@ -766,12 +774,12 @@ class BausteinEditor {
         }, false);
         dragstart_elements[dragstart_elements.length] = baustein_indicator;
 
-        if (const_parent === null) {
+        if (position_parent === null) {
             var baustein_indicator_position: HTMLElement = <HTMLElement> baustein_indicator.appendChild(
                 this.createElement("span", "", "baustein_indicator_position")
             );
-            baustein_indicator_position.innerHTML = baustein_counter.toString();
-            baustein_counter++;
+            baustein_indicator_position.innerHTML = self.baustein_counter.toString();
+            self.baustein_counter++;
         }
 
         var changeBausteinOptions = this.getChangeBausteinOptions(baustein.renderType, baustein.type);
@@ -784,6 +792,7 @@ class BausteinEditor {
             var baustein_indicator_changer: HTMLSelectElement = <HTMLSelectElement> baustein_indicator.appendChild(
                 this.createElement("select", "", "baustein_indicator_changer")
             );
+            baustein_indicator_changer.tabIndex = -1;
             baustein_indicator_changer.addEventListener("change", function() {
                 self.changeBaustein(baustein_id, this.value);
             });
@@ -830,7 +839,7 @@ class BausteinEditor {
                 // WENN dataset.src empty ist, dann ist nur der Placeholder vorhanden
                 image.dataset.src = baustein.content;
                 if (baustein.content === "") {
-                    image.src = this.assets.baustein_image_placeholder_url;
+                    image.src = this.assets.baustein_image_placeholder;
                 } else {
                     image.src = baustein.content;
                 }
@@ -920,6 +929,7 @@ class BausteinEditor {
 
 
         // source
+        /*
         dragstart_elements.forEach(function(element) {
             element.draggable = true;
             element.addEventListener("dragstart", function(e: any) {
@@ -933,9 +943,51 @@ class BausteinEditor {
                 }
             });
         });
+        */
 
         // handle draggable condition
-        new ClickHoldDrag(baustein_dom);
+        new LuxClickHoldDrag(baustein_dom, {
+            mousedown: null,
+            mousemove: null,
+            mouseup: (e: any, reciever_element: HTMLElement) => {
+                console.log("reciever_element", reciever_element);
+
+                // Go up the DOM Tree until we find a parent with the dataset "position_parent"
+                for (let tries = 0; tries < 4; tries++) {
+                    if(typeof reciever_element.dataset.position_parent === "string") {
+                        break;
+                    } else {
+                        if (reciever_element.parentElement === null) {
+                            console.error("[BausteinEditor] reciever_element.parentElement is null");
+                            break;
+                        } else {
+                            reciever_element = reciever_element.parentElement;
+                        }
+                    }
+                }
+
+                if (typeof reciever_element.dataset.position_parent !== "string") {
+                    console.error("BausteinEditor: reciever_element.dataset.position_parent is not a string");
+                } else if (typeof reciever_element.dataset.position_sort !== "string") {
+                    console.error("BausteinEditor: reciever_element.dataset.position_sort is not a string");
+                } else {
+                    var old_baustein_id = baustein_id;
+                    var new_position = { 
+                        parent: reciever_element.dataset.position_parent === "0" ? 0 : (parseInt(reciever_element.dataset.position_parent) || null), 
+                        sort: reciever_element.dataset.position_sort === "0" ? 0 : (parseInt(reciever_element.dataset.position_sort) || null) 
+                    };
+
+                    console.log("drop on addBausteinSelector: old_baustein_id", old_baustein_id);
+                    console.log("drop on addBausteinSelector: new position", new_position);
+                    
+                    if (new_position.sort === null) {
+                        console.error("[BausteinEditor] LuxClickHoldDrag.callback_mouseup: new_position.sort is null");
+                    } else {
+                        self.moveBaustein(old_baustein_id, new Position(new_position.parent, new_position.sort));
+                    }
+                }
+            }
+        });
         baustein_dom.addEventListener("dragend", function() {
             baustein_dom.draggable = false;
         });
@@ -946,7 +998,7 @@ class BausteinEditor {
     
     render() {
         this.dom.content.innerHTML = "";
-        baustein_counter = 0;
+        this.baustein_counter = 0;
 
         /*  Bausteine Recursive Graph Array
             this.data.bausteine[row] :: .parent :: .position
@@ -1271,13 +1323,22 @@ class BausteinEditor {
 
 
             if (current_baustein.renderType === bausteinRenderType.image) {
+                // path zum Bild. Darf keine URL mit SERVER_NAME beinhalten. Button zum starten der Bildauswahl aus der Mediatek
                 var baustein_image_row = this.dom.sidebar_content__baustein_styles.appendChild(
                     this.formcontrol(
                         "baustein_image", "text", "image"
-                        , 'Bildquelle (URL)'
+                        , 'Bildquelle'
                         , current_baustein.content, "", []
                     )
                 );
+
+                var start_image_selector =  baustein_image_row.getElementsByClassName('form-control-container')[0].appendChild(
+                    self.createElement("button", "start_image_selector", "form-control")
+                );
+                start_image_selector.type = "button";
+                start_image_selector.innerHTML= "[>]";
+                start_image_selector.style.width = "34px";
+                start_image_selector.style.marginLeft = "4px";
 
                 const baustein_image_form_control: HTMLFormElement = <HTMLFormElement> baustein_image_row.getElementsByClassName('form-control')[0];
                 baustein_image_form_control.addEventListener("change", function() {
@@ -1286,6 +1347,13 @@ class BausteinEditor {
                         const selected_baustein_item = <HTMLImageElement> self.selected_baustein.querySelector(".be_baustein_item");
                         selected_baustein_item.src  = this.value;
                     }
+                });
+                
+                baustein_image_form_control.style.width = 'calc(100% - '+start_image_selector.style.width+' - '+start_image_selector.style.marginLeft+')';
+
+
+                start_image_selector.addEventListener("click", function() {
+                    self.dialog_media(bausteinRenderType.image, baustein_id);
                 });
             }
     
@@ -1338,6 +1406,7 @@ class BausteinEditor {
             this.dom.sidebar_header_col__baustein.classList.remove("disabled");
         }
     }
+    
 
     // returns the value of the pointed array item OR attribute def on fail
     getItemFromArray(array: any, index: any, def: any) {
@@ -1382,10 +1451,39 @@ class BausteinEditor {
         }
     }
 
-    dialog(title: string, body_text: string, action_ok_text: string | null, action_fail_text: string | null, action_close_text: string | null, action_ok: Function | null = null, action_fail: Function | null = null, action_close: Function | null = null) {
+    request(type: string, endpoint: string, params: string): Promise<any> {
+        return new Promise(function(resolve: Function, reject: Function) {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4) {
+                    if (this.status == 200) {
+                        resolve(this);
+                    } else {
+                        reject(this);
+                    }
+                }
+            };
+
+            if (type === "GET") {
+                xhttp.open("GET", endpoint+params, true);
+                xhttp.send();
+            } else {
+                xhttp.open("POST", endpoint, true);
+                xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                xhttp.send(params);
+            }
+        })
+    }
+
+    dialog(title: string, body_content: string | HTMLElement, action_ok_text: string | null, action_fail_text: string | null, action_close_text: string | null, action_ok: Function | null = null, action_fail: Function | null = null, action_close: Function | null = null) {
         const self = this;
         self.dom.dialog_title.innerHTML = title;
-        self.dom.dialog_body.innerHTML = body_text;
+        if(typeof body_content === "string") {
+            self.dom.dialog_body.innerHTML = body_content;
+        } else {
+            self.dom.dialog_body.innerHTML = '';
+            self.dom.dialog_body.appendChild(body_content);
+        }
         if(self.dialog_close_function !== null) self.dom.dialog_close.removeEventListener("click", self.dialog_close_function);
         if (action_close === null) {
             self.dialog_close_function = function() { self.dom.dialog.style.display = "none"; };
@@ -1396,34 +1494,142 @@ class BausteinEditor {
 
         self.dom.dialog_footer.innerHTML = '';
         if (action_ok_text !== null) {
-            var ok_button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-green"))
-            ok_button.innerHTML = action_ok_text;
-            ok_button.addEventListener("click", action_ok);
+            var button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-green"))
+            button.type = "button";
+            button.innerHTML = action_ok_text;
+            button.addEventListener("click", action_ok);
         }
 
         if (action_fail_text !== null) {
-            var ok_button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-red"))
-            ok_button.innerHTML = action_fail_text;
-            ok_button.addEventListener("click", action_fail);
+            var button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-red"))
+            button.type = "button";
+            button.innerHTML = action_fail_text;
+            button.addEventListener("click", action_fail);
         }
 
         if (action_close_text !== null) {
-            var ok_button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-gray"))
-            ok_button.innerHTML = action_close_text;
-            ok_button.addEventListener("click", self.dialog_close_function);
+            var button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-gray"))
+            button.type = "button";
+            button.innerHTML = action_close_text;
+            button.addEventListener("click", self.dialog_close_function);
         }
         
 
         self.dom.dialog.style.display = "";
     }
 
+    dialog_media(renderType: number, baustein_id: number) {
+        const self = this;
+        const baustein = this.getBaustein(baustein_id);
+        //TODO: Dialog for image selector
+
+        var search_endpoint: string, register_endpoint: string;
+        if (renderType === bausteinRenderType.image) {
+            search_endpoint = self.api_endpoints.image_search;
+            register_endpoint = self.api_endpoints.image_register;
+        } else {
+            search_endpoint = "";
+            register_endpoint = "";
+        }
+
+        var content = self.createElement("div", "", "");
+        var content_search = content.appendChild(self.createElement("div", "", "be-dialog-media-search"));
+        content_search.style.marginBottom = "20px";
+        var content_search_input = <HTMLInputElement> content_search.appendChild(self.createElement("input", "", "be-dialog-media-search-input form-control"));
+        content_search_input.type = "text";
+        content_search_input.placeholder = "Suchbegriffe..";
+        content_search_input.style.display = "inline-block"; content_search_input.style.verticalAlign = "middle";
+        var content_search_submit = <HTMLButtonElement> content_search.appendChild(self.createElement("button", "", "be-dialog-media-search-submit __dialog-btn"));
+        content_search_submit.type = "button";
+        content_search_submit.innerHTML = "Suchen";
+        content_search_submit.style.display = "inline-block"; content_search_submit.style.verticalAlign = "middle";
+        content_search_submit.style.width = "66px";
+        content_search_submit.style.padding = "6px";
+        content_search_submit.style.marginLeft = "8px";
+        content_search_submit.style.marginRight = "0";
+        
+        content_search_input.style.width = "calc(100% - "+content_search_submit.style.width+" - "+content_search_submit.style.marginLeft+")";
+
+        var content_results = content.appendChild(self.createElement("div", "", "be-dialog-media-results"));
+        content_results.style.overflowY = "auto";
+        content_results.style.height = "500px";
+        content_results.style.maxHeight = "90vh";
+
+        function start_search() {
+            self.request("GET", search_endpoint, "&q="+content_search_input.value)
+            .then(function(response) {
+                var json = JSON.parse(response.responseText);
+                var media_array = json.media;
+                console.log("response json", json)
+                content_results.innerHTML = '';
+
+                for (let i = 0; i < media_array.length; i++) {
+                    const element = media_array[i];
+                    var row =  content_results.appendChild(self.createElement("div", "", "row"));
+                    row.style.display = "inline-block";
+                    row.style.verticalAlign = "top";
+                    row.style.width = (content_results.clientWidth/2 -18)+"px";
+                    row.style.maxWidth = "100%";
+                    row.style.border = "1px solid #ccc";
+                    row.style.borderRadius = "6px";
+                    row.style.margin = "4px";
+                    row.style.textAlign = "center";
+                    row.style.overflow = "hidden";
+
+                    var image_container = <HTMLImageElement> row.appendChild(self.createElement("div", "", "col"));
+                    image_container.style.width = "100%";
+                    image_container.style.height = "200px";
+                    var image = <HTMLImageElement> image_container.appendChild(self.createElement("img", "", ""));
+                    image.src = element.url;
+                    image.style.maxWidth = "100%";
+                    image.style.maxHeight = "100%";
+
+                    var title = row.appendChild(self.createElement("div", "", "col"));
+                    title.innerText = element.name;
+                    title.style.marginBottom = "8px";
+                    
+                    var button = <HTMLButtonElement> row.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-green"));
+                    button.type = "button";
+                    button.innerText = "Auswählen";
+                    button.style.marginBottom = "8px";
+
+                    const bild_id = element.id;
+                    button.addEventListener("click", function() {
+                        self.request("POST", register_endpoint, "&id="+bild_id)
+                        .then(function(response) {
+                            var json = JSON.parse(response.responseText);
+                            var bild_url = json.url;
+                            baustein.content = bild_url;
+                            if (self.selected_baustein !== null) {
+                                var img = self.selected_baustein.querySelector("img");
+                                if (img !== null) {
+                                    img.src = bild_url;
+                                }
+                            }
+                            if(self.dialog_close_function !== null) self.dialog_close_function();
+                        })
+                    });
+                }
+            })
+        }
+        content_search_input.addEventListener("change", start_search);
+        content_search_submit.addEventListener("click", start_search);
+        
+        self.dialog("Bild laden", content, null, null, null);
+        start_search();
+    }
+
 
     import(data: any) {
-        // set baustein_id_counter from data
         for (var i = 0; i < data.bausteine.length; i++) {
-            if (data.bausteine[i].id > this.baustein_id_counter) {
+            // set baustein_id_counter from data
+            if (data.bausteine[i].id >= this.baustein_id_counter) {
                 this.baustein_id_counter = data.bausteine[i].id +1;
             }
+            
+            // set icon
+            var baustein_type = this.getBausteinType(data.bausteine[i].type);
+            data.bausteine[i].icon = baustein_type.icon;
         }
 
         this.data = data;
@@ -1505,7 +1711,9 @@ class BausteinEditor {
             );
         }
 
-        
+        for (let i = 0; i < this.data.bausteine.length; i++) {
+            delete this.data.bausteine[i].icon;
+        }
         return {
             data: this.data,
             html: export_html_dom.outerHTML
@@ -1514,44 +1722,123 @@ class BausteinEditor {
 }
 
 
-class ClickHoldDrag {
+class LuxClickHoldDrag {
     target: HTMLElement;
-    isHeld: boolean;
-    timeoutId: number;
+    isHeld: boolean = false;
+    timeoutId: number = 0;
 
-    constructor(target: HTMLElement) {
+    drag_element: HTMLElement|null = null;
+    offset_x: number = 0;
+    offset_y: number = 0;
+
+    callback_mousedown: Function|null = null;
+    callback_mousemove: Function|null = null;
+    callback_mouseup: Function|null = null;
+
+
+    constructor(target: HTMLElement, options: {
+        mousedown: Function|null,
+        mousemove: Function|null,
+        mouseup: Function|null,
+    }) {
         this.target = target;
-        this.isHeld = false;
-        this.timeoutId = 0;
+        this.callback_mousedown = options.mousedown || null;
+        this.callback_mousemove = options.mousemove || null;
+        this.callback_mouseup = options.mouseup || null;
 
         ["mousedown", "mousestart"].forEach(type => {
-             this.target.addEventListener(type, this.onHoldStart.bind(this));
-        });
-
-        ["mouseup", "mouseleave", "mouseout", "touchend", "touchcancel"].forEach(type => {
-             this.target.addEventListener(type, this.onHoldEnd.bind(this));
+             this.target.addEventListener(type, this.mousedown);
         });
     }
 
-    onHoldStart() {
-        this.isHeld = true;
 
-        this.timeoutId = setTimeout(() => {
-            if (this.isHeld) {
-                this.target.draggable = true
-                this.target.style.userSelect = "none";
-            }
-        }, 1);
-    }
+    mousedown = (e: any) => {
+        if (!this.isHeld) {
+            this.timeoutId = setTimeout(() => {
+                this.isHeld = true;
+                this.target.classList.add("disabled");
+                
+                this.drag_element = document.createElement(this.target.tagName);
+                this.drag_element.className = this.target.className;
+                this.drag_element.innerHTML = this.target.innerHTML;
+                this.drag_element.style.width = this.target.clientWidth+"px";
+                this.drag_element.style.height = this.target.offsetHeight+"px";
+                document.body.appendChild(this.drag_element)
+                
+                if(this.callback_mousedown !== null) this.callback_mousedown(e);
+                
 
-    onHoldEnd() {
-        this.isHeld = false;
+                document.body.classList.add("grabbing");
+                if(this.drag_element === null) {
+                    console.error("[LuxClickHoldDrag] drag_element is null. Well bad.");
+                } else {
+                    this.drag_element.classList.add("ondrag");
+                    this.drag_element.style.position = "fixed";
+                    this.drag_element.style.display = "none";
+                    setTimeout(() => {
+                        if(this.drag_element !== null) {
+                            this.drag_element.style.display = "block";
+                        }
+                    }, 100);
+                }
+    
+                // start mouse movement tracking
+                ["mousemove", "touchmove"].forEach(type => {
+                    document.body.addEventListener(type, this.mousemove);
+                });
+                this.offset_x = this.target.offsetWidth / 2;
+                this.offset_y = this.target.offsetHeight / 2;
+            }, 200);
+        }
+        
+        // always start mouseup so we can stop tracking / kill the events
+        ["mouseup", "touchend", "touchcancel"].forEach(type => {
+            document.body.addEventListener(type, this.mouseup);
+        });
+    };
+
+
+    mousemove = (e: any) => {
+        if (this.drag_element !== null) {
+            this.drag_element.style.left = (e.clientX - this.offset_x)+"px";
+            this.drag_element.style.top = (e.clientY - this.offset_y)+"px";
+            //TODO: drop preview
+            
+            if(this.callback_mousemove !== null) this.callback_mousemove(e);
+        }
+    };
+    
+    mouseup = (e: any) => {
         clearTimeout(this.timeoutId);
-        setTimeout(() => {
-            if (!this.isHeld) {
-                this.target.draggable = false
-                this.target.style.userSelect = "";
+        
+        if (this.isHeld) {
+            this.isHeld = false;
+            this.target.classList.remove("disabled");
+            if(this.drag_element !== null) this.drag_element.remove();
+            document.querySelectorAll(".ondrag").forEach((elem) => { elem.remove() });
+            document.body.classList.remove("grabbing");
+
+            // mouseup events on boards and items (drag reciever)
+            var elementTarget: HTMLElement | null = this.elementFromPoint(e.clientX, e.clientY);
+            if (elementTarget === null) {
+                console.error("[LuxClickHoldDrag] Oh well bad, elementTarget is null. Uff.");
+            } else {
+                if(this.callback_mouseup !== null) this.callback_mouseup(e, elementTarget);
             }
-        }, 500);
+        }
+
+        // kill mouse movement tracking
+        ["mousemove", "touchmove"].forEach(type => {
+            document.body.removeEventListener(type, this.mousemove);
+        });
+        ["mouseup", "touchend", "touchcancel"].forEach(type => {
+            document.body.removeEventListener(type, this.mouseup);
+        });
+    };
+
+
+    elementFromPoint(x: number, y: number): HTMLElement | null {
+        var elem: any = document.elementFromPoint(x, y);
+        return elem;
     }
 }

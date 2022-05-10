@@ -12,13 +12,15 @@
     <script src="out/tinyeditor.js"></script>
     <script src="out/baustein_editor.js"></script>
 </head>
-<body style="margin: 0;">
+<body>
     <div style="height: 100vh;">
-        <div id="baustein_editor1" class="be"></div>
+        <div id="baustein_editor" class="be"></div>
     </div>
 
     <script>
-        var baustein_editor1 = new BausteinEditor("baustein_editor1");
+        var baustein_editor = new BausteinEditor("baustein_editor");
+        baustein_editor.addBaustein(baustein_editor.types.text, new Position(null, 1));
+        baustein_editor.addBaustein(baustein_editor.types.h1, new Position(null, 2));
     </script>
 </body>
 </html>

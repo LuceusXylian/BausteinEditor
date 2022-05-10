@@ -1,5 +1,4 @@
 "use strict";
-var baustein_counter = 0;
 var bausteinRenderType = {
     layout: 0,
     table: 1,
@@ -53,6 +52,7 @@ var Baustein = (function () {
 }());
 var BausteinEditor = (function () {
     function BausteinEditor(dom_id) {
+        this.baustein_counter = 0;
         this.baustein_id_counter = 0;
         this.styleProperties = {
             font_size: { name: "font-size", title: "Schriftgröße", type: "select", suffix: "", options: [new Option("Normal", ""), new Option("Kleiner (~10px)", "smaller"), new Option("Klein (~11px)", "small"), new Option("Medium (~14px)", "medium"), new Option("Groß (~17px)", "large"), new Option("Größer (~20px)", "larger")], useAsClass: true },
@@ -84,9 +84,6 @@ var BausteinEditor = (function () {
         this.data = {
             page: {
                 style: [],
-                styleClasses: [
-                    { property: this.styleProperties.font_size, value: this.styleProperties.font_size.options[0].value },
-                ]
             },
             bausteine: []
         };
@@ -192,7 +189,11 @@ var BausteinEditor = (function () {
         ];
         this.dialog_close_function = null;
         this.assets = {
-            baustein_image_placeholder_url: "/img/baustein-image-placeholder.png"
+            baustein_image_placeholder: "/img/baustein-image-placeholder.png"
+        };
+        this.api_endpoints = {
+            image_search: "",
+            image_register: "",
         };
         this.dom_id = dom_id;
         this.selected_baustein = null;
@@ -209,13 +210,16 @@ var BausteinEditor = (function () {
         this.dom.preview_button_desktop = this.dom.preview.appendChild(this.createElement("button", this.dom_id + "_preview_button_desktop", "be_preview_button_desktop"));
         this.dom.preview_button_desktop.innerHTML = '<i class="fas fa-desktop"></i> Desktop';
         this.dom.preview_button_desktop.style.display = "none";
+        this.dom.preview_button_desktop.type = "button";
         this.dom.preview_button_mobile = this.dom.preview.appendChild(this.createElement("button", this.dom_id + "_preview_button_mobile", "be_preview_button_mobile"));
         this.dom.preview_button_mobile.innerHTML = '<i class="fas fa-mobile-alt"></i> Mobile';
         this.dom.preview_button_mobile.style.display = "none";
+        this.dom.preview_button_desktop.type = "button";
         this.dom.preview_button = this.dom.preview.appendChild(this.createElement("button", this.dom_id + "_preview_button", "be_preview_button"));
         this.dom.preview_button.innerHTML = '<i class="fas fa-eye"></i> Vorschau';
         this.dom.preview_content = this.dom.preview.appendChild(this.createElement("div", this.dom_id + "_preview_content", "be_preview_content"));
         this.dom.preview_content.style.display = "none";
+        this.dom.preview_button_desktop.type = "button";
         this.dom.sidebar_header = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_header", "be_sidebar_header"));
         this.dom.sidebar_content__site = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__site", "be_sidebar_content"));
         this.dom.sidebar_content__baustein = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__baustein", "be_sidebar_content"));
@@ -225,10 +229,6 @@ var BausteinEditor = (function () {
         this.dom.sidebar_header_col__site.innerHTML = "Artikel";
         this.dom.sidebar_header_col__baustein = this.dom.sidebar_header.appendChild(this.createElement("div", this.dom_id + "_sidebar_header_col__baustein", "be_sidebar_header_col disabled"));
         this.dom.sidebar_header_col__baustein.innerHTML = "Baustein";
-        for (var i = 0; i < this.data.page.styleClasses.length; i++) {
-            var element = this.data.page.styleClasses[i];
-            this.dom.sidebar_content__site.appendChild(this.formcontrol("page-sc", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options));
-        }
         for (var i = 0; i < this.data.page.style.length; i++) {
             var element = this.data.page.style[i];
             this.dom.sidebar_content__site.appendChild(this.formcontrol("page", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options));
@@ -317,14 +317,16 @@ var BausteinEditor = (function () {
     };
     BausteinEditor.prototype.addBausteinSelector = function (position, hide, showLayoutItems) {
         var self = this;
-        var selector_dom_id = this.dom_id + "_" + position;
-        var const_parent = position.parent;
-        var const_sort = position.sort;
+        var selector_dom_id = this.dom_id + "_" + position.parent + "_" + position.sort;
+        var position_parent = position.parent;
+        var position_sort = position.sort;
         var clz = "be_bausteinSelector_container";
         if (hide) {
             clz += " hidden";
         }
         var be_bausteinSelector_container = this.createElement("div", "", clz);
+        be_bausteinSelector_container.dataset.position_parent = position_parent + "";
+        be_bausteinSelector_container.dataset.position_sort = position_sort + "";
         var be_bausteinSelector = be_bausteinSelector_container.appendChild(this.createElement("div", selector_dom_id + '_bausteinSelector', "be_bausteinSelector"));
         be_bausteinSelector.appendChild(this.createElement("i", "", "fas fa-plus-circle"));
         var be_bausteinSelector_layer = be_bausteinSelector_container.appendChild(this.createElement("div", selector_dom_id + '_bausteinSelector_layer', "be_bausteinSelector_layer"));
@@ -350,11 +352,13 @@ var BausteinEditor = (function () {
             title1 = be_bausteinSelector_layer_item.appendChild(this_1.createElement("div", "", "be_bausteinSelector_layer_item_title1"));
             title2 = be_bausteinSelector_layer_item.appendChild(this_1.createElement("div", "", "be_bausteinSelector_layer_item_title2"));
             if (itemset.type === 0) {
-                title1.innerHTML = itemset.items[0].icon;
+                if (itemset.items[0].icon !== undefined)
+                    title1.innerHTML = itemset.items[0].icon;
                 title2.innerHTML = itemset.items[0].title;
             }
             else {
-                title1.innerHTML = itemset.icon;
+                if (itemset.icon !== undefined)
+                    title1.innerHTML = itemset.icon;
                 title2.innerHTML = itemset.title;
             }
             var category = i;
@@ -404,7 +408,7 @@ var BausteinEditor = (function () {
             }
             else {
                 var old_baustein_id = parseInt(e.dataTransfer.getData("baustein_id"));
-                var new_position = { parent: const_parent, sort: const_sort };
+                var new_position = { parent: position_parent, sort: position_sort };
                 console.log("drop on addBausteinSelector: old_baustein_id", old_baustein_id);
                 console.log("drop on addBausteinSelector: new position", new_position);
                 self.moveBaustein(old_baustein_id, new_position);
@@ -541,13 +545,14 @@ var BausteinEditor = (function () {
     BausteinEditor.prototype.renderBaustein = function (baustein, position) {
         var self = this;
         var baustein_id = baustein.id;
-        var const_parent = position.parent;
-        var const_sort = position.sort;
+        var position_parent = position.parent;
+        var position_sort = position.sort;
         var baustein_dom_id = this.dom_id + '_be_baustein_item' + baustein_id;
         var baustein_editor_id = baustein_dom_id + '_editor';
         var baustein_dom = this.createElement("div", baustein_dom_id, "be_baustein");
         baustein_dom.dataset.type = baustein.type;
-        baustein_dom.draggable = false;
+        baustein_dom.dataset.position_parent = position_parent + "";
+        baustein_dom.dataset.position_sort = position_sort + "";
         var dragstart_elements = [baustein_dom];
         if (this.selected_baustein_id !== null && this.selected_baustein_id === baustein_id) {
             baustein_dom.classList.add("selected");
@@ -564,10 +569,10 @@ var BausteinEditor = (function () {
             self.selectBaustein(baustein_id);
         }, false);
         dragstart_elements[dragstart_elements.length] = baustein_indicator;
-        if (const_parent === null) {
+        if (position_parent === null) {
             var baustein_indicator_position = baustein_indicator.appendChild(this.createElement("span", "", "baustein_indicator_position"));
-            baustein_indicator_position.innerHTML = baustein_counter.toString();
-            baustein_counter++;
+            baustein_indicator_position.innerHTML = self.baustein_counter.toString();
+            self.baustein_counter++;
         }
         var changeBausteinOptions = this.getChangeBausteinOptions(baustein.renderType, baustein.type);
         if (changeBausteinOptions.length === 0) {
@@ -576,6 +581,7 @@ var BausteinEditor = (function () {
         }
         else {
             var baustein_indicator_changer = baustein_indicator.appendChild(this.createElement("select", "", "baustein_indicator_changer"));
+            baustein_indicator_changer.tabIndex = -1;
             baustein_indicator_changer.addEventListener("change", function () {
                 self.changeBaustein(baustein_id, this.value);
             });
@@ -604,7 +610,7 @@ var BausteinEditor = (function () {
                 var image = baustein_dom.appendChild(this.createElement("img", baustein_editor_id, "be_baustein_item"));
                 image.dataset.src = baustein.content;
                 if (baustein.content === "") {
-                    image.src = this.assets.baustein_image_placeholder_url;
+                    image.src = this.assets.baustein_image_placeholder;
                 }
                 else {
                     image.src = baustein.content;
@@ -664,21 +670,48 @@ var BausteinEditor = (function () {
                 return false;
             }
         }, false);
-        dragstart_elements.forEach(function (element) {
-            element.draggable = true;
-            element.addEventListener("dragstart", function (e) {
-                console.log(e);
-                if (e.dataTransfer === null) {
-                    console.error("baustein_item.addEventListener('dragstart'): e.dataTransfer is null");
+        new LuxClickHoldDrag(baustein_dom, {
+            mousedown: null,
+            mousemove: null,
+            mouseup: function (e, reciever_element) {
+                console.log("reciever_element", reciever_element);
+                for (var tries = 0; tries < 4; tries++) {
+                    if (typeof reciever_element.dataset.position_parent === "string") {
+                        break;
+                    }
+                    else {
+                        if (reciever_element.parentElement === null) {
+                            console.error("[BausteinEditor] reciever_element.parentElement is null");
+                            break;
+                        }
+                        else {
+                            reciever_element = reciever_element.parentElement;
+                        }
+                    }
                 }
-                else if (e.target.id === element.id) {
-                    console.log("dragstart baustein_id", baustein_id);
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData("baustein_id", baustein_id.toString());
+                if (typeof reciever_element.dataset.position_parent !== "string") {
+                    console.error("BausteinEditor: reciever_element.dataset.position_parent is not a string");
                 }
-            });
+                else if (typeof reciever_element.dataset.position_sort !== "string") {
+                    console.error("BausteinEditor: reciever_element.dataset.position_sort is not a string");
+                }
+                else {
+                    var old_baustein_id = baustein_id;
+                    var new_position = {
+                        parent: reciever_element.dataset.position_parent === "0" ? 0 : (parseInt(reciever_element.dataset.position_parent) || null),
+                        sort: reciever_element.dataset.position_sort === "0" ? 0 : (parseInt(reciever_element.dataset.position_sort) || null)
+                    };
+                    console.log("drop on addBausteinSelector: old_baustein_id", old_baustein_id);
+                    console.log("drop on addBausteinSelector: new position", new_position);
+                    if (new_position.sort === null) {
+                        console.error("[BausteinEditor] LuxClickHoldDrag.callback_mouseup: new_position.sort is null");
+                    }
+                    else {
+                        self.moveBaustein(old_baustein_id, new Position(new_position.parent, new_position.sort));
+                    }
+                }
+            }
         });
-        new ClickHoldDrag(baustein_dom);
         baustein_dom.addEventListener("dragend", function () {
             baustein_dom.draggable = false;
         });
@@ -686,7 +719,7 @@ var BausteinEditor = (function () {
     };
     BausteinEditor.prototype.render = function () {
         this.dom.content.innerHTML = "";
-        baustein_counter = 0;
+        this.baustein_counter = 0;
         var bausteine = this.getBausteineArray(null);
         for (var row = 0; row < bausteine.length; row++) {
             var baustein = bausteine[row];
@@ -909,7 +942,12 @@ var BausteinEditor = (function () {
             be_layout_view_inner.appendChild(this.createElement("span", "", "be_layout_wh_delimiter")).innerHTML = " &times; ";
             be_layout_view_inner.appendChild(this.layout_fc("max-height", this.getItemFromArray(current_baustein_1.style, "max-height", "auto"), null, null, null, null));
             if (current_baustein_1.renderType === bausteinRenderType.image) {
-                var baustein_image_row = this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein_image", "text", "image", 'Bildquelle (URL)', current_baustein_1.content, "", []));
+                var baustein_image_row = this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein_image", "text", "image", 'Bildquelle', current_baustein_1.content, "", []));
+                var start_image_selector = baustein_image_row.getElementsByClassName('form-control-container')[0].appendChild(self_1.createElement("button", "start_image_selector", "form-control"));
+                start_image_selector.type = "button";
+                start_image_selector.innerHTML = "[>]";
+                start_image_selector.style.width = "34px";
+                start_image_selector.style.marginLeft = "4px";
                 var baustein_image_form_control = baustein_image_row.getElementsByClassName('form-control')[0];
                 baustein_image_form_control.addEventListener("change", function () {
                     current_baustein_1.content = this.value;
@@ -917,6 +955,10 @@ var BausteinEditor = (function () {
                         var selected_baustein_item = self_1.selected_baustein.querySelector(".be_baustein_item");
                         selected_baustein_item.src = this.value;
                     }
+                });
+                baustein_image_form_control.style.width = 'calc(100% - ' + start_image_selector.style.width + ' - ' + start_image_selector.style.marginLeft + ')';
+                start_image_selector.addEventListener("click", function () {
+                    self_1.dialog_media(bausteinRenderType.image, baustein_id);
                 });
             }
             for (var i = 0; i < current_baustein_1.style.length; i++) {
@@ -988,13 +1030,43 @@ var BausteinEditor = (function () {
             this.dom.preview_content.innerHTML = this.export().html;
         }
     };
-    BausteinEditor.prototype.dialog = function (title, body_text, action_ok_text, action_fail_text, action_close_text, action_ok, action_fail, action_close) {
+    BausteinEditor.prototype.request = function (type, endpoint, params) {
+        return new Promise(function (resolve, reject) {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4) {
+                    if (this.status == 200) {
+                        resolve(this);
+                    }
+                    else {
+                        reject(this);
+                    }
+                }
+            };
+            if (type === "GET") {
+                xhttp.open("GET", endpoint + params, true);
+                xhttp.send();
+            }
+            else {
+                xhttp.open("POST", endpoint, true);
+                xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                xhttp.send(params);
+            }
+        });
+    };
+    BausteinEditor.prototype.dialog = function (title, body_content, action_ok_text, action_fail_text, action_close_text, action_ok, action_fail, action_close) {
         if (action_ok === void 0) { action_ok = null; }
         if (action_fail === void 0) { action_fail = null; }
         if (action_close === void 0) { action_close = null; }
         var self = this;
         self.dom.dialog_title.innerHTML = title;
-        self.dom.dialog_body.innerHTML = body_text;
+        if (typeof body_content === "string") {
+            self.dom.dialog_body.innerHTML = body_content;
+        }
+        else {
+            self.dom.dialog_body.innerHTML = '';
+            self.dom.dialog_body.appendChild(body_content);
+        }
         if (self.dialog_close_function !== null)
             self.dom.dialog_close.removeEventListener("click", self.dialog_close_function);
         if (action_close === null) {
@@ -1006,27 +1078,128 @@ var BausteinEditor = (function () {
         self.dom.dialog_close.addEventListener("click", self.dialog_close_function);
         self.dom.dialog_footer.innerHTML = '';
         if (action_ok_text !== null) {
-            var ok_button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-green"));
-            ok_button.innerHTML = action_ok_text;
-            ok_button.addEventListener("click", action_ok);
+            var button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-green"));
+            button.type = "button";
+            button.innerHTML = action_ok_text;
+            button.addEventListener("click", action_ok);
         }
         if (action_fail_text !== null) {
-            var ok_button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-red"));
-            ok_button.innerHTML = action_fail_text;
-            ok_button.addEventListener("click", action_fail);
+            var button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-red"));
+            button.type = "button";
+            button.innerHTML = action_fail_text;
+            button.addEventListener("click", action_fail);
         }
         if (action_close_text !== null) {
-            var ok_button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-gray"));
-            ok_button.innerHTML = action_close_text;
-            ok_button.addEventListener("click", self.dialog_close_function);
+            var button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-gray"));
+            button.type = "button";
+            button.innerHTML = action_close_text;
+            button.addEventListener("click", self.dialog_close_function);
         }
         self.dom.dialog.style.display = "";
     };
+    BausteinEditor.prototype.dialog_media = function (renderType, baustein_id) {
+        var self = this;
+        var baustein = this.getBaustein(baustein_id);
+        var search_endpoint, register_endpoint;
+        if (renderType === bausteinRenderType.image) {
+            search_endpoint = self.api_endpoints.image_search;
+            register_endpoint = self.api_endpoints.image_register;
+        }
+        else {
+            search_endpoint = "";
+            register_endpoint = "";
+        }
+        var content = self.createElement("div", "", "");
+        var content_search = content.appendChild(self.createElement("div", "", "be-dialog-media-search"));
+        content_search.style.marginBottom = "20px";
+        var content_search_input = content_search.appendChild(self.createElement("input", "", "be-dialog-media-search-input form-control"));
+        content_search_input.type = "text";
+        content_search_input.placeholder = "Suchbegriffe..";
+        content_search_input.style.display = "inline-block";
+        content_search_input.style.verticalAlign = "middle";
+        var content_search_submit = content_search.appendChild(self.createElement("button", "", "be-dialog-media-search-submit __dialog-btn"));
+        content_search_submit.type = "button";
+        content_search_submit.innerHTML = "Suchen";
+        content_search_submit.style.display = "inline-block";
+        content_search_submit.style.verticalAlign = "middle";
+        content_search_submit.style.width = "66px";
+        content_search_submit.style.padding = "6px";
+        content_search_submit.style.marginLeft = "8px";
+        content_search_submit.style.marginRight = "0";
+        content_search_input.style.width = "calc(100% - " + content_search_submit.style.width + " - " + content_search_submit.style.marginLeft + ")";
+        var content_results = content.appendChild(self.createElement("div", "", "be-dialog-media-results"));
+        content_results.style.overflowY = "auto";
+        content_results.style.height = "500px";
+        content_results.style.maxHeight = "90vh";
+        function start_search() {
+            self.request("GET", search_endpoint, "&q=" + content_search_input.value)
+                .then(function (response) {
+                var json = JSON.parse(response.responseText);
+                var media_array = json.media;
+                console.log("response json", json);
+                content_results.innerHTML = '';
+                var _loop_3 = function (i) {
+                    var element = media_array[i];
+                    row = content_results.appendChild(self.createElement("div", "", "row"));
+                    row.style.display = "inline-block";
+                    row.style.verticalAlign = "top";
+                    row.style.width = (content_results.clientWidth / 2 - 18) + "px";
+                    row.style.maxWidth = "100%";
+                    row.style.border = "1px solid #ccc";
+                    row.style.borderRadius = "6px";
+                    row.style.margin = "4px";
+                    row.style.textAlign = "center";
+                    row.style.overflow = "hidden";
+                    image_container = row.appendChild(self.createElement("div", "", "col"));
+                    image_container.style.width = "100%";
+                    image_container.style.height = "200px";
+                    image = image_container.appendChild(self.createElement("img", "", ""));
+                    image.src = element.url;
+                    image.style.maxWidth = "100%";
+                    image.style.maxHeight = "100%";
+                    title = row.appendChild(self.createElement("div", "", "col"));
+                    title.innerText = element.name;
+                    title.style.marginBottom = "8px";
+                    button = row.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-green"));
+                    button.type = "button";
+                    button.innerText = "Auswählen";
+                    button.style.marginBottom = "8px";
+                    var bild_id = element.id;
+                    button.addEventListener("click", function () {
+                        self.request("POST", register_endpoint, "&id=" + bild_id)
+                            .then(function (response) {
+                            var json = JSON.parse(response.responseText);
+                            var bild_url = json.url;
+                            baustein.content = bild_url;
+                            if (self.selected_baustein !== null) {
+                                var img = self.selected_baustein.querySelector("img");
+                                if (img !== null) {
+                                    img.src = bild_url;
+                                }
+                            }
+                            if (self.dialog_close_function !== null)
+                                self.dialog_close_function();
+                        });
+                    });
+                };
+                var row, image_container, image, title, button;
+                for (var i = 0; i < media_array.length; i++) {
+                    _loop_3(i);
+                }
+            });
+        }
+        content_search_input.addEventListener("change", start_search);
+        content_search_submit.addEventListener("click", start_search);
+        self.dialog("Bild laden", content, null, null, null);
+        start_search();
+    };
     BausteinEditor.prototype.import = function (data) {
         for (var i = 0; i < data.bausteine.length; i++) {
-            if (data.bausteine[i].id > this.baustein_id_counter) {
+            if (data.bausteine[i].id >= this.baustein_id_counter) {
                 this.baustein_id_counter = data.bausteine[i].id + 1;
             }
+            var baustein_type = this.getBausteinType(data.bausteine[i].type);
+            data.bausteine[i].icon = baustein_type.icon;
         }
         this.data = data;
         this.render();
@@ -1099,6 +1272,9 @@ var BausteinEditor = (function () {
             var baustein = bausteine[row];
             export_html_dom.appendChild(this.export_createBausteinElement(baustein, new Position(null, baustein.position.sort)));
         }
+        for (var i = 0; i < this.data.bausteine.length; i++) {
+            delete this.data.bausteine[i].icon;
+        }
         return {
             data: this.data,
             html: export_html_dom.outerHTML
@@ -1106,40 +1282,103 @@ var BausteinEditor = (function () {
     };
     return BausteinEditor;
 }());
-var ClickHoldDrag = (function () {
-    function ClickHoldDrag(target) {
+var LuxClickHoldDrag = (function () {
+    function LuxClickHoldDrag(target, options) {
         var _this = this;
-        this.target = target;
         this.isHeld = false;
         this.timeoutId = 0;
+        this.drag_element = null;
+        this.offset_x = 0;
+        this.offset_y = 0;
+        this.callback_mousedown = null;
+        this.callback_mousemove = null;
+        this.callback_mouseup = null;
+        this.mousedown = function (e) {
+            if (!_this.isHeld) {
+                _this.timeoutId = setTimeout(function () {
+                    _this.isHeld = true;
+                    _this.target.classList.add("disabled");
+                    _this.drag_element = document.createElement(_this.target.tagName);
+                    _this.drag_element.className = _this.target.className;
+                    _this.drag_element.innerHTML = _this.target.innerHTML;
+                    _this.drag_element.style.width = _this.target.clientWidth + "px";
+                    _this.drag_element.style.height = _this.target.offsetHeight + "px";
+                    document.body.appendChild(_this.drag_element);
+                    if (_this.callback_mousedown !== null)
+                        _this.callback_mousedown(e);
+                    document.body.classList.add("grabbing");
+                    if (_this.drag_element === null) {
+                        console.error("[LuxClickHoldDrag] drag_element is null. Well bad.");
+                    }
+                    else {
+                        _this.drag_element.classList.add("ondrag");
+                        _this.drag_element.style.position = "fixed";
+                        _this.drag_element.style.display = "none";
+                        setTimeout(function () {
+                            if (_this.drag_element !== null) {
+                                _this.drag_element.style.display = "block";
+                            }
+                        }, 100);
+                    }
+                    ["mousemove", "touchmove"].forEach(function (type) {
+                        document.body.addEventListener(type, _this.mousemove);
+                    });
+                    _this.offset_x = _this.target.offsetWidth / 2;
+                    _this.offset_y = _this.target.offsetHeight / 2;
+                }, 200);
+            }
+            ["mouseup", "touchend", "touchcancel"].forEach(function (type) {
+                document.body.addEventListener(type, _this.mouseup);
+            });
+        };
+        this.mousemove = function (e) {
+            if (_this.drag_element !== null) {
+                _this.drag_element.style.left = (e.clientX - _this.offset_x) + "px";
+                _this.drag_element.style.top = (e.clientY - _this.offset_y) + "px";
+                if (_this.callback_mousemove !== null)
+                    _this.callback_mousemove(e);
+            }
+        };
+        this.mouseup = function (e) {
+            clearTimeout(_this.timeoutId);
+            console.log("LuxClickHoldDrag mouseup 1 -- this.isHeld", _this.isHeld);
+            if (_this.isHeld) {
+                console.log("LuxClickHoldDrag mouseup 2");
+                _this.isHeld = false;
+                console.log("mouseup");
+                _this.target.classList.remove("disabled");
+                if (_this.drag_element !== null)
+                    _this.drag_element.remove();
+                document.querySelectorAll(".ondrag").forEach(function (elem) { elem.remove(); });
+                document.body.classList.remove("grabbing");
+                var elementTarget = _this.elementFromPoint(e.clientX, e.clientY);
+                if (elementTarget === null) {
+                    console.error("[LuxClickHoldDrag] Oh well bad, elementTarget is null. Uff.");
+                }
+                else {
+                    if (_this.callback_mouseup !== null)
+                        _this.callback_mouseup(e, elementTarget);
+                }
+            }
+            ["mousemove", "touchmove"].forEach(function (type) {
+                document.body.removeEventListener(type, _this.mousemove);
+            });
+            ["mouseup", "touchend", "touchcancel"].forEach(function (type) {
+                document.body.removeEventListener(type, _this.mouseup);
+            });
+        };
+        this.target = target;
+        this.callback_mousedown = options.mousedown || null;
+        this.callback_mousemove = options.mousemove || null;
+        this.callback_mouseup = options.mouseup || null;
         ["mousedown", "mousestart"].forEach(function (type) {
-            _this.target.addEventListener(type, _this.onHoldStart.bind(_this));
-        });
-        ["mouseup", "mouseleave", "mouseout", "touchend", "touchcancel"].forEach(function (type) {
-            _this.target.addEventListener(type, _this.onHoldEnd.bind(_this));
+            _this.target.addEventListener(type, _this.mousedown);
         });
     }
-    ClickHoldDrag.prototype.onHoldStart = function () {
-        var _this = this;
-        this.isHeld = true;
-        this.timeoutId = setTimeout(function () {
-            if (_this.isHeld) {
-                _this.target.draggable = true;
-                _this.target.style.userSelect = "none";
-            }
-        }, 1);
+    LuxClickHoldDrag.prototype.elementFromPoint = function (x, y) {
+        var elem = document.elementFromPoint(x, y);
+        return elem;
     };
-    ClickHoldDrag.prototype.onHoldEnd = function () {
-        var _this = this;
-        this.isHeld = false;
-        clearTimeout(this.timeoutId);
-        setTimeout(function () {
-            if (!_this.isHeld) {
-                _this.target.draggable = false;
-                _this.target.style.userSelect = "";
-            }
-        }, 500);
-    };
-    return ClickHoldDrag;
+    return LuxClickHoldDrag;
 }());
 //# sourceMappingURL=baustein_editor.js.map
