@@ -81,6 +81,8 @@ select.form-control:not([multiple]) {
 
 /* dialog */
 .__dialog {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 1rem;
     position: fixed;
     top: 0;
     right: 0;

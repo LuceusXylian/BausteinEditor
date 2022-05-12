@@ -1,4 +1,7 @@
+/// <reference path="dialog.ts"/>
 /// <reference path="tinyeditor.ts"/>
+var dialog = new Dialog();
+
 
 const bausteinRenderType = {
     layout: 0,
@@ -258,7 +261,6 @@ class BausteinEditor {
 	public selected_baustein: HTMLElement | null;
 	public selected_baustein_id: number | null;
 	public open_baustein_attributes__baustein_id: number | null;
-	public dialog_close_function: Function | null = null;
     public assets = {
         baustein_image_placeholder: "/img/baustein-image-placeholder.png"
     };
@@ -374,19 +376,6 @@ class BausteinEditor {
         this.apply_styles();
         
 
-        // Dialog
-        this.dom.dialog = this.dom.be.appendChild(this.createElement("div", this.dom_id+"_dialog", "__dialog"));
-        this.dom.dialog.style.display = "none";
-        this.dom.dialog_wrapper = this.dom.dialog.appendChild(this.createElement("div", this.dom_id+"_dialog_wrapper", "__dialog-wrapper"));
-        this.dom.dialog_content = this.dom.dialog_wrapper.appendChild(this.createElement("div", this.dom_id+"_dialog_content", "__dialog-content"));
-        this.dom.dialog_header = this.dom.dialog_content.appendChild(this.createElement("div", this.dom_id+"_dialog_header", "__dialog-header"));
-        this.dom.dialog_title = this.dom.dialog_header.appendChild(this.createElement("div", this.dom_id+"_dialog_title", "__dialog-title"));
-        this.dom.dialog_close = this.dom.dialog_header.appendChild(this.createElement("div", this.dom_id+"_dialog_close", "__dialog-close"));
-        this.dom.dialog_close.innerHTML = '&times;';
-        this.dom.dialog_body = this.dom.dialog_content.appendChild(this.createElement("div", this.dom_id+"_dialog_body", "__dialog-body"));
-        this.dom.dialog_footer = this.dom.dialog_content.appendChild(this.createElement("div", this.dom_id+"_dialog_footer", "__dialog-footer"));
-        
-        
         // Events
         const self = this;
 
@@ -868,30 +857,36 @@ class BausteinEditor {
                             bold
                             italic
                             underline
-                            forecolor
-                            justifyleft
-                            justifycenter
-                            justifyright
+                            textcolor
+                            textleft
+                            textcenter
+                            textright
                             insertorderedlist
                             insertunorderedlist
                             outdent
                             removeFormat
                         */
-                        editor.dataset.formatblock = "0";
-                        editor.dataset.fontname = "0";
-                        editor.dataset.justifyleft = "0";
-                        editor.dataset.justifycenter = "0";
-                        editor.dataset.justifyright = "0";
-                        editor.dataset.insertorderedlist = "1";
-                        editor.dataset.insertunorderedlist = "1";
-                        editor.dataset.indent = "0";
-                        editor.dataset.outdent = "0";
         
-                        TinyEditor.transformToEditor(editor);
+                        new TinyEditor(editor, {
+                            bold: true,
+                            italic: true,
+                            underline: true,
+                            textcolor: true,
+                            textleft: true,
+                            textcenter: true,
+                            textright: true,
+                            insertorderedlist: true,
+                            insertunorderedlist: true,
+                            indent: true,
+                            outdent: true,
+                            hyperlink: true,
+                            removeFormat: true,
+                        });
                         editor.addEventListener("input", function() {
                             editor.style.height = '1px';
                             editor.style.height = editor.scrollHeight + 'px';
                             baustein.content = editor.innerHTML;
+                            console.log("editor.innerHTML", editor.innerHTML)
                         });
                         
                         dragstart_elements[dragstart_elements.length] = <HTMLElement> baustein_dom.getElementsByClassName("__toolbar")[0];
@@ -1386,16 +1381,12 @@ class BausteinEditor {
             });
     
             baustein_delete_button.addEventListener("click", function() {
-                self.dialog("Baustein löschen", "Sind Sie sich sicher, dass Sie diesen Baustein löschen wollen?", null, "Löschen", "Abbrechen", null, function() {
+                dialog.start("Baustein löschen", "Sind Sie sich sicher, dass Sie diesen Baustein löschen wollen?", null, "Löschen", "Abbrechen", null, function() {
                     self.close_baustein_attributes();
                     console.log(self.data.bausteine);
                     self.deleteBaustein(baustein_id);
                     console.log(self.data.bausteine);
-                    if (self.dialog_close_function === null) {
-                        console.error("baustein_delete_button tried to close dialog, but self.dialog_close_function is null");
-                    } else {
-                        self.dialog_close_function();
-                    }
+                    dialog.close();
                 });
             });
     
@@ -1475,53 +1466,10 @@ class BausteinEditor {
         })
     }
 
-    dialog(title: string, body_content: string | HTMLElement, action_ok_text: string | null, action_fail_text: string | null, action_close_text: string | null, action_ok: Function | null = null, action_fail: Function | null = null, action_close: Function | null = null) {
-        const self = this;
-        self.dom.dialog_title.innerHTML = title;
-        if(typeof body_content === "string") {
-            self.dom.dialog_body.innerHTML = body_content;
-        } else {
-            self.dom.dialog_body.innerHTML = '';
-            self.dom.dialog_body.appendChild(body_content);
-        }
-        if(self.dialog_close_function !== null) self.dom.dialog_close.removeEventListener("click", self.dialog_close_function);
-        if (action_close === null) {
-            self.dialog_close_function = function() { self.dom.dialog.style.display = "none"; };
-        } else {
-            self.dialog_close_function = action_close;
-        }
-        self.dom.dialog_close.addEventListener("click", self.dialog_close_function);
-
-        self.dom.dialog_footer.innerHTML = '';
-        if (action_ok_text !== null) {
-            var button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-green"))
-            button.type = "button";
-            button.innerHTML = action_ok_text;
-            button.addEventListener("click", action_ok);
-        }
-
-        if (action_fail_text !== null) {
-            var button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-red"))
-            button.type = "button";
-            button.innerHTML = action_fail_text;
-            button.addEventListener("click", action_fail);
-        }
-
-        if (action_close_text !== null) {
-            var button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-gray"))
-            button.type = "button";
-            button.innerHTML = action_close_text;
-            button.addEventListener("click", self.dialog_close_function);
-        }
-        
-
-        self.dom.dialog.style.display = "";
-    }
 
     dialog_media(renderType: number, baustein_id: number) {
         const self = this;
         const baustein = this.getBaustein(baustein_id);
-        //TODO: Dialog for image selector
 
         var search_endpoint: string, register_endpoint: string;
         if (renderType === bausteinRenderType.image) {
@@ -1606,7 +1554,7 @@ class BausteinEditor {
                                     img.src = bild_url;
                                 }
                             }
-                            if(self.dialog_close_function !== null) self.dialog_close_function();
+                            dialog.close();
                         })
                     });
                 }
@@ -1615,7 +1563,7 @@ class BausteinEditor {
         content_search_input.addEventListener("change", start_search);
         content_search_submit.addEventListener("click", start_search);
         
-        self.dialog("Bild laden", content, null, null, null);
+        dialog.start("Bild laden", content, null, null, null);
         start_search();
     }
 

@@ -1,4 +1,5 @@
 "use strict";
+var dialog = new Dialog();
 var bausteinRenderType = {
     layout: 0,
     table: 1,
@@ -187,7 +188,6 @@ var BausteinEditor = (function () {
             { type: 0, title: this.types.table.title, icon: this.types.table.icon, items: [this.types.table] },
             { type: 1, title: "Sonstiges", icon: '<i class="fas fa-cubes"></i>', items: [this.types.html, this.types.script, this.types.shortcode] }
         ];
-        this.dialog_close_function = null;
         this.assets = {
             baustein_image_placeholder: "/img/baustein-image-placeholder.png"
         };
@@ -235,16 +235,6 @@ var BausteinEditor = (function () {
         }
         this.be_bausteinSelector_isOpen = false;
         this.apply_styles();
-        this.dom.dialog = this.dom.be.appendChild(this.createElement("div", this.dom_id + "_dialog", "__dialog"));
-        this.dom.dialog.style.display = "none";
-        this.dom.dialog_wrapper = this.dom.dialog.appendChild(this.createElement("div", this.dom_id + "_dialog_wrapper", "__dialog-wrapper"));
-        this.dom.dialog_content = this.dom.dialog_wrapper.appendChild(this.createElement("div", this.dom_id + "_dialog_content", "__dialog-content"));
-        this.dom.dialog_header = this.dom.dialog_content.appendChild(this.createElement("div", this.dom_id + "_dialog_header", "__dialog-header"));
-        this.dom.dialog_title = this.dom.dialog_header.appendChild(this.createElement("div", this.dom_id + "_dialog_title", "__dialog-title"));
-        this.dom.dialog_close = this.dom.dialog_header.appendChild(this.createElement("div", this.dom_id + "_dialog_close", "__dialog-close"));
-        this.dom.dialog_close.innerHTML = '&times;';
-        this.dom.dialog_body = this.dom.dialog_content.appendChild(this.createElement("div", this.dom_id + "_dialog_body", "__dialog-body"));
-        this.dom.dialog_footer = this.dom.dialog_content.appendChild(this.createElement("div", this.dom_id + "_dialog_footer", "__dialog-footer"));
         var self = this;
         this.dom.preview_button.addEventListener("click", function () {
             if (self.dom.preview_content.style.display === "none") {
@@ -628,20 +618,26 @@ var BausteinEditor = (function () {
                         editor = baustein_dom.appendChild(this.createElement("div", baustein_editor_id, "be_baustein_item"));
                         editor.innerHTML = baustein.content;
                         editor.style.minHeight = "100px";
-                        editor.dataset.formatblock = "0";
-                        editor.dataset.fontname = "0";
-                        editor.dataset.justifyleft = "0";
-                        editor.dataset.justifycenter = "0";
-                        editor.dataset.justifyright = "0";
-                        editor.dataset.insertorderedlist = "1";
-                        editor.dataset.insertunorderedlist = "1";
-                        editor.dataset.indent = "0";
-                        editor.dataset.outdent = "0";
-                        TinyEditor.transformToEditor(editor);
+                        new TinyEditor(editor, {
+                            bold: true,
+                            italic: true,
+                            underline: true,
+                            textcolor: true,
+                            textleft: true,
+                            textcenter: true,
+                            textright: true,
+                            insertorderedlist: true,
+                            insertunorderedlist: true,
+                            indent: true,
+                            outdent: true,
+                            hyperlink: true,
+                            removeFormat: true,
+                        });
                         editor.addEventListener("input", function () {
                             editor.style.height = '1px';
                             editor.style.height = editor.scrollHeight + 'px';
                             baustein.content = editor.innerHTML;
+                            console.log("editor.innerHTML", editor.innerHTML);
                         });
                         dragstart_elements[dragstart_elements.length] = baustein_dom.getElementsByClassName("__toolbar")[0];
                         break;
@@ -974,17 +970,12 @@ var BausteinEditor = (function () {
                 current_baustein_1.class = this.value;
             });
             baustein_delete_button.addEventListener("click", function () {
-                self_1.dialog("Baustein löschen", "Sind Sie sich sicher, dass Sie diesen Baustein löschen wollen?", null, "Löschen", "Abbrechen", null, function () {
+                dialog.start("Baustein löschen", "Sind Sie sich sicher, dass Sie diesen Baustein löschen wollen?", null, "Löschen", "Abbrechen", null, function () {
                     self_1.close_baustein_attributes();
                     console.log(self_1.data.bausteine);
                     self_1.deleteBaustein(baustein_id);
                     console.log(self_1.data.bausteine);
-                    if (self_1.dialog_close_function === null) {
-                        console.error("baustein_delete_button tried to close dialog, but self.dialog_close_function is null");
-                    }
-                    else {
-                        self_1.dialog_close_function();
-                    }
+                    dialog.close();
                 });
             });
             this.dom.sidebar_content__site.style.display = "none";
@@ -1053,49 +1044,6 @@ var BausteinEditor = (function () {
                 xhttp.send(params);
             }
         });
-    };
-    BausteinEditor.prototype.dialog = function (title, body_content, action_ok_text, action_fail_text, action_close_text, action_ok, action_fail, action_close) {
-        if (action_ok === void 0) { action_ok = null; }
-        if (action_fail === void 0) { action_fail = null; }
-        if (action_close === void 0) { action_close = null; }
-        var self = this;
-        self.dom.dialog_title.innerHTML = title;
-        if (typeof body_content === "string") {
-            self.dom.dialog_body.innerHTML = body_content;
-        }
-        else {
-            self.dom.dialog_body.innerHTML = '';
-            self.dom.dialog_body.appendChild(body_content);
-        }
-        if (self.dialog_close_function !== null)
-            self.dom.dialog_close.removeEventListener("click", self.dialog_close_function);
-        if (action_close === null) {
-            self.dialog_close_function = function () { self.dom.dialog.style.display = "none"; };
-        }
-        else {
-            self.dialog_close_function = action_close;
-        }
-        self.dom.dialog_close.addEventListener("click", self.dialog_close_function);
-        self.dom.dialog_footer.innerHTML = '';
-        if (action_ok_text !== null) {
-            var button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-green"));
-            button.type = "button";
-            button.innerHTML = action_ok_text;
-            button.addEventListener("click", action_ok);
-        }
-        if (action_fail_text !== null) {
-            var button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-red"));
-            button.type = "button";
-            button.innerHTML = action_fail_text;
-            button.addEventListener("click", action_fail);
-        }
-        if (action_close_text !== null) {
-            var button = self.dom.dialog_footer.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-gray"));
-            button.type = "button";
-            button.innerHTML = action_close_text;
-            button.addEventListener("click", self.dialog_close_function);
-        }
-        self.dom.dialog.style.display = "";
     };
     BausteinEditor.prototype.dialog_media = function (renderType, baustein_id) {
         var self = this;
@@ -1177,8 +1125,7 @@ var BausteinEditor = (function () {
                                     img.src = bild_url;
                                 }
                             }
-                            if (self.dialog_close_function !== null)
-                                self.dialog_close_function();
+                            dialog.close();
                         });
                     });
                 };
@@ -1190,7 +1137,7 @@ var BausteinEditor = (function () {
         }
         content_search_input.addEventListener("change", start_search);
         content_search_submit.addEventListener("click", start_search);
-        self.dialog("Bild laden", content, null, null, null);
+        dialog.start("Bild laden", content, null, null, null);
         start_search();
     };
     BausteinEditor.prototype.import = function (data) {
@@ -1341,11 +1288,8 @@ var LuxClickHoldDrag = (function () {
         };
         this.mouseup = function (e) {
             clearTimeout(_this.timeoutId);
-            console.log("LuxClickHoldDrag mouseup 1 -- this.isHeld", _this.isHeld);
             if (_this.isHeld) {
-                console.log("LuxClickHoldDrag mouseup 2");
                 _this.isHeld = false;
-                console.log("mouseup");
                 _this.target.classList.remove("disabled");
                 if (_this.drag_element !== null)
                     _this.drag_element.remove();
