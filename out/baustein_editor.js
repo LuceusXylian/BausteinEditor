@@ -512,7 +512,6 @@ var BausteinEditor = (function () {
     BausteinEditor.prototype.changeBaustein = function (baustein_id, type) {
         var baustein = this.getBaustein(baustein_id);
         var new_baustein = this.getBausteinType(type);
-        baustein.icon = new_baustein.icon;
         baustein.renderType = new_baustein.renderType;
         baustein.tag = new_baustein.tag;
         baustein.title = new_baustein.title;
@@ -539,11 +538,11 @@ var BausteinEditor = (function () {
         var position_sort = position.sort;
         var baustein_dom_id = this.dom_id + '_be_baustein_item' + baustein_id;
         var baustein_editor_id = baustein_dom_id + '_editor';
+        var baustein_type_object = this.getBausteinType(baustein.type);
         var baustein_dom = this.createElement("div", baustein_dom_id, "be_baustein");
         baustein_dom.dataset.type = baustein.type;
         baustein_dom.dataset.position_parent = position_parent + "";
         baustein_dom.dataset.position_sort = position_sort + "";
-        var dragstart_elements = [baustein_dom];
         if (this.selected_baustein_id !== null && this.selected_baustein_id === baustein_id) {
             baustein_dom.classList.add("selected");
         }
@@ -558,7 +557,6 @@ var BausteinEditor = (function () {
         baustein_indicator.addEventListener("click", function () {
             self.selectBaustein(baustein_id);
         }, false);
-        dragstart_elements[dragstart_elements.length] = baustein_indicator;
         if (position_parent === null) {
             var baustein_indicator_position = baustein_indicator.appendChild(this.createElement("span", "", "baustein_indicator_position"));
             baustein_indicator_position.innerHTML = self.baustein_counter.toString();
@@ -567,7 +565,7 @@ var BausteinEditor = (function () {
         var changeBausteinOptions = this.getChangeBausteinOptions(baustein.renderType, baustein.type);
         if (changeBausteinOptions.length === 0) {
             var baustein_indicator_title = baustein_indicator.appendChild(this.createElement("span", "", "baustein_indicator_title"));
-            baustein_indicator_title.innerHTML = baustein.icon + " " + baustein.title;
+            baustein_indicator_title.innerHTML = baustein_type_object.icon + " " + baustein.title;
         }
         else {
             var baustein_indicator_changer = baustein_indicator.appendChild(this.createElement("select", "", "baustein_indicator_changer"));
@@ -577,7 +575,7 @@ var BausteinEditor = (function () {
             });
             var baustein_indicator_option = baustein_indicator_changer.appendChild(this.createElement("option", "", ""));
             baustein_indicator_option.value = baustein.type;
-            baustein_indicator_option.innerHTML = baustein.icon + " " + baustein.title;
+            baustein_indicator_option.innerHTML = baustein_type_object.icon + " " + baustein.title;
             baustein_indicator_option.selected = true;
             baustein_indicator_option.style.display = "none";
             for (var i = 0; i < changeBausteinOptions.length; i++) {
@@ -609,7 +607,6 @@ var BausteinEditor = (function () {
                 image.addEventListener("click", function () {
                     self.selectBaustein(baustein_id);
                 });
-                dragstart_elements[dragstart_elements.length] = image;
                 break;
             default:
                 var editor;
@@ -632,14 +629,15 @@ var BausteinEditor = (function () {
                             outdent: true,
                             hyperlink: true,
                             removeFormat: true,
+                            onchange: function () {
+                                baustein.content = editor.innerHTML;
+                                self.preview_render();
+                            }
                         });
                         editor.addEventListener("input", function () {
                             editor.style.height = '1px';
                             editor.style.height = editor.scrollHeight + 'px';
-                            baustein.content = editor.innerHTML;
-                            console.log("editor.innerHTML", editor.innerHTML);
                         });
-                        dragstart_elements[dragstart_elements.length] = baustein_dom.getElementsByClassName("__toolbar")[0];
                         break;
                     default:
                         editor = baustein_dom.appendChild(this.createElement("textarea", baustein_editor_id, "be_baustein_item"));

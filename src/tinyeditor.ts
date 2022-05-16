@@ -5,7 +5,6 @@ var dialog = new Dialog();
 class TinyEditor {
     TOOLBAR_ITEM: string = '__toolbar-item';
     editor: HTMLElement;
-    //TODO: callback_onchange
     callback_onchange: Function|null = null;
 
     createElement(_type: string, _id: string, _class: string): HTMLElement {
@@ -19,6 +18,8 @@ class TinyEditor {
         this.editor = editor;
         editor.classList.add("__editor");
         editor.setAttribute('contentEditable', "true");
+        
+        if(typeof options.onchange === "function") this.callback_onchange = options.onchange;
     
         // Create a toolbar
         const toolbar = this.createToolbar(options);
@@ -84,6 +85,7 @@ class TinyEditor {
             
             let text = (e.originalEvent || e).clipboardData.getData('text/plain');
             document.execCommand('insertHTML', false, text);
+            if(this.callback_onchange !== null) this.callback_onchange();
         });
 
 
@@ -96,6 +98,7 @@ class TinyEditor {
                 
                 document.execCommand('formatBlock', false, 'p');
             }
+            if(this.callback_onchange !== null) this.callback_onchange();
         });
     }
 
@@ -113,6 +116,7 @@ class TinyEditor {
                 break;
         }
         this.editor.focus();
+        if(this.callback_onchange !== null) this.callback_onchange();
     }
 
     execCommandLink() {  
@@ -124,7 +128,7 @@ class TinyEditor {
         // TODO: check for current
         var selection_ranges = this.saveSelection();
         if (selection_ranges === null) {
-            console.log("[TinyEditor] user tired to create a link without selecting text");
+            console.log("[TinyEditor] User tried to create a link without selecting text");
         } else {
             var dialog_content = document.createElement("div");
             var row1 = dialog_content.appendChild(document.createElement("div")); row1.className = "row";

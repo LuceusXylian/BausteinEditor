@@ -2,10 +2,14 @@
 var dialog = new Dialog();
 var TinyEditor = (function () {
     function TinyEditor(editor, options) {
+        var _this = this;
         this.TOOLBAR_ITEM = '__toolbar-item';
+        this.callback_onchange = null;
         this.editor = editor;
         editor.classList.add("__editor");
         editor.setAttribute('contentEditable', "true");
+        if (typeof options.onchange === "function")
+            this.callback_onchange = options.onchange;
         var toolbar = this.createToolbar(options);
         editor.insertAdjacentElement("beforebegin", toolbar);
         var self = this;
@@ -49,6 +53,8 @@ var TinyEditor = (function () {
             e.preventDefault();
             var text = (e.originalEvent || e).clipboardData.getData('text/plain');
             document.execCommand('insertHTML', false, text);
+            if (_this.callback_onchange !== null)
+                _this.callback_onchange();
         });
         editor.addEventListener('keypress', function (e) {
             if ((e.keyCode || e.which) === 13) {
@@ -57,6 +63,8 @@ var TinyEditor = (function () {
                     return;
                 document.execCommand('formatBlock', false, 'p');
             }
+            if (_this.callback_onchange !== null)
+                _this.callback_onchange();
         });
     }
     TinyEditor.prototype.createElement = function (_type, _id, _class) {
@@ -78,13 +86,15 @@ var TinyEditor = (function () {
                 break;
         }
         this.editor.focus();
+        if (this.callback_onchange !== null)
+            this.callback_onchange();
     };
     TinyEditor.prototype.execCommandLink = function () {
         var _this = this;
         "<label for=\"linkValue\">Link</label>\n        <input type=\"text\" id=\"linkValue\" placeholder=\"http://example.com\">\n        <label for=\"new-tab\">Open in new tab</label>\n        <input type=\"checkbox\" id=\"new-tab\">";
         var selection_ranges = this.saveSelection();
         if (selection_ranges === null) {
-            console.log("[TinyEditor] user tired to create a link without selecting text");
+            console.log("[TinyEditor] User tried to create a link without selecting text");
         }
         else {
             var dialog_content = document.createElement("div");
