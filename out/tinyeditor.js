@@ -63,9 +63,13 @@ var TinyEditor = (function () {
                     return;
                 document.execCommand('formatBlock', false, 'p');
             }
-            if (_this.callback_onchange !== null)
-                _this.callback_onchange();
         });
+        if (this.callback_onchange !== null) {
+            editor.addEventListener('keyup', function () {
+                if (_this.callback_onchange !== null)
+                    _this.callback_onchange();
+            });
+        }
     }
     TinyEditor.prototype.createElement = function (_type, _id, _class) {
         var element = document.createElement(_type);

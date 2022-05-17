@@ -550,24 +550,6 @@ class BausteinEditor {
 
         be_bausteinSelector.addEventListener("click", function() { self.bausteinSelector_toggle(be_bausteinSelector, be_bausteinSelector_layer, be_bausteinSelector_layer_item_container1, be_bausteinSelector_layer_item_container2); });
         be_bausteinSelector_layer_close.addEventListener("click", function() { self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer); });
-
-        be_bausteinSelector.addEventListener("dragover", function(e: any) {
-            e.preventDefault();
-        });
-
-        // target
-        be_bausteinSelector.addEventListener("drop", function(e: any) {
-            e.preventDefault();
-            if (e.dataTransfer === null) {
-                console.error("be_bausteinSelector.addEventListener('drop'): e.dataTransfer is null");
-            } else {
-                var old_baustein_id = parseInt(e.dataTransfer.getData("baustein_id"));
-                var new_position = { parent: position_parent, sort: position_sort };
-                console.log("drop on addBausteinSelector: old_baustein_id", old_baustein_id);
-                console.log("drop on addBausteinSelector: new position", new_position);
-                self.moveBaustein(old_baustein_id, new_position);
-            }
-        });
             
         return be_bausteinSelector_container;
     }
@@ -686,17 +668,26 @@ class BausteinEditor {
 
     moveBaustein(baustein_id: number, position_new: Position) {
         const baustein = this.getBaustein(baustein_id);
-        baustein.position.parent = position_new.parent;
-        baustein.position.sort = position_new.sort;
-
-        // any baustein with equel or greater then position.sort += 1
-        for (var r = 0; r < this.data.bausteine.length; r++) {
-            if (this.data.bausteine[r].id !== baustein_id && this.data.bausteine[r].position.sort >= baustein.position.sort) {
-                this.data.bausteine[r].position.sort++;
+        console.log("moveBaustein old position.sort", baustein.position.sort);
+        console.log("moveBaustein new position.sort", position_new.sort);
+        if (baustein.position.parent !== position_new.parent || baustein.position.sort !== position_new.sort) {
+            if (position_new.sort - baustein.position.sort === 1) {
+                position_new.sort += 1;
             }
-        }
 
-        this.render();
+            baustein.position.parent = position_new.parent;
+            baustein.position.sort = position_new.sort;
+    
+    
+            // any baustein with equel or greater then position.sort++
+            for (var r = 0; r < this.data.bausteine.length; r++) {
+                if (this.data.bausteine[r].id !== baustein_id && this.data.bausteine[r].position.sort >= baustein.position.sort) {
+                    this.data.bausteine[r].position.sort++;
+                }
+            }
+    
+            this.render();
+        }
     }
 
     changeBaustein(baustein_id: number, type: string) {
@@ -734,6 +725,7 @@ class BausteinEditor {
         const baustein_dom_id = this.dom_id+'_be_baustein_item'+baustein_id;
         const baustein_editor_id = baustein_dom_id+'_editor';
         const baustein_type_object = this.getBausteinType(baustein.type);
+        var elements_drag_not_allowed: Element[] = [];
         
         var baustein_dom = this.createElement("div", baustein_dom_id, "be_baustein");
         baustein_dom.dataset.type = baustein.type;
@@ -836,6 +828,13 @@ class BausteinEditor {
                 image.addEventListener("click", function() {
                     self.selectBaustein(baustein_id);
                 });
+
+                // remove ghost image
+                image.addEventListener("dragstart", function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
                 break;
 
             default:
@@ -909,6 +908,8 @@ class BausteinEditor {
                 editor.addEventListener("focusin", function() {
                     self.selectBaustein(baustein_id);
                 });
+
+                elements_drag_not_allowed.push(editor);
                 break;
         }
 
@@ -923,7 +924,11 @@ class BausteinEditor {
 
         // handle draggable condition
         new LuxClickHoldDrag(baustein_dom, {
-            mousedown: null,
+            mousedown: () => {
+                // prevent draggable from starting if the click is on the editor
+                var document_activeElement = document.activeElement;
+                return document_activeElement === null || elements_drag_not_allowed.includes(document_activeElement) === false;
+            },
             mousemove: null,
             mouseup: (e: any, reciever_element: HTMLElement) => {
                 console.log("reciever_element", reciever_element);
@@ -1685,6 +1690,11 @@ class LuxClickHoldDrag {
     mousedown = (e: any) => {
         if (!this.isHeld) {
             this.timeoutId = setTimeout(() => {
+                console.log("document.activeElement ", document.activeElement)
+                if(this.callback_mousedown !== null) {
+                    if(this.callback_mousedown(e) === false) return false;
+                }
+
                 this.isHeld = true;
                 this.target.classList.add("disabled");
                 
@@ -1695,7 +1705,6 @@ class LuxClickHoldDrag {
                 this.drag_element.style.height = this.target.offsetHeight+"px";
                 document.body.appendChild(this.drag_element)
                 
-                if(this.callback_mousedown !== null) this.callback_mousedown(e);
                 
 
                 document.body.classList.add("grabbing");

@@ -388,22 +388,6 @@ var BausteinEditor = (function () {
         }
         be_bausteinSelector.addEventListener("click", function () { self.bausteinSelector_toggle(be_bausteinSelector, be_bausteinSelector_layer, be_bausteinSelector_layer_item_container1, be_bausteinSelector_layer_item_container2); });
         be_bausteinSelector_layer_close.addEventListener("click", function () { self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer); });
-        be_bausteinSelector.addEventListener("dragover", function (e) {
-            e.preventDefault();
-        });
-        be_bausteinSelector.addEventListener("drop", function (e) {
-            e.preventDefault();
-            if (e.dataTransfer === null) {
-                console.error("be_bausteinSelector.addEventListener('drop'): e.dataTransfer is null");
-            }
-            else {
-                var old_baustein_id = parseInt(e.dataTransfer.getData("baustein_id"));
-                var new_position = { parent: position_parent, sort: position_sort };
-                console.log("drop on addBausteinSelector: old_baustein_id", old_baustein_id);
-                console.log("drop on addBausteinSelector: new position", new_position);
-                self.moveBaustein(old_baustein_id, new_position);
-            }
-        });
         return be_bausteinSelector_container;
     };
     BausteinEditor.prototype.addBaustein = function (baustein_type, position) {
@@ -500,14 +484,21 @@ var BausteinEditor = (function () {
     };
     BausteinEditor.prototype.moveBaustein = function (baustein_id, position_new) {
         var baustein = this.getBaustein(baustein_id);
-        baustein.position.parent = position_new.parent;
-        baustein.position.sort = position_new.sort;
-        for (var r = 0; r < this.data.bausteine.length; r++) {
-            if (this.data.bausteine[r].id !== baustein_id && this.data.bausteine[r].position.sort >= baustein.position.sort) {
-                this.data.bausteine[r].position.sort++;
+        console.log("moveBaustein old position.sort", baustein.position.sort);
+        console.log("moveBaustein new position.sort", position_new.sort);
+        if (baustein.position.parent !== position_new.parent || baustein.position.sort !== position_new.sort) {
+            if (position_new.sort - baustein.position.sort === 1) {
+                position_new.sort += 1;
             }
+            baustein.position.parent = position_new.parent;
+            baustein.position.sort = position_new.sort;
+            for (var r = 0; r < this.data.bausteine.length; r++) {
+                if (this.data.bausteine[r].id !== baustein_id && this.data.bausteine[r].position.sort >= baustein.position.sort) {
+                    this.data.bausteine[r].position.sort++;
+                }
+            }
+            this.render();
         }
-        this.render();
     };
     BausteinEditor.prototype.changeBaustein = function (baustein_id, type) {
         var baustein = this.getBaustein(baustein_id);
@@ -539,6 +530,7 @@ var BausteinEditor = (function () {
         var baustein_dom_id = this.dom_id + '_be_baustein_item' + baustein_id;
         var baustein_editor_id = baustein_dom_id + '_editor';
         var baustein_type_object = this.getBausteinType(baustein.type);
+        var elements_drag_not_allowed = [];
         var baustein_dom = this.createElement("div", baustein_dom_id, "be_baustein");
         baustein_dom.dataset.type = baustein.type;
         baustein_dom.dataset.position_parent = position_parent + "";
@@ -607,6 +599,11 @@ var BausteinEditor = (function () {
                 image.addEventListener("click", function () {
                     self.selectBaustein(baustein_id);
                 });
+                image.addEventListener("dragstart", function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
                 break;
             default:
                 var editor;
@@ -654,6 +651,7 @@ var BausteinEditor = (function () {
                 editor.addEventListener("focusin", function () {
                     self.selectBaustein(baustein_id);
                 });
+                elements_drag_not_allowed.push(editor);
                 break;
         }
         baustein_dom.addEventListener("click", function (e) {
@@ -665,7 +663,10 @@ var BausteinEditor = (function () {
             }
         }, false);
         new LuxClickHoldDrag(baustein_dom, {
-            mousedown: null,
+            mousedown: function () {
+                var document_activeElement = document.activeElement;
+                return document_activeElement === null || elements_drag_not_allowed.includes(document_activeElement) === false;
+            },
             mousemove: null,
             mouseup: function (e, reciever_element) {
                 console.log("reciever_element", reciever_element);
@@ -1241,6 +1242,11 @@ var LuxClickHoldDrag = (function () {
         this.mousedown = function (e) {
             if (!_this.isHeld) {
                 _this.timeoutId = setTimeout(function () {
+                    console.log("document.activeElement ", document.activeElement);
+                    if (_this.callback_mousedown !== null) {
+                        if (_this.callback_mousedown(e) === false)
+                            return false;
+                    }
                     _this.isHeld = true;
                     _this.target.classList.add("disabled");
                     _this.drag_element = document.createElement(_this.target.tagName);
@@ -1249,8 +1255,6 @@ var LuxClickHoldDrag = (function () {
                     _this.drag_element.style.width = _this.target.clientWidth + "px";
                     _this.drag_element.style.height = _this.target.offsetHeight + "px";
                     document.body.appendChild(_this.drag_element);
-                    if (_this.callback_mousedown !== null)
-                        _this.callback_mousedown(e);
                     document.body.classList.add("grabbing");
                     if (_this.drag_element === null) {
                         console.error("[LuxClickHoldDrag] drag_element is null. Well bad.");

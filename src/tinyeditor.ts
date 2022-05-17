@@ -98,8 +98,16 @@ class TinyEditor {
                 
                 document.execCommand('formatBlock', false, 'p');
             }
-            if(this.callback_onchange !== null) this.callback_onchange();
         });
+
+
+        // keyup for correct change event
+        if(this.callback_onchange !== null) {
+            editor.addEventListener('keyup', () => {
+                if(this.callback_onchange !== null) this.callback_onchange();
+            });
+        }
+
     }
 
     
