@@ -1,6 +1,7 @@
 "use strict";
 var Dialog = (function () {
     function Dialog() {
+        var _this = this;
         this.previous_action_close_function = null;
         var dialog = document.getElementById("__dialog");
         var dialog_wrapper = document.getElementById("__dialog_wrapper");
@@ -11,7 +12,7 @@ var Dialog = (function () {
         var dialog_body = document.getElementById("__dialog_body");
         var dialog_footer = document.getElementById("__dialog_footer");
         if (dialog === null)
-            dialog = document.body.appendChild(this.createElement("div", "__dialog", "__dialog"));
+            dialog = this.createElement("div", "__dialog", "__dialog");
         if (dialog_wrapper === null)
             dialog_wrapper = dialog.appendChild(this.createElement("div", "__dialog_wrapper", "__dialog-wrapper"));
         if (dialog_content === null)
@@ -37,7 +38,8 @@ var Dialog = (function () {
             dialog_footer: dialog_footer,
         };
         this.dom.dialog.style.display = "none";
-        this.dom.dialog_close.innerHTML = '&times;';
+        this.dom.dialog_close.innerHTML = "&times;";
+        document.addEventListener("DOMContentLoaded", function () { return document.body.appendChild(_this.dom.dialog); });
     }
     Dialog.prototype.start = function (title, body_content, action_ok_text, action_fail_text, action_close_text, action_ok, action_fail, action_close) {
         var _this = this;

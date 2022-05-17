@@ -340,6 +340,7 @@ class BausteinEditor {
         this.dom.sidebar_content__baustein = this.dom.sidebar.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_content__baustein", "be_sidebar_content")
         );
+        this.dom.sidebar_content__baustein.style.display = "none";
         this.dom.sidebar_content__baustein_styles = this.dom.sidebar_content__baustein.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_content__baustein_styles", "")
         );
@@ -948,9 +949,9 @@ class BausteinEditor {
                 }
 
                 if (typeof reciever_element.dataset.position_parent !== "string") {
-                    console.error("BausteinEditor: reciever_element.dataset.position_parent is not a string");
+                    console.error("[BausteinEditor]: reciever_element.dataset.position_parent is not a string");
                 } else if (typeof reciever_element.dataset.position_sort !== "string") {
-                    console.error("BausteinEditor: reciever_element.dataset.position_sort is not a string");
+                    console.error("[BausteinEditor]: reciever_element.dataset.position_sort is not a string");
                 } else {
                     var old_baustein_id = baustein_id;
                     var new_position = { 

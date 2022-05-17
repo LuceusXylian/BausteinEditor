@@ -197,7 +197,7 @@ select.form-control:not([multiple]) {
 /* Spezifisch */
 .be {
     display: flex;
-    height: inherit;
+    height: calc(100% - 3px);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     font-size: 1rem;
     border: 1px solid #ccc;
@@ -339,12 +339,11 @@ select.form-control:not([multiple]) {
     background: transparent;
     border: 0;
     width: auto;
-    padding: 0; padding-right: 4px;
+    padding: 0; padding-right: 16px;
     margin: 0;
     font-size: 13px;
 
-    background: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E") right .75rem center no-repeat #fff;
-    background-size: auto;
+    background: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E") right 6px center no-repeat #fff;
     background-size: 8px 10px;
     -webkit-appearance: none;
     -moz-appearance: none;

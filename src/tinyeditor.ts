@@ -61,22 +61,9 @@ class TinyEditor {
         toolbar.addEventListener('click', updateActiveState);
 
 
-        // add active tag event
         document.addEventListener('selectionchange', () => {
-            
-            /*
-            for(let i = 0; i < this.toolbarButtons.length; i++) {
-              let button = this.toolbarButtons[i];
-              
-              // don't remove active class on code toggle button
-              if(button.dataset.action === 'toggle-view') continue;
-              
-              button.classList.remove('active');
-            }
-            */
-            
             var selection: any = window.getSelection();
-            if(!editor.contains(selection.anchorNode.parentNode)) return false;
+            if(selection.anchorNode !== null && !editor.contains(selection.anchorNode.parentNode)) return false;
         });
 
         // add paste event
@@ -115,27 +102,23 @@ class TinyEditor {
     execCommand(commandId: any, value: any) {
         switch (commandId) {
             case "createLink":
-                console.log("execCommand() [createLink] value:", value);
-                this.execCommandLink();
+                this.execCommand_createLink();
+                break;
+            case "removeLink":
+                this.execCommand_removeLink();
                 break;
         
             default:
                 document.execCommand(commandId, false, value);
+                if(this.callback_onchange !== null) this.callback_onchange();
                 break;
         }
         this.editor.focus();
-        if(this.callback_onchange !== null) this.callback_onchange();
     }
 
-    execCommandLink() {  
-        `<label for="linkValue">Link</label>
-        <input type="text" id="linkValue" placeholder="http://example.com">
-        <label for="new-tab">Open in new tab</label>
-        <input type="checkbox" id="new-tab">`
-
-        // TODO: check for current
+    execCommand_createLink() {  
         var selection_ranges = this.saveSelection();
-        if (selection_ranges === null) {
+        if (selection_ranges.length === 0) {
             console.log("[TinyEditor] User tried to create a link without selecting text");
         } else {
             var dialog_content = document.createElement("div");
@@ -157,9 +140,16 @@ class TinyEditor {
             link_new_tab_input_label.style.userSelect = "none";
             link_new_tab_input_label.style.cursor = "pointer";
     
+            // if exists: get selected AnchorElement
+            var selected_element = <HTMLAnchorElement|null> this.getElementFromSelection(selection_ranges[0]);
+            if (selected_element !== null) {
+                link_input.value = selected_element.href;
+                link_new_tab_input.checked = selected_element.target === "_blank";
+            }
+
             dialog.start('Link eingeben', dialog_content, 'Link setzen', null, null, () => {
                 var linkValue = link_input.value;
-                var newTab = link_new_tab_input.checked;    
+                var newTab = link_new_tab_input.checked;
               
                 if (selection_ranges !== null) this.restoreSelection(selection_ranges);
                 
@@ -172,9 +162,30 @@ class TinyEditor {
                 }
           
                 dialog.close();
-            });  
+                if(this.callback_onchange !== null) this.callback_onchange();
+            });
+
+            setTimeout(() => {
+                link_input.focus();
+            }, 100);
+
         }
-        
+    }
+
+    execCommand_removeLink() {
+        var selection_ranges = this.saveSelection();
+        if (selection_ranges.length === 0) {
+            console.log("[TinyEditor] User tried to create a link without selecting text");
+        } else {
+            var selected_element = <HTMLAnchorElement|null> this.getElementFromSelection(selection_ranges[0]);
+            if(selected_element === null) {
+                console.log("[TinyEditor] User tried to remove a link without selecting text");
+            } else if(selected_element.tagName !== 'A') {
+                console.log("[TinyEditor] User tried to remove a link without selecting an anchor element");
+            } else {
+                selected_element.outerHTML = selected_element.innerHTML;
+            }
+        }
     }
 
 
@@ -408,10 +419,17 @@ class TinyEditor {
         // Create Hyperlink
         if (options.hyperlink === true) {
             toolbar.appendChild(
-            this.createButton(
-                'createLink',
-                'Create Hyperlink',
-                this.createIcon('fas fa-link'))
+                this.createButton(
+                    'createLink',
+                    'Create Hyperlink',
+                    this.createIcon('fas fa-link'))
+            );
+
+            toolbar.appendChild(
+                this.createButton(
+                    'removeLink',
+                    'remove Hyperlink',
+                    this.createIcon('fas fa-unlink'))
             );
         }
     
@@ -445,7 +463,7 @@ class TinyEditor {
         }
     }
 
-    saveSelection(): Range[] | null {
+    saveSelection(): Range[] {
         if(window.getSelection) {
             var selection = window.getSelection();
             if(selection !== null && selection.getRangeAt && selection.rangeCount) {
@@ -456,7 +474,8 @@ class TinyEditor {
                 return ranges;
             }
         }
-        return null;
+        
+        throw new Error("window.getSelection() is not supported, by this browser.");
     }
     
     restoreSelection(ranges: Range[]) {
@@ -474,4 +493,22 @@ class TinyEditor {
         }
         return false;
     }
+
+    getElementFromSelection(selection_range: Range): HTMLElement|null {
+        var selected_element: HTMLElement = <HTMLElement> selection_range.startContainer;
+        if (selected_element.parentElement !== null && selected_element.parentElement.tagName === "A") {
+            return selected_element.parentElement;
+        } else {
+            // if is editor it self, check if only one link exists
+            if (selected_element.classList.contains("__editor")) {
+                var link_elements: any = selected_element.querySelectorAll("a");
+                if (link_elements.length === 1) {
+                    return link_elements[0];
+                }
+            }
+        }
+
+        return null;
+    }
+
 }

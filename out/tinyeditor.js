@@ -46,7 +46,7 @@ var TinyEditor = (function () {
         toolbar.addEventListener('click', updateActiveState);
         document.addEventListener('selectionchange', function () {
             var selection = window.getSelection();
-            if (!editor.contains(selection.anchorNode.parentNode))
+            if (selection.anchorNode !== null && !editor.contains(selection.anchorNode.parentNode))
                 return false;
         });
         editor.addEventListener('paste', function (e) {
@@ -82,22 +82,23 @@ var TinyEditor = (function () {
     TinyEditor.prototype.execCommand = function (commandId, value) {
         switch (commandId) {
             case "createLink":
-                console.log("execCommand() [createLink] value:", value);
-                this.execCommandLink();
+                this.execCommand_createLink();
+                break;
+            case "removeLink":
+                this.execCommand_removeLink();
                 break;
             default:
                 document.execCommand(commandId, false, value);
+                if (this.callback_onchange !== null)
+                    this.callback_onchange();
                 break;
         }
         this.editor.focus();
-        if (this.callback_onchange !== null)
-            this.callback_onchange();
     };
-    TinyEditor.prototype.execCommandLink = function () {
+    TinyEditor.prototype.execCommand_createLink = function () {
         var _this = this;
-        "<label for=\"linkValue\">Link</label>\n        <input type=\"text\" id=\"linkValue\" placeholder=\"http://example.com\">\n        <label for=\"new-tab\">Open in new tab</label>\n        <input type=\"checkbox\" id=\"new-tab\">";
         var selection_ranges = this.saveSelection();
-        if (selection_ranges === null) {
+        if (selection_ranges.length === 0) {
             console.log("[TinyEditor] User tried to create a link without selecting text");
         }
         else {
@@ -120,6 +121,11 @@ var TinyEditor = (function () {
             link_new_tab_input_label.innerHTML = "neuer Tab";
             link_new_tab_input_label.style.userSelect = "none";
             link_new_tab_input_label.style.cursor = "pointer";
+            var selected_element = this.getElementFromSelection(selection_ranges[0]);
+            if (selected_element !== null) {
+                link_input.value = selected_element.href;
+                link_new_tab_input.checked = selected_element.target === "_blank";
+            }
             dialog.start('Link eingeben', dialog_content, 'Link setzen', null, null, function () {
                 var linkValue = link_input.value;
                 var newTab = link_new_tab_input.checked;
@@ -134,7 +140,30 @@ var TinyEditor = (function () {
                     newSelection.getRangeAt(0).surroundContents(new_a_element);
                 }
                 dialog.close();
+                if (_this.callback_onchange !== null)
+                    _this.callback_onchange();
             });
+            setTimeout(function () {
+                link_input.focus();
+            }, 100);
+        }
+    };
+    TinyEditor.prototype.execCommand_removeLink = function () {
+        var selection_ranges = this.saveSelection();
+        if (selection_ranges.length === 0) {
+            console.log("[TinyEditor] User tried to create a link without selecting text");
+        }
+        else {
+            var selected_element = this.getElementFromSelection(selection_ranges[0]);
+            if (selected_element === null) {
+                console.log("[TinyEditor] User tried to remove a link without selecting text");
+            }
+            else if (selected_element.tagName !== 'A') {
+                console.log("[TinyEditor] User tried to remove a link without selecting an anchor element");
+            }
+            else {
+                selected_element.outerHTML = selected_element.innerHTML;
+            }
         }
     };
     TinyEditor.prototype.createButton = function (commandId, title, child) {
@@ -264,6 +293,7 @@ var TinyEditor = (function () {
         }
         if (options.hyperlink === true) {
             toolbar.appendChild(this.createButton('createLink', 'Create Hyperlink', this.createIcon('fas fa-link')));
+            toolbar.appendChild(this.createButton('removeLink', 'remove Hyperlink', this.createIcon('fas fa-unlink')));
         }
         if (options.removeFormat === true) {
             toolbar.appendChild(this.createButton('removeFormat', 'Clear formatting', this.createIcon('fas fa-eraser')));
@@ -296,7 +326,7 @@ var TinyEditor = (function () {
                 return ranges;
             }
         }
-        return null;
+        throw new Error("window.getSelection() is not supported, by this browser.");
     };
     TinyEditor.prototype.restoreSelection = function (ranges) {
         if (ranges) {
@@ -312,6 +342,21 @@ var TinyEditor = (function () {
             }
         }
         return false;
+    };
+    TinyEditor.prototype.getElementFromSelection = function (selection_range) {
+        var selected_element = selection_range.startContainer;
+        if (selected_element.parentElement !== null && selected_element.parentElement.tagName === "A") {
+            return selected_element.parentElement;
+        }
+        else {
+            if (selected_element.classList.contains("__editor")) {
+                var link_elements = selected_element.querySelectorAll("a");
+                if (link_elements.length === 1) {
+                    return link_elements[0];
+                }
+            }
+        }
+        return null;
     };
     return TinyEditor;
 }());

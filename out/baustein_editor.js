@@ -223,6 +223,7 @@ var BausteinEditor = (function () {
         this.dom.sidebar_header = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_header", "be_sidebar_header"));
         this.dom.sidebar_content__site = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__site", "be_sidebar_content"));
         this.dom.sidebar_content__baustein = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__baustein", "be_sidebar_content"));
+        this.dom.sidebar_content__baustein.style.display = "none";
         this.dom.sidebar_content__baustein_styles = this.dom.sidebar_content__baustein.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__baustein_styles", ""));
         this.dom.sidebar_content__baustein_misc = this.dom.sidebar_content__baustein.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__baustein_misc", ""));
         this.dom.sidebar_header_col__site = this.dom.sidebar_header.appendChild(this.createElement("div", this.dom_id + "_sidebar_header_col__site", "be_sidebar_header_col active"));
@@ -685,10 +686,10 @@ var BausteinEditor = (function () {
                     }
                 }
                 if (typeof reciever_element.dataset.position_parent !== "string") {
-                    console.error("BausteinEditor: reciever_element.dataset.position_parent is not a string");
+                    console.error("[BausteinEditor]: reciever_element.dataset.position_parent is not a string");
                 }
                 else if (typeof reciever_element.dataset.position_sort !== "string") {
-                    console.error("BausteinEditor: reciever_element.dataset.position_sort is not a string");
+                    console.error("[BausteinEditor]: reciever_element.dataset.position_sort is not a string");
                 }
                 else {
                     var old_baustein_id = baustein_id;
