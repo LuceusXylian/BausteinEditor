@@ -1213,6 +1213,7 @@ class BausteinEditor {
             });
         }
 
+        form_control.autocomplete = "off";
         return be_formrow;
     }
 
