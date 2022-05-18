@@ -247,13 +247,11 @@ var BausteinEditor = (function () {
             self.cursor_mode = 0;
             self.dom.cursormodechanger_default.classList.add("active");
             self.dom.cursormodechanger_drag.classList.remove("active");
-            self.render();
         });
         this.dom.cursormodechanger_drag.addEventListener("click", function () {
             self.cursor_mode = 1;
             self.dom.cursormodechanger_default.classList.remove("active");
             self.dom.cursormodechanger_drag.classList.add("active");
-            self.render();
         });
         this.dom.preview_button.addEventListener("click", function () {
             if (self.dom.preview_content.style.display === "none") {
