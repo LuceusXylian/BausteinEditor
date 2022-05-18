@@ -233,7 +233,6 @@ var TinyEditor = (function () {
     TinyEditor.prototype.createToolbar = function (options) {
         var toolbar = document.createElement('div');
         toolbar.className = '__toolbar';
-        console.log("options", options);
         if (options.formatblock === true) {
             toolbar.appendChild(this.createSelect('formatblock', 'Styles', [
                 { value: 'h1', text: 'Title 1' },

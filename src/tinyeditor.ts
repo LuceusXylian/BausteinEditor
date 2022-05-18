@@ -265,7 +265,6 @@ class TinyEditor {
     createToolbar(options: any) {
         const toolbar = document.createElement('div');
         toolbar.className = '__toolbar';
-        console.log("options", options);
     
         // Styles
         if (options.formatblock === true) {

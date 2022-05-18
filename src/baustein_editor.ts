@@ -85,6 +85,7 @@ class BausteinEditor {
 	public dom: any;
 	public baustein_counter: number = 0;
 	public baustein_id_counter: number = 0;
+	public cursor_mode: number = 0;
     
 	public styleProperties = {
         //font_family: { name: "font-family", title: "Schriftart", type: "string", suffix: "", options:  [new Option("Verdana, Arial, Helvetica, sans-serif")] },
@@ -297,6 +298,18 @@ class BausteinEditor {
             this.createElement("div", this.dom_id+"_sidebar", "be_sidebar")
         );
 
+        this.dom.cursormodechanger = this.dom.main.appendChild(
+            this.createElement("div", "", "be_cursormodechanger")
+        );
+        this.dom.cursormodechanger_default = this.dom.cursormodechanger.appendChild(
+            this.createElement("div", "", "be_cursormodechanger_item active be_cursormodechanger_default")
+        );
+        this.dom.cursormodechanger_default.innerHTML = '<i class="fas fa-mouse-pointer"></i>';
+        this.dom.cursormodechanger_drag = this.dom.cursormodechanger.appendChild(
+            this.createElement("div", "", "be_cursormodechanger_item be_cursormodechanger_drag")
+        );
+        this.dom.cursormodechanger_drag.innerHTML = '<i class="fas fa-arrows-alt"></i>';
+        
         this.dom.underlay = this.dom.main.appendChild(
             this.createElement("div", this.dom_id+"_underlay", "be_underlay")
         );
@@ -380,13 +393,26 @@ class BausteinEditor {
         // Events
         const self = this;
 
+        this.dom.cursormodechanger_default.addEventListener("click", function() {
+            self.cursor_mode = 0;
+            self.dom.cursormodechanger_default.classList.add("active");
+            self.dom.cursormodechanger_drag.classList.remove("active");
+            self.render();
+        });
+        this.dom.cursormodechanger_drag.addEventListener("click", function() {
+            self.cursor_mode = 1;
+            self.dom.cursormodechanger_default.classList.remove("active");
+            self.dom.cursormodechanger_drag.classList.add("active");
+            self.render();
+        });
+
         this.dom.preview_button.addEventListener("click", function() {
             if (self.dom.preview_content.style.display === "none") {
                 self.dom.preview_content.style.display = "";
                 self.preview_render();
 
                 self.dom.preview_content.style.height = "400px";
-                self.dom.content.style.height = "calc(100% - 50px - "+self.dom.preview_content.style.height+")";
+                self.dom.content.style.height = "calc(100% - 50px - 46px - "+self.dom.preview_content.style.height+")";
                 self.dom.preview_button_mobile.style.display = "";
                 self.dom.preview_content.style.width = "";
                 self.dom.preview_content.classList.remove("mobile");
@@ -926,9 +952,11 @@ class BausteinEditor {
         // handle draggable condition
         new LuxClickHoldDrag(baustein_dom, {
             mousedown: () => {
-                // prevent draggable from starting if the click is on the editor
-                var document_activeElement = document.activeElement;
-                return document_activeElement === null || elements_drag_not_allowed.includes(document_activeElement) === false;
+                if (this.cursor_mode === 0) {
+                    // prevent draggable from starting if the click is on the editor
+                    var document_activeElement = document.activeElement;
+                    return document_activeElement === null || elements_drag_not_allowed.includes(document_activeElement) === false;
+                }
             },
             mousemove: null,
             mouseup: (e: any, reciever_element: HTMLElement) => {
