@@ -7,6 +7,7 @@ var bausteinRenderType = {
     plaintext: 3,
     richtext: 4,
     image: 5,
+    button: 6,
 };
 var Position = (function () {
     function Position(parent, sort) {
@@ -52,10 +53,11 @@ var Baustein = (function () {
     return Baustein;
 }());
 var BausteinEditor = (function () {
-    function BausteinEditor(dom_id) {
+    function BausteinEditor(dom_id, options) {
         this.baustein_counter = 0;
         this.baustein_id_counter = 0;
         this.cursor_mode = 0;
+        this.imageUpload = null;
         this.styleProperties = {
             font_size: { name: "font-size", title: "Schriftgröße", type: "select", suffix: "", options: [new Option("Normal", ""), new Option("Kleiner (~10px)", "smaller"), new Option("Klein (~11px)", "small"), new Option("Medium (~14px)", "medium"), new Option("Groß (~17px)", "large"), new Option("Größer (~20px)", "larger")], useAsClass: true },
             font_weight: { name: "font-weight", title: "Textdicke", type: "select", suffix: "",
@@ -154,6 +156,16 @@ var BausteinEditor = (function () {
                 { property: this.styleProperties.background_color, value: "" },
                 { property: this.styleProperties.background_image, value: "" },
             ]),
+            button: new Baustein(-1, new Position(null, -1), "button", "Button", '<i class="fas fa-exclamation-square"></i>', "a", bausteinRenderType.button, [
+                { property: this.styleProperties.font_size, value: "" },
+                { property: this.styleProperties.text_align, value: "" },
+                { property: this.styleProperties.font_weight, value: "" },
+                { property: this.styleProperties.text_decoration, value: "" },
+                { property: this.styleProperties.font_style, value: "" },
+                { property: this.styleProperties.color, value: "" },
+                { property: this.styleProperties.background_color, value: "" },
+                { property: this.styleProperties.background_image, value: "" },
+            ]),
             html: new Baustein(-1, new Position(null, -1), "html", "HTML", '<i class="fab fa-html5"></i>', "div", bausteinRenderType.plaintext, [
                 { property: this.styleProperties.font_size, value: "" },
                 { property: this.styleProperties.text_align, value: "" },
@@ -200,6 +212,14 @@ var BausteinEditor = (function () {
         this.selected_baustein = null;
         this.selected_baustein_id = null;
         this.open_baustein_attributes__baustein_id = null;
+        if (typeof options !== "undefined") {
+            if (typeof options.assets !== "undefined")
+                this.assets = options.assets;
+            if (typeof options.api_endpoints !== "undefined")
+                this.api_endpoints = options.api_endpoints;
+            if (typeof options.imageUpload !== "undefined")
+                this.imageUpload = options.imageUpload;
+        }
         this.dom = {};
         this.dom.be = document.getElementById(this.dom_id);
         this.dom.page_styles = this.dom.be.appendChild(this.createElement("style", this.dom_id + '_page_styles', ""));
@@ -429,6 +449,9 @@ var BausteinEditor = (function () {
         if (baustein.renderType === bausteinRenderType.table) {
             this.addBaustein(this.types.tableRow, new Position(baustein_id, this.getPositionSort(false)));
         }
+        else if (baustein.renderType === bausteinRenderType.image) {
+            this.dialog_media(baustein.renderType, baustein_id);
+        }
         console.log("addBaustein() this.data.bausteine", this.data.bausteine);
     };
     BausteinEditor.prototype.selectBaustein = function (baustein_id) {
@@ -626,6 +649,7 @@ var BausteinEditor = (function () {
             default:
                 var editor;
                 switch (baustein.renderType) {
+                    case bausteinRenderType.button:
                     case bausteinRenderType.richtext:
                         editor = baustein_dom.appendChild(this.createElement("div", baustein_editor_id, "be_baustein_item"));
                         editor.innerHTML = baustein.content;
@@ -979,7 +1003,8 @@ var BausteinEditor = (function () {
             }
             for (var i = 0; i < current_baustein_1.style.length; i++) {
                 var element = current_baustein_1.style[i];
-                this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein", element.property.type, element.property.name, element.property.title, element.value, element.property.suffix, element.property.options));
+                var styleProperty = this.getStylePropertyByName(element.property.name);
+                this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein", styleProperty.type, styleProperty.name, styleProperty.title, element.value, styleProperty.suffix, styleProperty.options));
             }
             var baustein_class_row = this.dom.sidebar_content__baustein_misc.appendChild(this.formcontrol("baustein_class", "text", "class", 'CSS Klasse <div style="font-size: 11px; margin-bottom: 2px;">(für Fortgeschrittene Nutzer)</div>', current_baustein_1.class, "", []));
             var baustein_delete_button = this.dom.sidebar_content__baustein_misc.appendChild(this.createElement("button", this.dom_id + '_deleteBaustein', "form-control bautstein-delete"));
@@ -1066,6 +1091,7 @@ var BausteinEditor = (function () {
         });
     };
     BausteinEditor.prototype.dialog_media = function (renderType, baustein_id) {
+        var _this = this;
         var self = this;
         var baustein = this.getBaustein(baustein_id);
         var search_endpoint, register_endpoint;
@@ -1157,7 +1183,18 @@ var BausteinEditor = (function () {
         }
         content_search_input.addEventListener("change", start_search);
         content_search_submit.addEventListener("click", start_search);
-        dialog.start("Bild laden", content, null, null, null);
+        dialog.start("Bild laden", content, '<i class="fas fa-sync"></i> Ansicht aktualisieren', null, 'Abbrechen', function () {
+            start_search();
+        });
+        if (this.imageUpload !== null) {
+            var __dialog_footer = document.getElementById("__dialog_footer");
+            var upload_button = self.createElement("button", "", "__dialog-btn __dialog-btn-cyan");
+            upload_button.innerHTML = '<i class="fas fa-upload"></i> Bild hochladen';
+            upload_button.addEventListener("click", function () { if (_this.imageUpload !== null)
+                _this.imageUpload(); });
+            console.log("this.imageUpload", this.imageUpload);
+            __dialog_footer === null || __dialog_footer === void 0 ? void 0 : __dialog_footer.prepend(upload_button);
+        }
         start_search();
     };
     BausteinEditor.prototype.import = function (data) {

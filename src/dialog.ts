@@ -21,7 +21,7 @@ class Dialog {
         var dialog_body = document.getElementById("__dialog_body");
         var dialog_footer = document.getElementById("__dialog_footer");
         
-        if(dialog === null) dialog = this.createElement("div", "__dialog", "__dialog");
+        if(dialog === null) dialog = document.body.appendChild(this.createElement("div", "__dialog", "__dialog"));
         if(dialog_wrapper === null) dialog_wrapper = dialog.appendChild(this.createElement("div", "__dialog_wrapper", "__dialog-wrapper"));
         if(dialog_content === null) dialog_content = dialog_wrapper.appendChild(this.createElement("div", "__dialog_content", "__dialog-content"));
         if(dialog_header === null) dialog_header = dialog_content.appendChild(this.createElement("div", "__dialog_header", "__dialog-header"));
@@ -43,7 +43,6 @@ class Dialog {
 
         this.dom.dialog.style.display = "none";
         this.dom.dialog_close.innerHTML = "&times;";
-        document.addEventListener("DOMContentLoaded", () => document.body.appendChild(this.dom.dialog));
     }
     
     start(title: string, body_content: string | HTMLElement, action_ok_text: string | null, action_fail_text: string | null, action_close_text: string | null, action_ok: EventListenerOrEventListenerObject | null = null, action_fail: EventListenerOrEventListenerObject | null = null, action_close: EventListenerOrEventListenerObject | null = null) {

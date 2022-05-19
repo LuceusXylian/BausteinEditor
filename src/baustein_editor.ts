@@ -10,6 +10,7 @@ const bausteinRenderType = {
     plaintext: 3,
     richtext: 4,
     image: 5,
+    button: 6,
 };
 
 class Position {
@@ -83,9 +84,10 @@ class Baustein {
 class BausteinEditor {
 	public dom_id: any;
 	public dom: any;
-	public baustein_counter: number = 0;
-	public baustein_id_counter: number = 0;
-	public cursor_mode: number = 0;
+	private baustein_counter: number = 0;
+	private baustein_id_counter: number = 0;
+	private cursor_mode: number = 0;
+	private imageUpload: Function|null = null;
     
 	public styleProperties = {
         //font_family: { name: "font-family", title: "Schriftart", type: "string", suffix: "", options:  [new Option("Verdana, Arial, Helvetica, sans-serif")] },
@@ -212,6 +214,17 @@ class BausteinEditor {
                 { property: this.styleProperties.background_color, value:"" }, 
                 { property: this.styleProperties.background_image, value:"" }, 
             ])
+        ,button: new Baustein(-1, new Position(null, -1), "button", "Button", '<i class="fas fa-exclamation-square"></i>', "a", bausteinRenderType.button, [
+                //{ property: this.styleProperties.font_family, value:"" },
+                { property: this.styleProperties.font_size, value:"" },
+                { property: this.styleProperties.text_align, value:"" },
+                { property: this.styleProperties.font_weight, value:"" },
+                { property: this.styleProperties.text_decoration, value:"" },
+                { property: this.styleProperties.font_style, value:"" },
+                { property: this.styleProperties.color, value:"" },
+                { property: this.styleProperties.background_color, value:"" }, 
+                { property: this.styleProperties.background_image, value:"" }, 
+            ])
         ,html: new Baustein(-1, new Position(null, -1), "html", "HTML", '<i class="fab fa-html5"></i>', "div", bausteinRenderType.plaintext, [
                 //{ property: this.styleProperties.font_family, value:"" },
                 { property: this.styleProperties.font_size, value:"" },
@@ -277,11 +290,18 @@ class BausteinEditor {
         return element;
     }
 
-    constructor(dom_id: string) {
+    constructor(dom_id: string, options: any) {
         this.dom_id = dom_id;
         this.selected_baustein = null;
         this.selected_baustein_id = null;
         this.open_baustein_attributes__baustein_id = null;
+
+        // Options
+        if(typeof options !== "undefined") {
+            if(typeof options.assets !== "undefined") this.assets = options.assets;
+            if(typeof options.api_endpoints !== "undefined") this.api_endpoints = options.api_endpoints;
+            if(typeof options.imageUpload !== "undefined") this.imageUpload = options.imageUpload;
+        }
 
 
         // DOM
@@ -612,6 +632,8 @@ class BausteinEditor {
         // add tableRow
         if (baustein.renderType === bausteinRenderType.table) {
             this.addBaustein(this.types.tableRow, new Position(baustein_id, this.getPositionSort(false)))        
+        } else if (baustein.renderType === bausteinRenderType.image) {
+            this.dialog_media(baustein.renderType, baustein_id);
         }
         console.log("addBaustein() this.data.bausteine", this.data.bausteine);
     }
@@ -865,6 +887,7 @@ class BausteinEditor {
             default:
                 var editor: any;
                 switch (baustein.renderType) {
+                    case bausteinRenderType.button:
                     case bausteinRenderType.richtext:
                         editor = baustein_dom.appendChild(
                             this.createElement("div", baustein_editor_id, "be_baustein_item")
@@ -1368,9 +1391,13 @@ class BausteinEditor {
     
             for (var i = 0; i < current_baustein.style.length; i++) {
                 const element = current_baustein.style[i];
+
+                // styleProperty is necessery to fix the bug where a refernce points to an undefined object
+                var styleProperty = this.getStylePropertyByName(element.property.name);
+
                 this.dom.sidebar_content__baustein_styles.appendChild(
-                    this.formcontrol("baustein", element.property.type, element.property.name, element.property.title
-                        , element.value, element.property.suffix, element.property.options)
+                    this.formcontrol("baustein", styleProperty.type, styleProperty.name, styleProperty.title
+                        , element.value, styleProperty.suffix, styleProperty.options)
                 );
             }
             
@@ -1577,7 +1604,18 @@ class BausteinEditor {
         content_search_input.addEventListener("change", start_search);
         content_search_submit.addEventListener("click", start_search);
         
-        dialog.start("Bild laden", content, null, null, null);
+        dialog.start("Bild laden", content, '<i class="fas fa-sync"></i> Ansicht aktualisieren', null, 'Abbrechen', function() {
+            start_search();
+        });
+
+        if (this.imageUpload !== null) {
+            var __dialog_footer = document.getElementById("__dialog_footer");
+            var upload_button = <HTMLButtonElement> self.createElement("button", "", "__dialog-btn __dialog-btn-cyan");
+            upload_button.innerHTML = '<i class="fas fa-upload"></i> Bild hochladen';
+            upload_button.addEventListener("click", () => { if(this.imageUpload !== null) this.imageUpload() });
+            __dialog_footer?.prepend(upload_button);
+        }
+
         start_search();
     }
 

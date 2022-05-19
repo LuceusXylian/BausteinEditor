@@ -21,7 +21,11 @@
     <script src="out/tinyeditor.js"></script>
     <script src="out/baustein_editor.js"></script>
     <script>
-        var baustein_editor = new BausteinEditor("baustein_editor");
+        var baustein_editor = new BausteinEditor("baustein_editor", {
+            imageUpload: function() {
+                console.log("imageUpload works")
+            }
+        });
         baustein_editor.addBaustein(baustein_editor.types.text, new Position(null, 1));
         baustein_editor.addBaustein(baustein_editor.types.h1, new Position(null, 2));
     </script>

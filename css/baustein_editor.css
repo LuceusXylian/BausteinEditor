@@ -96,7 +96,7 @@ select.form-control:not([multiple]) {
 }
 .__dialog-wrapper {
     position: relative;
-    width: 500px;
+    width: 520px;
     max-width: 95%;
     transform: translate(0,-55%);
     top: 45%;
@@ -159,7 +159,7 @@ select.form-control:not([multiple]) {
     max-height: calc(100vh - 280px);
 }
 .__dialog-footer {
-    padding: 1rem;
+    padding: 1rem 1rem .5rem 1rem;
     border-top: 1px solid #e9ecef;
     background: white;
 }
@@ -179,13 +179,14 @@ select.form-control:not([multiple]) {
     border-right-color: transparent;
     border-bottom-color: transparent;
     border-left-color: transparent;
-    padding: .375rem .75rem;
     font-size: 1rem;
     line-height: 1.5;
     border-radius: .25rem;
     transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
     cursor: pointer;
+    padding: .375rem .75rem;
     margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
 }
 .__dialog-btn-green { background: #649748; color: white; }
 .__dialog-btn-red   { background: #cc0000; color: white; }
