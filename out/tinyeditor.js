@@ -344,10 +344,12 @@ var TinyEditor = (function () {
     };
     TinyEditor.prototype.getElementFromSelection = function (selection_range) {
         var selected_element = selection_range.startContainer;
+        console.log("selection_range", selection_range);
+        console.log("selected_element", selected_element);
         if (selected_element.parentElement !== null && selected_element.parentElement.tagName === "A") {
             return selected_element.parentElement;
         }
-        else {
+        else if (selected_element.nodeName !== "#text") {
             if (selected_element.classList.contains("__editor")) {
                 var link_elements = selected_element.querySelectorAll("a");
                 if (link_elements.length === 1) {

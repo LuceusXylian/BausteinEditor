@@ -495,9 +495,11 @@ class TinyEditor {
 
     getElementFromSelection(selection_range: Range): HTMLElement|null {
         var selected_element: HTMLElement = <HTMLElement> selection_range.startContainer;
+        console.log("selection_range", selection_range);
+        console.log("selected_element", selected_element);
         if (selected_element.parentElement !== null && selected_element.parentElement.tagName === "A") {
             return selected_element.parentElement;
-        } else {
+        } else if(selected_element.nodeName !== "#text") {
             // if is editor it self, check if only one link exists
             if (selected_element.classList.contains("__editor")) {
                 var link_elements: any = selected_element.querySelectorAll("a");

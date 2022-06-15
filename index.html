@@ -26,8 +26,36 @@
                 console.log("imageUpload works")
             }
         });
-        baustein_editor.addBaustein(baustein_editor.types.text, new Position(null, 1));
-        baustein_editor.addBaustein(baustein_editor.types.h1, new Position(null, 2));
+
+
+        function test_table() {
+            baustein_editor.addBaustein(baustein_editor.types.table, new Position(null, 1));
+    
+            setTimeout(() => {
+                document.getElementById("baustein_editor_dialog_fc_columns").value = "2";
+                document.getElementById("baustein_editor_dialog_fc_rows").value = "2";
+                document.querySelector(".__dialog-btn.__dialog-btn-green").click();
+    
+                const baustein_tablerow = baustein_editor.data.bausteine[2];
+                baustein_editor.addBaustein(baustein_editor.types.text, new Position(baustein_tablerow.position.parent, baustein_tablerow.position.sort))
+                .then((new_baustein) => {
+                    baustein_editor.deleteBaustein(new_baustein.id);
+                    baustein_editor.rowcol_amount_evaluate();
+                    baustein_editor.render();
+    
+                    // now if the child count do not match then the test failed
+                    const children = baustein_editor.getBausteineArray(baustein_tablerow.id);
+                    if (baustein_tablerow.columns === children.length) {
+                        console.info("test_table: success");
+                    } else {
+                        console.error("test_table: failed");
+                    }
+                        
+                })
+            }, 1);
+        }
+
+        test_table();
     </script>
 </body>
 </html>
