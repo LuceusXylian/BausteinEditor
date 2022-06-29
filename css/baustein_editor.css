@@ -248,14 +248,6 @@ select.form-control:not([multiple]) {
     color: #007cba;
 }
 
-.be_underlay {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    left: 0;
-}
-
 .be_content {
     height: calc(100% - 20px - 20px - 46px);
     padding: 10px;

@@ -56,10 +56,11 @@ var bausteinRenderType = {
     layout: 0,
     table: 1,
     tableRow: 2,
-    plaintext: 3,
-    richtext: 4,
-    image: 5,
-    button: 6,
+    tableCell: 3,
+    plaintext: 4,
+    richtext: 5,
+    image: 6,
+    button: 7,
     isParentType: function (renderType) {
         return renderType === this.layout || renderType === this.table || renderType === this.tableRow;
     }
@@ -72,13 +73,14 @@ var Position = (function () {
     return Position;
 }());
 var BausteinStyleProperty = (function () {
-    function BausteinStyleProperty(name, title, type, suffix, options, useAsClass) {
+    function BausteinStyleProperty(name, title, type, suffix, options, useAsClass, showInBausteinAttributesSidebar) {
         this.name = name;
         this.title = title;
         this.type = type;
         this.suffix = suffix;
         this.options = options;
         this.useAsClass = useAsClass;
+        this.showInBausteinAttributesSidebar = showInBausteinAttributesSidebar;
     }
     return BausteinStyleProperty;
 }());
@@ -108,6 +110,21 @@ var BausteinTemplate = (function () {
     BausteinTemplate.prototype.isParentType = function () {
         return bausteinRenderType.isParentType(this.renderType);
     };
+    BausteinTemplate.prototype.getStyle = function (name) {
+        for (var i = 0; i < this.style.length; i++) {
+            if (this.style[i].property.name === name) {
+                return this.style[i];
+            }
+        }
+        return null;
+    };
+    BausteinTemplate.prototype.getStyleValue = function (name, def) {
+        var style = this.getStyle(name);
+        if (style) {
+            return style.value;
+        }
+        return def;
+    };
     return BausteinTemplate;
 }());
 var Baustein = (function (_super) {
@@ -127,30 +144,33 @@ var BausteinEditor = (function () {
         this.cursor_mode = 0;
         this.imageUpload = null;
         this.styleProperties = {
-            font_size: { name: "font-size", title: "Schriftgröße", type: "select", suffix: "", options: [new Option("Normal", ""), new Option("Kleiner (~10px)", "smaller"), new Option("Klein (~11px)", "small"), new Option("Medium (~14px)", "medium"), new Option("Groß (~17px)", "large"), new Option("Größer (~20px)", "larger")], useAsClass: true },
+            font_size: { name: "font-size", title: "Schriftgröße", type: "select", suffix: "",
+                options: [new Option("Normal", ""), new Option("Kleiner (~10px)", "smaller"), new Option("Klein (~11px)", "small"),
+                    new Option("Medium (~14px)", "medium"), new Option("Groß (~17px)", "large"), new Option("Größer (~20px)", "larger")],
+                useAsClass: true, showInBausteinAttributesSidebar: true },
             font_weight: { name: "font-weight", title: "Textdicke", type: "select", suffix: "",
-                options: [new Option("Normal", ""), new Option("Fett", "bold"), new Option("Fetter", "bolder"), new Option("Leichter", "lighter")], useAsClass: false },
+                options: [new Option("Normal", ""), new Option("Fett", "bold"), new Option("Fetter", "bolder"), new Option("Leichter", "lighter")], useAsClass: false, showInBausteinAttributesSidebar: true },
             text_decoration: { name: "text-decoration", title: "Textunterschreichung", type: "select", suffix: "",
-                options: [new Option("Normal", ""), new Option("underline", "underline"), new Option("dotted", "dotted")], useAsClass: false },
+                options: [new Option("Normal", ""), new Option("underline", "underline"), new Option("dotted", "dotted")], useAsClass: false, showInBausteinAttributesSidebar: true },
             font_style: { name: "font-style", title: "Textkursion", type: "select", suffix: "",
-                options: [new Option("Normal", ""), new Option("italic", "italic"), new Option("oblique", "oblique")], useAsClass: false },
+                options: [new Option("Normal", ""), new Option("italic", "italic"), new Option("oblique", "oblique")], useAsClass: false, showInBausteinAttributesSidebar: true },
             text_align: { name: "text-align", title: "Textausrichtung", type: "select", suffix: "",
-                options: [new Option("Normal", ""), new Option("left", "left"), new Option("center", "center"), new Option("right", "right")], useAsClass: false },
-            color: { name: "color", title: "Farbe", type: "color", suffix: "", options: [], useAsClass: false },
-            background_color: { name: "background-color", title: "Background Color", type: "color", suffix: "", options: [], useAsClass: false },
-            background_image: { name: "background-image", title: "Background Image", type: "string", suffix: "", options: [], useAsClass: false },
-            width: { name: "width", title: "Breite", type: "number", suffix: "px", options: [], useAsClass: false },
-            height: { name: "height", title: "Höhe", type: "number", suffix: "px", options: [], useAsClass: false },
-            max_width: { name: "max-width", title: "Maximale Breite", type: "number", suffix: "px", options: [], useAsClass: false },
-            max_height: { name: "max-height", title: "Maximale Höhe", type: "number", suffix: "px", options: [], useAsClass: false },
-            margin_top: { name: "margin-top", title: "Außenabstand Oben", type: "number", suffix: "px", options: [], useAsClass: false },
-            margin_right: { name: "margin-right", title: "Außenabstand Rechts", type: "number", suffix: "px", options: [], useAsClass: false },
-            margin_bottom: { name: "margin-bottom", title: "Außenabstand Unten", type: "number", suffix: "px", options: [], useAsClass: false },
-            margin_left: { name: "margin-left", title: "Außenabstand Links", type: "number", suffix: "px", options: [], useAsClass: false },
-            padding_top: { name: "padding-top", title: "Innenabstand Oben", type: "number", suffix: "px", options: [], useAsClass: false },
-            padding_right: { name: "padding-right", title: "Innenabstand Rechts", type: "number", suffix: "px", options: [], useAsClass: false },
-            padding_bottom: { name: "padding-bottom", title: "Innenabstand Unten", type: "number", suffix: "px", options: [], useAsClass: false },
-            padding_left: { name: "padding-left", title: "Innenabstand Links", type: "number", suffix: "px", options: [], useAsClass: false },
+                options: [new Option("Normal", ""), new Option("left", "left"), new Option("center", "center"), new Option("right", "right")], useAsClass: false, showInBausteinAttributesSidebar: true },
+            color: { name: "color", title: "Farbe", type: "color", suffix: "", options: [], useAsClass: false, showInBausteinAttributesSidebar: true },
+            background_color: { name: "background-color", title: "Background Color", type: "color", suffix: "", options: [], useAsClass: false, showInBausteinAttributesSidebar: true },
+            background_image: { name: "background-image", title: "Background Image", type: "string", suffix: "", options: [], useAsClass: false, showInBausteinAttributesSidebar: true },
+            width: { name: "width", title: "Breite", type: "number", suffix: "px", options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+            height: { name: "height", title: "Höhe", type: "number", suffix: "px", options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+            max_width: { name: "max-width", title: "Maximale Breite", type: "number", suffix: "px", options: [], useAsClass: false, showInBausteinAttributesSidebar: true },
+            max_height: { name: "max-height", title: "Maximale Höhe", type: "number", suffix: "px", options: [], useAsClass: false, showInBausteinAttributesSidebar: true },
+            margin_top: { name: "margin-top", title: "Außenabstand Oben", type: "number", suffix: "px", options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+            margin_right: { name: "margin-right", title: "Außenabstand Rechts", type: "number", suffix: "px", options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+            margin_bottom: { name: "margin-bottom", title: "Außenabstand Unten", type: "number", suffix: "px", options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+            margin_left: { name: "margin-left", title: "Außenabstand Links", type: "number", suffix: "px", options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+            padding_top: { name: "padding-top", title: "Innenabstand Oben", type: "number", suffix: "px", options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+            padding_right: { name: "padding-right", title: "Innenabstand Rechts", type: "number", suffix: "px", options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+            padding_bottom: { name: "padding-bottom", title: "Innenabstand Unten", type: "number", suffix: "px", options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+            padding_left: { name: "padding-left", title: "Innenabstand Links", type: "number", suffix: "px", options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
         };
         this.stylePropertiesArray = Object.values(this.styleProperties);
         this.data = {
@@ -243,7 +263,7 @@ var BausteinEditor = (function () {
                 { property: this.styleProperties.color, value: "" },
             ]),
             script: new BausteinTemplate("script", "Script", '<i class="fas fa-code"></i>', "script", bausteinRenderType.plaintext, []),
-            shortcode: new BausteinTemplate("shortcode", "Shortcode", '<b>[..]</b>', "span", bausteinRenderType.plaintext, []),
+            shortcode: new BausteinTemplate("shortcode", "Shortcode", '<b>[..]</b>', "", bausteinRenderType.plaintext, []),
             image: new BausteinTemplate("image", "Bild", '<i class="fas fa-image"></i>', "img", bausteinRenderType.image, []),
             layout: new BausteinTemplate("layout", "Layout", '<i class="fas fa-layer-group" style="transform: rotate(90deg);"></i>', "div", bausteinRenderType.layout, [
                 { property: this.styleProperties.max_width, value: "" },
@@ -259,7 +279,9 @@ var BausteinEditor = (function () {
                 { property: this.styleProperties.background_color, value: "" },
                 { property: this.styleProperties.background_image, value: "" },
             ]),
-            tableRow: new BausteinTemplate("tableRow", "Tabellenreihe", '<i class="fas fa-table"></i>', "tr", bausteinRenderType.tableRow, [])
+            tableRow: new BausteinTemplate("tableRow", "Tabellenreihe", '<i class="fas fa-table"></i>', "tr", bausteinRenderType.tableRow, []),
+            th: new BausteinTemplate("th", "Tabellentitelzeile", '<i class="fas fa-table"></i>', "tr", bausteinRenderType.tableCell, []),
+            td: new BausteinTemplate("td", "Tabellenzeile", '<i class="fas fa-table"></i>', "tr", bausteinRenderType.tableCell, [])
         };
         this.typesArray = Object.values(this.types);
         this.addBausteinSelectorItems = [
@@ -299,7 +321,6 @@ var BausteinEditor = (function () {
         this.dom.cursormodechanger_default.innerHTML = '<i class="fas fa-mouse-pointer"></i>';
         this.dom.cursormodechanger_drag = this.dom.cursormodechanger.appendChild(this.createElement("div", "", "be_cursormodechanger_item be_cursormodechanger_drag"));
         this.dom.cursormodechanger_drag.innerHTML = '<i class="fas fa-arrows-alt"></i>';
-        this.dom.underlay = this.dom.main.appendChild(this.createElement("div", this.dom_id + "_underlay", "be_underlay"));
         this.dom.content = this.dom.main.appendChild(this.createElement("div", this.dom_id + "_content", "be_content"));
         this.dom.preview = this.dom.main.appendChild(this.createElement("div", this.dom_id + "_preview", "be_preview"));
         this.dom.preview_button_desktop = this.dom.preview.appendChild(this.createElement("button", this.dom_id + "_preview_button_desktop", "be_preview_button_desktop"));
@@ -402,7 +423,7 @@ var BausteinEditor = (function () {
                 return this.stylePropertiesArray[i];
             }
         }
-        return new BausteinStyleProperty(name, "", "", "", [], false);
+        return new BausteinStyleProperty(name, "", "", "", [], false, false);
     };
     BausteinEditor.prototype.getBausteinType = function (type) {
         for (var i = 0; i < this.typesArray.length; i++) {
@@ -548,10 +569,14 @@ var BausteinEditor = (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 return [2, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var self, baustein_id, baustein, actual_addBaustein, parent_baustein;
+                        var self, parent_baustein, baustein_id, baustein, actual_addBaustein;
                         return __generator(this, function (_a) {
-                            self = this;
                             console.log("addBaustein( type:", baustein_type.type, ", position:", position, " )");
+                            self = this;
+                            parent_baustein = position.parent === null ? null : this.getBaustein(position.parent);
+                            if (parent_baustein !== null && baustein_type.type === this.types.text.type) {
+                                baustein_type = this.types.td;
+                            }
                             baustein_id = this.baustein_id_counter;
                             baustein = new Baustein(baustein_id, position, baustein_type.type, baustein_type.title, baustein_type.tag, baustein_type.renderType, baustein_type.style);
                             actual_addBaustein = function () {
@@ -603,14 +628,17 @@ var BausteinEditor = (function () {
                                 resolve(baustein);
                             };
                             if (baustein.renderType === bausteinRenderType.layout || baustein.renderType === bausteinRenderType.table) {
-                                this.dialog_rowcol(baustein, actual_addBaustein);
+                                this.dialog_rowcol(baustein)
+                                    .then(function () { return actual_addBaustein(); })
+                                    .catch(function () { return reject(); });
                             }
                             else if (baustein.renderType === bausteinRenderType.image) {
-                                this.dialog_media(baustein, actual_addBaustein);
+                                this.dialog_media(baustein)
+                                    .then(function () { return actual_addBaustein(); })
+                                    .catch(function () { return reject(); });
                             }
                             else {
-                                if (baustein.renderType === bausteinRenderType.tableRow && position.parent !== null) {
-                                    parent_baustein = this.getBaustein(position.parent);
+                                if (baustein.renderType === bausteinRenderType.tableRow && parent_baustein !== null) {
                                     baustein.columns = parent_baustein.columns;
                                 }
                                 actual_addBaustein();
@@ -856,6 +884,7 @@ var BausteinEditor = (function () {
                     var editor;
                     switch (baustein.renderType) {
                         case bausteinRenderType.button:
+                        case bausteinRenderType.tableCell:
                         case bausteinRenderType.richtext:
                             editor = baustein_dom.appendChild(this.createElement("div", baustein_editor_id, "be_baustein_item"));
                             editor.innerHTML = baustein.content;
@@ -1167,28 +1196,28 @@ var BausteinEditor = (function () {
             var be_layout_view_margin = be_layout_view.appendChild(this.createElement("div", "", "be_layout_view_margin"));
             var be_layout_view_margin_indicator = be_layout_view_margin.appendChild(this.createElement("div", "", "be_layout_view_indicator"));
             be_layout_view_margin_indicator.innerHTML = "margin";
-            be_layout_view_margin.appendChild(this.layout_fc("margin-top", this.getItemFromArray(current_baustein_1.style, "margin-top", "0"), "-6px", null, null, ""));
-            be_layout_view_margin.appendChild(this.layout_fc("margin-bottom", this.getItemFromArray(current_baustein_1.style, "margin-bottom", "0"), null, null, "-6px", ""));
-            be_layout_view_margin.appendChild(this.layout_fc("margin-left", this.getItemFromArray(current_baustein_1.style, "margin-left", "0"), "", null, null, "-6px"));
-            be_layout_view_margin.appendChild(this.layout_fc("margin-right", this.getItemFromArray(current_baustein_1.style, "margin-right", "0"), "", "-6px", null, null));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-top", current_baustein_1.getStyleValue("margin-top", "0"), "-6px", null, null, ""));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-bottom", current_baustein_1.getStyleValue("margin-bottom", "0"), null, null, "-6px", ""));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-left", current_baustein_1.getStyleValue("margin-left", "0"), "", null, null, "-6px"));
+            be_layout_view_margin.appendChild(this.layout_fc("margin-right", current_baustein_1.getStyleValue("margin-right", "0"), "", "-6px", null, null));
             var be_layout_view_border = be_layout_view_margin.appendChild(this.createElement("div", "", "be_layout_view_border"));
             var be_layout_view_border_indicator = be_layout_view_border.appendChild(this.createElement("div", "", "be_layout_view_indicator"));
             be_layout_view_border_indicator.innerHTML = "border";
-            be_layout_view_border.appendChild(this.layout_fc("border-top", this.getItemFromArray(current_baustein_1.style, "border-top", "0"), "-13px", null, null, ""));
-            be_layout_view_border.appendChild(this.layout_fc("border-bottom", this.getItemFromArray(current_baustein_1.style, "border-bottom", "0"), null, null, "-13px", ""));
-            be_layout_view_border.appendChild(this.layout_fc("border-left", this.getItemFromArray(current_baustein_1.style, "border-left", "0"), "", null, null, "-14px"));
-            be_layout_view_border.appendChild(this.layout_fc("border-right", this.getItemFromArray(current_baustein_1.style, "border-right", "0"), "", "-14px", null, null));
+            be_layout_view_border.appendChild(this.layout_fc("border-top", current_baustein_1.getStyleValue("border-top", "0"), "-13px", null, null, ""));
+            be_layout_view_border.appendChild(this.layout_fc("border-bottom", current_baustein_1.getStyleValue("border-bottom", "0"), null, null, "-13px", ""));
+            be_layout_view_border.appendChild(this.layout_fc("border-left", current_baustein_1.getStyleValue("border-left", "0"), "", null, null, "-14px"));
+            be_layout_view_border.appendChild(this.layout_fc("border-right", current_baustein_1.getStyleValue("border-right", "0"), "", "-14px", null, null));
             var be_layout_view_padding = be_layout_view_border.appendChild(this.createElement("div", "", "be_layout_view_padding"));
             var be_layout_view_padding_indicator = be_layout_view_padding.appendChild(this.createElement("div", "", "be_layout_view_indicator"));
             be_layout_view_padding_indicator.innerHTML = "padding";
-            be_layout_view_padding.appendChild(this.layout_fc("padding-top", this.getItemFromArray(current_baustein_1.style, "padding-top", "0"), "0px", null, null, ""));
-            be_layout_view_padding.appendChild(this.layout_fc("padding-bottom", this.getItemFromArray(current_baustein_1.style, "padding-bottom", "0"), null, null, "0px", ""));
-            be_layout_view_padding.appendChild(this.layout_fc("padding-left", this.getItemFromArray(current_baustein_1.style, "padding-left", "0"), "", null, null, "8px"));
-            be_layout_view_padding.appendChild(this.layout_fc("padding-right", this.getItemFromArray(current_baustein_1.style, "padding-right", "0"), "", "8px", null, null));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-top", current_baustein_1.getStyleValue("padding-top", "0"), "0px", null, null, ""));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-bottom", current_baustein_1.getStyleValue("padding-bottom", "0"), null, null, "0px", ""));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-left", current_baustein_1.getStyleValue("padding-left", "0"), "", null, null, "8px"));
+            be_layout_view_padding.appendChild(this.layout_fc("padding-right", current_baustein_1.getStyleValue("padding-right", "0"), "", "8px", null, null));
             var be_layout_view_inner = be_layout_view_padding.appendChild(this.createElement("div", "", "be_layout_view_inner"));
-            be_layout_view_inner.appendChild(this.layout_fc("max-width", this.getItemFromArray(current_baustein_1.style, "max-width", "auto"), null, null, null, null));
+            be_layout_view_inner.appendChild(this.layout_fc("width", current_baustein_1.getStyleValue("width", "auto"), null, null, null, null));
             be_layout_view_inner.appendChild(this.createElement("span", "", "be_layout_wh_delimiter")).innerHTML = " &times; ";
-            be_layout_view_inner.appendChild(this.layout_fc("max-height", this.getItemFromArray(current_baustein_1.style, "max-height", "auto"), null, null, null, null));
+            be_layout_view_inner.appendChild(this.layout_fc("height", current_baustein_1.getStyleValue("height", "auto"), null, null, null, null));
             if (current_baustein_1.renderType === bausteinRenderType.image) {
                 var formcontrol_result = this.formcontrol("baustein_image", "text", "image", 'Bildquelle', current_baustein_1.content, "", []);
                 this.dom.sidebar_content__baustein_styles.appendChild(formcontrol_result.content);
@@ -1208,14 +1237,16 @@ var BausteinEditor = (function () {
                 baustein_image_form_control_1.style.width = 'calc(100% - ' + start_image_selector.style.width + ' - ' + start_image_selector.style.marginLeft + ')';
                 start_image_selector.addEventListener("click", function () {
                     if (self_1.selected_baustein_id !== null) {
-                        self_1.dialog_media(self_1.getBaustein(self_1.selected_baustein_id), function () { return void 0; });
+                        self_1.dialog_media(self_1.getBaustein(self_1.selected_baustein_id));
                     }
                 });
             }
             for (var i = 0; i < current_baustein_1.style.length; i++) {
                 var element = current_baustein_1.style[i];
-                var styleProperty = this.getStylePropertyByName(element.property.name);
-                this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein", styleProperty.type, styleProperty.name, styleProperty.title, element.value, styleProperty.suffix, styleProperty.options).content);
+                if (element.property.showInBausteinAttributesSidebar) {
+                    var styleProperty = this.getStylePropertyByName(element.property.name);
+                    this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein", styleProperty.type, styleProperty.name, styleProperty.title, element.value, styleProperty.suffix, styleProperty.options).content);
+                }
             }
             var baustein_class_row = this.dom.sidebar_content__baustein_misc.appendChild(this.formcontrol("baustein_class", "text", "class", 'CSS Klasse <div style="font-size: 11px; margin-bottom: 2px;">(für Fortgeschrittene Nutzer)</div>', current_baustein_1.class, "", []).content);
             var baustein_delete_button = this.dom.sidebar_content__baustein_misc.appendChild(this.createElement("button", this.dom_id + '_deleteBaustein', "form-control bautstein-delete"));
@@ -1285,153 +1316,172 @@ var BausteinEditor = (function () {
             }
         });
     };
-    BausteinEditor.prototype.dialog_rowcol = function (baustein, onSuccess) {
-        var self = this;
-        var content = self.createElement("div", "", "");
-        var columns_fcr = self.formcontrol("dialog", "number", "columns", "Spalten", "", "", []);
-        columns_fcr.content.style.display = "inline-block";
-        columns_fcr.content.style.verticalAlign = "top";
-        columns_fcr.content.style.width = "100px";
-        columns_fcr.input.value = "1";
-        content.appendChild(columns_fcr.content);
-        if (baustein.renderType === bausteinRenderType.table) {
-            var rows_fcr = self.formcontrol("dialog", "number", "rows", "Reihen", "", "", []);
-            rows_fcr.content.style.display = "inline-block";
-            rows_fcr.content.style.verticalAlign = "top";
-            rows_fcr.content.style.width = "100px";
-            rows_fcr.input.value = "1";
-            content.appendChild(rows_fcr.content);
-        }
-        var error_message = self.createElement("div", "", "error-message");
-        error_message.style.color = "red";
-        dialog.start(baustein.title + " erstellen", content, 'Fertigstellen', null, 'Abbrechen', function () {
-            var columns_number = parseInt(columns_fcr.input.value);
-            if (columns_number < 1) {
-                error_message.innerHTML = '"Spalten Anzahl" muss größer als 0 sein';
-                return false;
-            }
-            else {
-                baustein.columns = columns_number;
-            }
-            if (baustein.renderType === bausteinRenderType.table) {
-                var rows_number = parseInt(rows_fcr.input.value);
-                if (rows_number < 1) {
-                    error_message.innerHTML = '"Reihen Anzahl" muss größer als 0 sein';
-                    return false;
-                }
-                else {
-                    baustein.rows = rows_number;
-                }
-            }
-            onSuccess();
-            dialog.close();
-        });
-    };
-    BausteinEditor.prototype.dialog_media = function (baustein, onSuccess) {
-        var _this = this;
-        var self = this;
-        var search_endpoint, register_endpoint;
-        if (baustein.renderType === bausteinRenderType.image) {
-            search_endpoint = self.api_endpoints.image_search;
-            register_endpoint = self.api_endpoints.image_register;
-        }
-        else {
-            search_endpoint = "";
-            register_endpoint = "";
-        }
-        var content = self.createElement("div", "", "");
-        var content_search = content.appendChild(self.createElement("div", "", "be-dialog-media-search"));
-        content_search.style.marginBottom = "20px";
-        var content_search_input = content_search.appendChild(self.createElement("input", "", "be-dialog-media-search-input form-control"));
-        content_search_input.type = "text";
-        content_search_input.placeholder = "Suchbegriffe..";
-        content_search_input.style.display = "inline-block";
-        content_search_input.style.verticalAlign = "middle";
-        var content_search_submit = content_search.appendChild(self.createElement("button", "", "be-dialog-media-search-submit __dialog-btn"));
-        content_search_submit.type = "button";
-        content_search_submit.innerHTML = "Suchen";
-        content_search_submit.style.display = "inline-block";
-        content_search_submit.style.verticalAlign = "middle";
-        content_search_submit.style.width = "66px";
-        content_search_submit.style.padding = "6px";
-        content_search_submit.style.marginLeft = "8px";
-        content_search_submit.style.marginRight = "0";
-        content_search_input.style.width = "calc(100% - " + content_search_submit.style.width + " - " + content_search_submit.style.marginLeft + ")";
-        var content_results = content.appendChild(self.createElement("div", "", "be-dialog-media-results"));
-        content_results.style.overflowY = "auto";
-        content_results.style.height = "500px";
-        content_results.style.maxHeight = "90vh";
-        function start_search() {
-            self.request("GET", search_endpoint, "&q=" + content_search_input.value)
-                .then(function (response) {
-                var json = JSON.parse(response.responseText);
-                var media_array = json.media;
-                console.log("response json", json);
-                content_results.innerHTML = '';
-                var _loop_3 = function (i) {
-                    var element = media_array[i];
-                    row = content_results.appendChild(self.createElement("div", "", "row"));
-                    row.style.display = "inline-block";
-                    row.style.verticalAlign = "top";
-                    row.style.width = (content_results.clientWidth / 2 - 18) + "px";
-                    row.style.maxWidth = "100%";
-                    row.style.border = "1px solid #ccc";
-                    row.style.borderRadius = "6px";
-                    row.style.margin = "4px";
-                    row.style.textAlign = "center";
-                    row.style.overflow = "hidden";
-                    image_container = row.appendChild(self.createElement("div", "", "col"));
-                    image_container.style.width = "100%";
-                    image_container.style.height = "200px";
-                    image = image_container.appendChild(self.createElement("img", "", ""));
-                    image.src = element.url;
-                    image.style.maxWidth = "100%";
-                    image.style.maxHeight = "100%";
-                    title = row.appendChild(self.createElement("div", "", "col"));
-                    title.innerText = element.name;
-                    title.style.marginBottom = "8px";
-                    button = row.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-green"));
-                    button.type = "button";
-                    button.innerText = "Auswählen";
-                    button.style.marginBottom = "8px";
-                    var bild_id = element.id;
-                    button.addEventListener("click", function () {
-                        self.request("POST", register_endpoint, "&id=" + bild_id)
-                            .then(function (response) {
-                            var json = JSON.parse(response.responseText);
-                            var bild_url = json.url;
-                            baustein.content = bild_url;
-                            if (self.selected_baustein !== null) {
-                                var img = self.selected_baustein.querySelector("img");
-                                if (img !== null) {
-                                    img.src = bild_url;
+    BausteinEditor.prototype.dialog_rowcol = function (baustein) {
+        return __awaiter(this, void 0, void 0, function () {
+            var self;
+            return __generator(this, function (_a) {
+                self = this;
+                return [2, new Promise(function (resolve, reject) {
+                        var content = self.createElement("div", "", "");
+                        var columns_fcr = self.formcontrol("dialog", "number", "columns", "Spalten", "", "", []);
+                        columns_fcr.content.style.display = "inline-block";
+                        columns_fcr.content.style.verticalAlign = "top";
+                        columns_fcr.content.style.width = "100px";
+                        columns_fcr.input.value = "1";
+                        content.appendChild(columns_fcr.content);
+                        if (baustein.renderType === bausteinRenderType.table) {
+                            var rows_fcr = self.formcontrol("dialog", "number", "rows", "Reihen", "", "", []);
+                            rows_fcr.content.style.display = "inline-block";
+                            rows_fcr.content.style.verticalAlign = "top";
+                            rows_fcr.content.style.width = "100px";
+                            rows_fcr.input.value = "1";
+                            content.appendChild(rows_fcr.content);
+                        }
+                        var error_message = self.createElement("div", "", "error-message");
+                        error_message.style.color = "red";
+                        dialog.start(baustein.title + " erstellen", content, 'Fertigstellen', null, 'Abbrechen', function () {
+                            var columns_number = parseInt(columns_fcr.input.value);
+                            if (columns_number < 1) {
+                                error_message.innerHTML = '"Spalten Anzahl" muss größer als 0 sein';
+                                return false;
+                            }
+                            else {
+                                baustein.columns = columns_number;
+                            }
+                            if (baustein.renderType === bausteinRenderType.table) {
+                                var rows_number = parseInt(rows_fcr.input.value);
+                                if (rows_number < 1) {
+                                    error_message.innerHTML = '"Reihen Anzahl" muss größer als 0 sein';
+                                    return false;
+                                }
+                                else {
+                                    baustein.rows = rows_number;
                                 }
                             }
-                            onSuccess(baustein);
+                            resolve(null);
                             dialog.close();
+                        }, null, function () {
+                            dialog.close();
+                            reject();
                         });
-                    });
-                };
-                var row, image_container, image, title, button;
-                for (var i = 0; i < media_array.length; i++) {
-                    _loop_3(i);
-                }
+                    })];
             });
-        }
-        content_search_input.addEventListener("change", start_search);
-        content_search_submit.addEventListener("click", start_search);
-        dialog.start("Bild laden", content, '<i class="fas fa-sync"></i> Ansicht aktualisieren', null, 'Abbrechen', function () {
-            start_search();
         });
-        if (this.imageUpload !== null) {
-            var __dialog_footer = document.getElementById("__dialog_footer");
-            var upload_button = self.createElement("button", "", "__dialog-btn __dialog-btn-cyan");
-            upload_button.innerHTML = '<i class="fas fa-upload"></i> Bild hochladen';
-            upload_button.addEventListener("click", function () { if (_this.imageUpload !== null)
-                _this.imageUpload(); });
-            __dialog_footer === null || __dialog_footer === void 0 ? void 0 : __dialog_footer.prepend(upload_button);
-        }
-        start_search();
+    };
+    BausteinEditor.prototype.dialog_media = function (baustein) {
+        return __awaiter(this, void 0, void 0, function () {
+            var self;
+            return __generator(this, function (_a) {
+                self = this;
+                return [2, new Promise(function (resolve, reject) {
+                        var search_endpoint, register_endpoint;
+                        if (baustein.renderType === bausteinRenderType.image) {
+                            search_endpoint = self.api_endpoints.image_search;
+                            register_endpoint = self.api_endpoints.image_register;
+                        }
+                        else {
+                            search_endpoint = "";
+                            register_endpoint = "";
+                        }
+                        var content = self.createElement("div", "", "");
+                        var content_search = content.appendChild(self.createElement("div", "", "be-dialog-media-search"));
+                        content_search.style.marginBottom = "20px";
+                        var content_search_input = content_search.appendChild(self.createElement("input", "", "be-dialog-media-search-input form-control"));
+                        content_search_input.type = "text";
+                        content_search_input.placeholder = "Suchbegriffe..";
+                        content_search_input.style.display = "inline-block";
+                        content_search_input.style.verticalAlign = "middle";
+                        var content_search_submit = content_search.appendChild(self.createElement("button", "", "be-dialog-media-search-submit __dialog-btn"));
+                        content_search_submit.type = "button";
+                        content_search_submit.innerHTML = "Suchen";
+                        content_search_submit.style.display = "inline-block";
+                        content_search_submit.style.verticalAlign = "middle";
+                        content_search_submit.style.width = "66px";
+                        content_search_submit.style.padding = "6px";
+                        content_search_submit.style.marginLeft = "8px";
+                        content_search_submit.style.marginRight = "0";
+                        content_search_input.style.width = "calc(100% - " + content_search_submit.style.width + " - " + content_search_submit.style.marginLeft + ")";
+                        var content_results = content.appendChild(self.createElement("div", "", "be-dialog-media-results"));
+                        content_results.style.overflowY = "auto";
+                        content_results.style.height = "500px";
+                        content_results.style.maxHeight = "90vh";
+                        function start_search() {
+                            self.request("GET", search_endpoint, "&q=" + content_search_input.value)
+                                .then(function (response) {
+                                var json = JSON.parse(response.responseText);
+                                var media_array = json.media;
+                                console.log("response json", json);
+                                content_results.innerHTML = '';
+                                var _loop_3 = function (i) {
+                                    var element = media_array[i];
+                                    row = content_results.appendChild(self.createElement("div", "", "row"));
+                                    row.style.display = "inline-block";
+                                    row.style.verticalAlign = "top";
+                                    row.style.width = (content_results.clientWidth / 2 - 18) + "px";
+                                    row.style.maxWidth = "100%";
+                                    row.style.border = "1px solid #ccc";
+                                    row.style.borderRadius = "6px";
+                                    row.style.margin = "4px";
+                                    row.style.textAlign = "center";
+                                    row.style.overflow = "hidden";
+                                    image_container = row.appendChild(self.createElement("div", "", "col"));
+                                    image_container.style.width = "100%";
+                                    image_container.style.height = "200px";
+                                    image = image_container.appendChild(self.createElement("img", "", ""));
+                                    image.src = element.url;
+                                    image.style.maxWidth = "100%";
+                                    image.style.maxHeight = "100%";
+                                    title = row.appendChild(self.createElement("div", "", "col"));
+                                    title.innerText = element.name;
+                                    title.style.marginBottom = "8px";
+                                    button = row.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-green"));
+                                    button.type = "button";
+                                    button.innerText = "Auswählen";
+                                    button.style.marginBottom = "8px";
+                                    var bild_id = element.id;
+                                    button.addEventListener("click", function () {
+                                        self.request("POST", register_endpoint, "&id=" + bild_id)
+                                            .then(function (response) {
+                                            var json = JSON.parse(response.responseText);
+                                            var bild_url = json.url;
+                                            baustein.content = bild_url;
+                                            if (self.selected_baustein !== null) {
+                                                var img = self.selected_baustein.querySelector("img");
+                                                if (img !== null) {
+                                                    img.src = bild_url;
+                                                }
+                                            }
+                                            resolve(null);
+                                            dialog.close();
+                                        });
+                                    });
+                                };
+                                var row, image_container, image, title, button;
+                                for (var i = 0; i < media_array.length; i++) {
+                                    _loop_3(i);
+                                }
+                            });
+                        }
+                        content_search_input.addEventListener("change", start_search);
+                        content_search_submit.addEventListener("click", start_search);
+                        dialog.start("Bild laden", content, '<i class="fas fa-sync"></i> Ansicht aktualisieren', null, 'Abbrechen', function () {
+                            start_search();
+                        }, null, function () {
+                            dialog.close();
+                            reject();
+                        });
+                        if (self.imageUpload !== null) {
+                            var __dialog_footer = document.getElementById("__dialog_footer");
+                            var upload_button = self.createElement("button", "", "__dialog-btn __dialog-btn-cyan");
+                            upload_button.innerHTML = '<i class="fas fa-upload"></i> Bild hochladen';
+                            upload_button.addEventListener("click", function () { if (self.imageUpload !== null)
+                                self.imageUpload(); });
+                            __dialog_footer === null || __dialog_footer === void 0 ? void 0 : __dialog_footer.prepend(upload_button);
+                        }
+                        start_search();
+                    })];
+            });
+        });
     };
     BausteinEditor.prototype.import = function (data) {
         for (var i = 0; i < data.bausteine.length; i++) {
@@ -1444,27 +1494,38 @@ var BausteinEditor = (function () {
         this.data = data;
         this.render();
     };
-    BausteinEditor.prototype.export_createBausteinElement = function (baustein, position, tag_override) {
+    BausteinEditor.prototype.export_createBausteinElement = function (baustein, tag_override) {
         if (tag_override === void 0) { tag_override = null; }
-        var tag, id;
-        if (tag_override === null) {
-            tag = baustein.tag;
-            id = baustein.type;
+        if (baustein.tag === "") {
+            var text_node = document.createTextNode(baustein.content);
+            if (tag_override !== null) {
+                var bausteinElement = document.createElement(tag_override);
+                bausteinElement.appendChild(text_node);
+                return bausteinElement;
+            }
+            return text_node;
         }
         else {
-            tag = tag_override;
-            id = tag_override;
-        }
-        var bausteinElement = document.createElement(tag);
-        bausteinElement.className = "baustein baustein--" + id;
-        if (baustein.class !== "")
-            bausteinElement.className += " " + baustein.class;
-        for (var s = 0; s < baustein.style.length; s++) {
-            var style = baustein.style[s];
-            if (style.value !== "" && style.value !== "0" && style.value !== "auto" && style.value !== "initial" && style.value !== "normal"
-                && (style.property.options.length === 0 || style.value !== style.property.options[0].value)) {
-                var ok = true, test_type = this.getBausteinType(id), test_type_index = -1;
-                if (test_type !== null) {
+            var tag, id;
+            if (tag_override === null) {
+                tag = baustein.tag;
+                id = baustein.type;
+            }
+            else {
+                tag = tag_override;
+                id = tag_override;
+            }
+            var bausteinElement = document.createElement(tag);
+            bausteinElement.className = "baustein baustein--" + id;
+            if (baustein.class !== "")
+                bausteinElement.className += " " + baustein.class;
+            for (var s = 0; s < baustein.style.length; s++) {
+                var style = baustein.style[s];
+                if (style.value !== "" && style.value !== "0" && style.value !== "auto" && style.value !== "initial" && style.value !== "normal"
+                    && (style.property.options.length === 0 || style.value !== style.property.options[0].value)) {
+                    var ok = true, test_type = this.getBausteinType(id), test_type_index = -1;
+                    console.log("test_type id", id);
+                    console.log("test_type", test_type);
                     for (var b = 0; b < test_type.style.length; b++) {
                         var test_style = test_type.style[b];
                         test_type_index = b;
@@ -1476,28 +1537,49 @@ var BausteinEditor = (function () {
                             break;
                         }
                     }
+                    if (ok) {
+                        if (test_type.style[test_type_index].property.useAsClass) {
+                            bausteinElement.classList.add(style.value);
+                        }
+                        else {
+                            bausteinElement.style.setProperty(style.property.name, style.value);
+                        }
+                    }
                 }
-                if (ok) {
-                    if (test_type.style[test_type_index].property.useAsClass) {
-                        bausteinElement.classList.add(style.value);
+            }
+            if (tag_override === null) {
+                console.log('baustein.content', baustein.content);
+                if (baustein.renderType === bausteinRenderType.image) {
+                    var bausteinElement_img = bausteinElement;
+                    bausteinElement_img.src = baustein.content;
+                }
+                else {
+                    bausteinElement.innerHTML = baustein.content;
+                }
+            }
+            var child_bausteine = this.getBausteineArray(baustein.id);
+            for (var r = 0; r < child_bausteine.length; r++) {
+                var child = child_bausteine[r];
+                var child_tag_override = null;
+                if (baustein.renderType === bausteinRenderType.tableRow)
+                    child_tag_override = "td";
+                else if (baustein.renderType === bausteinRenderType.layout)
+                    child_tag_override = "div";
+                if (child_tag_override === null) {
+                    bausteinElement.appendChild(this.export_createBausteinElement(child));
+                }
+                else {
+                    if (child.type === this.types.td.type || child.type === this.types.th.type) {
+                        bausteinElement.appendChild(this.export_createBausteinElement(child));
                     }
                     else {
-                        bausteinElement.style.setProperty(style.property.name, style.value);
+                        var bausteinElement_col = bausteinElement.appendChild(document.createElement(child_tag_override));
+                        bausteinElement_col.appendChild(this.export_createBausteinElement(child));
                     }
                 }
             }
+            return bausteinElement;
         }
-        if (tag_override === null) {
-            console.log('baustein.content', baustein.content);
-            if (baustein.renderType === bausteinRenderType.image) {
-                var bausteinElement_img = bausteinElement;
-                bausteinElement_img.src = baustein.content;
-            }
-            else {
-                bausteinElement.innerHTML = baustein.content;
-            }
-        }
-        return bausteinElement;
     };
     BausteinEditor.prototype.export = function () {
         var export_html_dom = this.createElement("div", "", "be-article");
@@ -1511,7 +1593,7 @@ var BausteinEditor = (function () {
         for (var row = 0; row < bausteine.length; row++) {
             var baustein = bausteine[row];
             if (baustein.renderType !== bausteinRenderType.bausteinSelector) {
-                export_html_dom.appendChild(this.export_createBausteinElement(baustein, new Position(null, baustein.position.sort)));
+                export_html_dom.appendChild(this.export_createBausteinElement(baustein, null));
             }
         }
         return {

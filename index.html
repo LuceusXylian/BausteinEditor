@@ -29,13 +29,9 @@
 
 
         function test_table() {
-            baustein_editor.addBaustein(baustein_editor.types.table, new Position(null, 1));
-    
-            setTimeout(() => {
-                document.getElementById("baustein_editor_dialog_fc_columns").value = "2";
-                document.getElementById("baustein_editor_dialog_fc_rows").value = "2";
-                document.querySelector(".__dialog-btn.__dialog-btn-green").click();
-    
+            baustein_editor.addBaustein(baustein_editor.types.table, new Position(null, 1))
+            .then(function(baustein) {
+                console.log(baustein_editor.data.bausteine[2])
                 const baustein_tablerow = baustein_editor.data.bausteine[2];
                 baustein_editor.addBaustein(baustein_editor.types.text, new Position(baustein_tablerow.position.parent, baustein_tablerow.position.sort))
                 .then((new_baustein) => {
@@ -52,6 +48,13 @@
                     }
                         
                 })
+            })
+    
+            setTimeout(() => {
+                document.getElementById("baustein_editor_dialog_fc_columns").value = "2";
+                document.getElementById("baustein_editor_dialog_fc_rows").value = "2";
+                document.querySelector(".__dialog-btn.__dialog-btn-green").click();
+    
             }, 1);
         }
 
