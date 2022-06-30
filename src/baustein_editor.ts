@@ -59,6 +59,16 @@ class BausteinStyle {
     }
 }
 
+class BausteinAttribute {
+	public name: string;
+	public value: string;
+
+    constructor(name: string, value: string) {
+        this.name = name;
+        this.value = value;
+    }
+}
+
 class BausteinTemplate {
 	public type: string;
 	public title: string;
@@ -68,6 +78,7 @@ class BausteinTemplate {
 	public content: string;
 	public class: string;
     public icon: string|null;
+	public attributes: BausteinAttribute[] = []; // aditional attributes, will be set before the other attributes like class and style
 
     // columns, rows for table and layout
 	public columns: number;
@@ -88,6 +99,25 @@ class BausteinTemplate {
         this.rows = 0;
         this.content = "";
         this.class = "";
+    }
+
+    getAttribute(name: string) {
+        for (var i = 0; i < this.attributes.length; i++) {
+            if (this.attributes[i].name === name) {
+                return this.attributes[i].value;
+            }
+        }
+        return null;
+    }
+
+    setAttribute(name: string, value: string) {
+        for (var i = 0; i < this.attributes.length; i++) {
+            if (this.attributes[i].name === name) {
+                this.attributes[i].value = value;
+                return;
+            }
+        }
+        this.attributes.push(new BausteinAttribute(name, value));
     }
 
     isParentType(): boolean {
@@ -536,7 +566,7 @@ class BausteinEditor {
     }
     
     renderBausteinSelector(position: Position, hide: boolean, showLayoutItems: boolean): HTMLElement {
-        console.log("renderBausteinSelector", position, hide, showLayoutItems);
+        //console.log("renderBausteinSelector", position, hide, showLayoutItems);
         const self = this;
         const selector_dom_id = this.dom_id + "_" + position.parent + "_" + position.sort;
         const position_parent = position.parent;
@@ -671,9 +701,6 @@ class BausteinEditor {
                 }
 
                 const children = this.getBausteineArray(baustein.id);
-                console.log("rowcol_amount_evaluate()", "amount", amount)
-                console.log("rowcol_amount_evaluate()", "child count", children.length)
-                console.log("rowcol_amount_evaluate()", "new_baustein_type", new_baustein_type)
 
                 if (children.length < amount) {
                     // add bausteine of type bausteinSelector
@@ -731,15 +758,12 @@ class BausteinEditor {
                 var baustein_type_baustein_selector_index = -1;
                 for (var r = 0; r < self.data.bausteine.length; r++) {
                     if (self.data.bausteine[r].position.parent === position.parent && self.data.bausteine[r].position.sort === position.sort) {
-                        console.log("--baustein_type_baustein_selector_index", r, "rendertype", self.data.bausteine[r].renderType);
                         if (self.data.bausteine[r].renderType === bausteinRenderType.bausteinSelector) {
                             baustein_type_baustein_selector_index = r;
                         }
                         break;
                     }
                 }
-
-                console.log("baustein_type_baustein_selector_index", baustein_type_baustein_selector_index)
 
                 if (baustein_type_baustein_selector_index === -1) {
                     // any baustein with equel or greater then position.sort += 1
@@ -790,7 +814,6 @@ class BausteinEditor {
                 }
                 actual_addBaustein();
             } 
-            console.log("addBaustein() this.data.bausteine", this.data.bausteine);
         });
     }
 
@@ -865,8 +888,6 @@ class BausteinEditor {
 
         this.rowcol_amount_evaluate();
 
-        console.log("this.data.bausteine", this.data.bausteine)
-        
         this.data.bausteine = bausteine;
         this.selected_baustein_id = null;
         this.open_baustein_attributes__baustein_id = null;
@@ -882,8 +903,7 @@ class BausteinEditor {
 
     moveBaustein(baustein_id: number, position_new: Position) {
         const baustein = this.getBaustein(baustein_id);
-        console.log("moveBaustein old position.sort", baustein.position.sort);
-        console.log("moveBaustein new position.sort", position_new.sort);
+        console.log("moveBaustein old position.sort", baustein.position.sort, "new position.sort", position_new.sort);
 
         var targetIsTable = false;
         if (position_new.parent !== null) {
@@ -969,7 +989,6 @@ class BausteinEditor {
         var elements_drag_not_allowed: Element[] = [];
 
         if (baustein.renderType === bausteinRenderType.bausteinSelector) {
-            console.log("position_parent position_parent ", position_parent);
             var baustein_dom = this.renderBausteinSelector(new Position(position_parent, position_sort), false, false);
         } else {
             var baustein_dom = this.createElement("div", baustein_dom_id, "be_baustein");
@@ -1196,8 +1215,7 @@ class BausteinEditor {
                                 sort: reciever_element.dataset.position_sort === "0" ? 0 : (parseInt(reciever_element.dataset.position_sort) || null) 
                             };
         
-                            console.log("drop on addBausteinSelector: old_baustein_id", old_baustein_id);
-                            console.log("drop on addBausteinSelector: new position", new_position);
+                            console.log("drop on addBausteinSelector: old_baustein_id", old_baustein_id, "new position", new_position);
                             
                             if (new_position.sort === null) {
                                 console.error("[BausteinEditor] LuxClickHoldDrag.callback_mouseup: new_position.sort is null");
@@ -1483,7 +1501,6 @@ class BausteinEditor {
             this.open_baustein_attributes__baustein_id = baustein_id;
             const self = this;
 
-            console.log("open_baustein_attributes baustein_id", baustein_id)
             this.dom.sidebar_content__baustein_styles.innerHTML = "";
             this.dom.sidebar_content__baustein_misc.innerHTML = "";
 
@@ -1617,9 +1634,7 @@ class BausteinEditor {
             baustein_delete_button.addEventListener("click", function() {
                 dialog.start("Baustein löschen", "Sind Sie sich sicher, dass Sie diesen Baustein löschen wollen?", null, "Löschen", "Abbrechen", null, function() {
                     self.close_baustein_attributes();
-                    console.log(self.data.bausteine);
                     self.deleteBaustein(baustein_id);
-                    console.log(self.data.bausteine);
                     dialog.close();
                 });
             });
@@ -1775,7 +1790,6 @@ class BausteinEditor {
                 .then(function(response) {
                     var json = JSON.parse(response.responseText);
                     var media_array = json.media;
-                    console.log("response json", json)
                     content_results.innerHTML = '';
 
                     for (let i = 0; i < media_array.length; i++) {
@@ -1903,14 +1917,11 @@ class BausteinEditor {
                 ) {
                     // get this.types[].style[] and check if it is not default value
                     var ok = true, test_type = this.getBausteinType(id), test_type_index = -1;
-                    console.log("test_type id", id)
-                    console.log("test_type", test_type)
                     for (var b = 0; b < test_type.style.length; b++) {
                         const test_style = test_type.style[b];
                         test_type_index = b;
 
                         if (test_style.property.name === style.property.name) {
-                            console.log(test_style.property.name, test_style.value, "|", style.property.name, style.value)
                             if (test_style.value === style.value) {
                                 ok = false;
                             }
@@ -1919,7 +1930,6 @@ class BausteinEditor {
                     }
     
                     if (ok) {
-                        //console.log("setProperty()", style.property.name, style.value, "style.property.options", style.property.options)
                         if (test_type.style[test_type_index].property.useAsClass) {
                             bausteinElement.classList.add(style.value);
                         } else {
@@ -1930,7 +1940,6 @@ class BausteinEditor {
             }
             
             if (tag_override === null) {
-                console.log('baustein.content', baustein.content)
                 if (baustein.renderType === bausteinRenderType.image) {
                     const bausteinElement_img: HTMLImageElement = <HTMLImageElement> bausteinElement;
                     bausteinElement_img.src = baustein.content;
@@ -2025,7 +2034,6 @@ class LuxDragDrop {
     mousedown = (e: any) => {
         if (!this.isHeld) {
             this.timeoutId = setTimeout(() => {
-                console.log("document.activeElement ", document.activeElement)
                 if(this.callback_mousedown !== null) {
                     if(this.callback_mousedown(e) === false) return false;
                 }
@@ -2040,8 +2048,6 @@ class LuxDragDrop {
                 this.drag_element.style.width = this.target.clientWidth+"px";
                 this.drag_element.style.height = this.target.offsetHeight+"px";
                 document.body.appendChild(this.drag_element)
-                console.log("this.drag_element", this.drag_element)
-                
                 
 
                 document.body.classList.add("grabbing");
