@@ -40,7 +40,7 @@
                     baustein_editor.render();
     
                     // now if the child count do not match then the test failed
-                    const children = baustein_editor.getBausteineArray(baustein_tablerow.id);
+                    const children = baustein_editor.getBausteineChildren(baustein_tablerow.id);
                     if (baustein_tablerow.columns === children.length) {
                         console.info("test_table: success");
                     } else {
