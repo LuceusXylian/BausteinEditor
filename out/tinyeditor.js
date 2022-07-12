@@ -37,7 +37,9 @@ var TinyEditor = (function () {
             for (var i = 0; i < inputButtons.length; i++) {
                 var input = inputButtons[i];
                 var value = document.queryCommandValue(input.dataset.commandId);
-                input.value = self.rgbToHex(value);
+                var converted_value = self.rgbToHex(value);
+                if (converted_value)
+                    input.value = converted_value;
             }
         };
         editor.addEventListener('keydown', updateActiveState);

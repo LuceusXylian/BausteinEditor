@@ -51,14 +51,15 @@
             })
     
             setTimeout(() => {
-                document.getElementById("baustein_editor_dialog_fc_columns").value = "2";
-                document.getElementById("baustein_editor_dialog_fc_rows").value = "2";
+                document.getElementById("baustein_editor_dialog_fc_columns").value = "1";
+                document.getElementById("baustein_editor_dialog_fc_rows").value = "1";
                 document.querySelector(".__dialog-btn.__dialog-btn-green").click();
     
             }, 1);
         }
 
-        test_table();
+        //test_table();
+        baustein_editor.addBaustein(baustein_editor.types.text, new Position(null, 1))
     </script>
 </body>
 </html>
