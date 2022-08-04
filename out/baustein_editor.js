@@ -1191,12 +1191,26 @@ var BausteinEditor = /** @class */ (function () {
                     var editor;
                     switch (baustein.renderType) {
                         case bausteinRenderType.button:
+                            var placeholder_text_1 = "Buttontext eingeben";
                             editor = baustein_dom.appendChild(this.createElement("a", baustein_editor_id, "be_baustein_item " + baustein.class));
-                            editor.innerHTML = baustein.content;
+                            if (baustein.content === "")
+                                editor.innerHTML = placeholder_text_1;
+                            else
+                                editor.innerHTML = baustein.content;
                             editor.setAttribute("contenteditable", "true");
                             editor.addEventListener("input", function () {
                                 baustein.content = editor.innerHTML;
                                 self.preview_render();
+                            });
+                            editor.addEventListener("focusin", function () {
+                                if (baustein.content === "") {
+                                    editor.innerHTML = "";
+                                }
+                            });
+                            editor.addEventListener("focusout", function () {
+                                if (baustein.content === "") {
+                                    editor.innerHTML = placeholder_text_1;
+                                }
                             });
                             break;
                         case bausteinRenderType.tableCell:

@@ -1349,15 +1349,31 @@ class BausteinEditor {
                     var editor: HTMLElement;
                     switch (baustein.renderType) {
                         case bausteinRenderType.button:
+                            const placeholder_text = "Buttontext eingeben";
+
                             editor = baustein_dom.appendChild(
                                 this.createElement("a", baustein_editor_id, "be_baustein_item "+baustein.class)
                             );
-                            editor.innerHTML = baustein.content;
+                            
+                            if(baustein.content === "") editor.innerHTML = placeholder_text;
+                            else editor.innerHTML = baustein.content;
                             editor.setAttribute("contenteditable", "true");
 
                             editor.addEventListener("input", function() {
                                 baustein.content = editor.innerHTML;
                                 self.preview_render();
+                            });
+
+                            editor.addEventListener("focusin", function() {
+                                if(baustein.content === "") {
+                                    editor.innerHTML = "";
+                                }
+                            });
+
+                            editor.addEventListener("focusout", function() {
+                                if(baustein.content === "") {
+                                    editor.innerHTML = placeholder_text;
+                                }
                             });
                             break;
                         case bausteinRenderType.tableCell:
