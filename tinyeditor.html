@@ -10,7 +10,8 @@
       height: 400px;
     }
   </style>
-  <link rel="stylesheet" href="css/tinyeditor.css">
+  <link rel="stylesheet" href="css/baustein_editor.css">
+  <link rel="stylesheet" href="css/website_styles.css">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
 </head>
 
@@ -24,36 +25,30 @@
     </p>
   </div>
 
-  <script src="js/tinyeditor.js"></script>
+  <script src="out/dialog.js"></script>
+  <script src="out/tinyeditor.js"></script>
   <script>
       var editor = document.getElementById("editor");
-      /*
-        formatblock
-        fontname
-        bold
-        italic
-        underline
-        forecolor
-        justifyleft
-        justifycenter
-        justifyright
-        insertorderedlist
-        insertunorderedlist
-        outdent
-        removeFormat
-      */
-      editor.dataset.formatblock = 0;
-      editor.dataset.fontname = 0;
-      editor.dataset.justifyleft = 0;
-      editor.dataset.justifycenter = 0;
-      editor.dataset.justifyright = 0;
-      editor.dataset.insertorderedlist = 0;
-      editor.dataset.insertunorderedlist = 0;
-      editor.dataset.indent = 0;
-      editor.dataset.outdent = 0;
-      console.log("options", editor.dataset)
 
-      TinyEditor.transformToEditor(document.getElementById("editor"))
+      const tiny_editor = new TinyEditor(editor, {
+        bold: true,
+        italic: true,
+        underline: true,
+        textcolor: true,
+        textleft: true,
+        textcenter: true,
+        textright: true,
+        insertorderedlist: true,
+        insertunorderedlist: true,
+        indent: true,
+        outdent: true,
+        image: true,
+        hyperlink: true,
+        removeFormat: true,
+        onchange: function() {
+        },
+        exec_command_create_image: function() {}
+    });
   </script>
 </body>
 

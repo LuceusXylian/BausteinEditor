@@ -1,5 +1,5 @@
 "use strict";
-var Dialog = (function () {
+var Dialog = /** @class */ (function () {
     function Dialog() {
         this.previous_action_close_function = null;
         var dialog = document.getElementById("__dialog");
@@ -95,4 +95,3 @@ var Dialog = (function () {
     };
     return Dialog;
 }());
-//# sourceMappingURL=dialog.js.map

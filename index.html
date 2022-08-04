@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
     <link rel="stylesheet" href="node_modules/@fortawesome/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="css/baustein_editor.css">
     <link rel="stylesheet" href="css/website_styles.css">
     
@@ -17,6 +18,7 @@
     </div>
 
 
+    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="out/dialog.js"></script>
     <script src="out/tinyeditor.js"></script>
     <script src="out/baustein_editor.js"></script>
@@ -24,7 +26,8 @@
         var baustein_editor = new BausteinEditor("baustein_editor", {
             imageUpload: function() {
                 console.log("imageUpload works")
-            }
+            },
+            preview_iframe_url: "preview.html",
         });
 
 
@@ -58,8 +61,26 @@
             }, 1);
         }
 
+        function test_layout() {
+            baustein_editor.addBaustein(baustein_editor.types.layout, new Position(null, 1))
+            .then(function(baustein) {
+                const baustein_layout = baustein_editor.data.bausteine[0];
+                baustein_editor.addBaustein(baustein_editor.types.text, new Position(baustein_layout.id, 2))
+                .then((new_baustein) => {
+                    new_baustein.content = "this is a test<br> adsasd";
+                    baustein_editor.render();
+                })
+            })
+    
+            setTimeout(() => {
+                document.getElementById("baustein_editor_dialog_fc_columns").value = "1";
+                document.querySelector(".__dialog-btn.__dialog-btn-green").click();
+            }, 1);
+        }
+
         //test_table();
-        baustein_editor.addBaustein(baustein_editor.types.text, new Position(null, 1))
+        test_layout();
+        //baustein_editor.addBaustein(baustein_editor.types.text, new Position(null, 1))
     </script>
 </body>
 </html>
