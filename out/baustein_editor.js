@@ -201,6 +201,9 @@ var BausteinTemplate = /** @class */ (function () {
                 return;
             }
         }
+        this.addStyle(name, value);
+    };
+    BausteinTemplate.prototype.addStyle = function (name, value) {
         this.style.push(new BausteinStyle(new BausteinStyleProperty(name, name, "", [], [], false, false), value));
     };
     return BausteinTemplate;
@@ -783,6 +786,10 @@ var BausteinEditor = /** @class */ (function () {
                                                 style.value = style.property.options[0].value;
                                             }
                                         }
+                                        if (baustein.getStyle("margin-top") === null)
+                                            baustein.setStyle("margin-top", "8px");
+                                        if (baustein.getStyle("margin-bottom") === null)
+                                            baustein.setStyle("margin-bottom", "8px");
                                         // test if on the same position is a Baustein typeof BausteinSelector
                                         var baustein_type_baustein_selector_index = null;
                                         if (baustein.renderType !== bausteinRenderType.bausteinSelector) {
@@ -2307,23 +2314,32 @@ var BausteinEditor = /** @class */ (function () {
         }
         else {
             // IS html node
-            var tag, id;
+            var is_image = baustein.renderType === bausteinRenderType.image;
+            var id, tag;
             if (tag_override === null) {
-                tag = baustein.tag;
                 id = baustein.type;
+                if (is_image) {
+                    tag = "div";
+                }
+                else {
+                    tag = baustein.tag;
+                }
             }
             else {
-                tag = tag_override;
                 id = tag_override;
+                tag = tag_override;
             }
             var bausteinElement_1 = document.createElement(tag);
-            for (var i = 0; i < baustein.attributes.length; i++) {
-                var attribute = baustein.attributes[i];
-                bausteinElement_1.setAttribute(attribute.name, attribute.value);
+            if (!is_image) {
+                for (var i = 0; i < baustein.attributes.length; i++) {
+                    var attribute = baustein.attributes[i];
+                    bausteinElement_1.setAttribute(attribute.name, attribute.value);
+                }
             }
             bausteinElement_1.className = "baustein baustein--" + id;
             if (baustein.class !== "")
                 bausteinElement_1.className += " " + baustein.class;
+            // Styles
             for (var s = 0; s < baustein.style.length; s++) {
                 var style = baustein.style[s];
                 if (style.value !== "" && style.value !== "0" && style.value !== "auto" && style.value !== "initial" && style.value !== "normal"
@@ -2344,7 +2360,6 @@ var BausteinEditor = /** @class */ (function () {
                         }
                     }
                     if (ok) {
-                        console.log("test_type.style", test_type.style);
                         // IF index === -1, then the style is not in the style list of the type. this is intended and means that the style should be used directly
                         if (test_type_index !== -1 && test_type.style[test_type_index].property.useAsClass) {
                             bausteinElement_1.classList.add(style.value);
@@ -2356,8 +2371,14 @@ var BausteinEditor = /** @class */ (function () {
                 }
             }
             if (tag_override === null) {
-                if (baustein.renderType === bausteinRenderType.image) {
-                    var bausteinElement_img = bausteinElement_1;
+                if (is_image) {
+                    var bausteinElement_img = bausteinElement_1.appendChild(document.createElement("img"));
+                    for (var i = 0; i < baustein.attributes.length; i++) {
+                        var attribute = baustein.attributes[i];
+                        bausteinElement_img.setAttribute(attribute.name, attribute.value);
+                    }
+                    bausteinElement_img.style.maxWidth = "100%";
+                    bausteinElement_img.style.maxHeight = "100%";
                     bausteinElement_img.src = baustein.content;
                 }
                 else {

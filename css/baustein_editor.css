@@ -468,7 +468,6 @@ select.be-form-control:not([multiple]) {
     margin: 4px;
     padding: 4px;
     border: 1px solid gray;
-    background: transparent;
     border-radius: 6px;
     cursor: pointer;
 }

@@ -194,6 +194,10 @@ class BausteinTemplate {
                 return;
             }
         }
+        this.addStyle(name, value);
+    }
+
+    private addStyle(name: string, value: string) {
         this.style.push(new BausteinStyle(new BausteinStyleProperty(name, name, "", [], [], false, false), value));
     }
 
@@ -775,7 +779,7 @@ class BausteinEditor {
             const category = i;
             be_bausteinSelector_layer_item.addEventListener("click", function() {
                 if(self.addBausteinSelectorItems[category].type === 0) {
-                    self.addBaustein(self.addBausteinSelectorItems[category].items[0], new Position(position.parent, position.sort));
+                    self.addBaustein(self.addBausteinSelectorItems[category].items[0], new Position(position.parent, position.sort), true);
                     self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
                 } else {
                     const types_array = self.addBausteinSelectorItems[category].items;
@@ -799,7 +803,7 @@ class BausteinEditor {
 
                         const types_array_row = b;
                         be_bausteinSelector_layer_item.addEventListener("click", function() {
-                            self.addBaustein(types_array[types_array_row], new Position(position.parent, position.sort));
+                            self.addBaustein(types_array[types_array_row], new Position(position.parent, position.sort), true);
                             self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
                         });
                     }
@@ -839,7 +843,7 @@ class BausteinEditor {
                 if (children.length < amount) {
                     // add bausteine of type bausteinSelector
                     for (var j = children.length; j < amount; j++) {
-                        this.addBaustein(new_baustein_type, new Position(baustein.id, this.getPositionSort(false)));
+                        this.addBaustein(new_baustein_type, new Position(baustein.id, this.getPositionSort(false)), false);
                     }
                 } else if(children.length > amount) {
                     // remove bausteine; to do this first we add all bausteine who are have not the parent of this table, then we add the rest
@@ -860,7 +864,7 @@ class BausteinEditor {
         }
     }
 
-    async addBaustein(baustein_template: BausteinTemplate, position: Position): Promise<Baustein> {
+    async addBaustein(baustein_template: BausteinTemplate, position: Position, do_render: boolean): Promise<Baustein> {
         return new Promise<Baustein>(async (resolve, reject) => {
             console.log("addBaustein( type:", baustein_template.type, ", position:", position, " )");
             const self = this;
@@ -874,7 +878,7 @@ class BausteinEditor {
                     baustein_class += "col";
                 } else if (parent_baustein.renderType === bausteinRenderType.tableRow && baustein_template.type === self.types.text.type) {
                     // IF parent is tableRow AND child is type "text" then change it to td
-                    resolve(await self.addBaustein(self.types.td, position));
+                    resolve(await self.addBaustein(self.types.td, position, do_render));
                     return;
                 }
             }
@@ -895,6 +899,9 @@ class BausteinEditor {
                         style.value = style.property.options[0].value;
                     }
                 }
+                
+                if(baustein.getStyle("margin-top") === null) baustein.setStyle("margin-top", "8px");
+                if(baustein.getStyle("margin-bottom") === null) baustein.setStyle("margin-bottom", "8px");
 
                 
                 // test if on the same position is a Baustein typeof BausteinSelector
@@ -925,7 +932,7 @@ class BausteinEditor {
 
                 if (baustein.renderType === bausteinRenderType.spoiler) {
                     const spoiler_id = new Date().getTime();
-                    self.addBaustein(self.types.spoiler_toggler, new Position(baustein_id, self.getPositionSort(false)))
+                    self.addBaustein(self.types.spoiler_toggler, new Position(baustein_id, self.getPositionSort(false)), false)
                         .then((that_baustein) => {
                             that_baustein.attributes = [
                                 new BausteinAttribute("data-bs-toggle", "collapse"),
@@ -934,26 +941,28 @@ class BausteinEditor {
                                 new BausteinAttribute("aria-controls", "be-bs-collapse-content"+spoiler_id),
                             ];
                     });
-                    self.addBaustein(self.types.spoiler_content, new Position(baustein_id, self.getPositionSort(false)))
+                    self.addBaustein(self.types.spoiler_content, new Position(baustein_id, self.getPositionSort(false)), false)
                         .then((that_baustein) => { that_baustein.attributes = [new BausteinAttribute("id", "be-bs-collapse-content"+spoiler_id)] });
                 } else {
                     // IF is ParentType THEN add dummy Bausteine to the Baustein-Array
                     if (baustein.isParentType()) {
                         if (baustein.renderType === bausteinRenderType.table) {
                             for (let row = 0; row < baustein.rows; row++) {
-                                self.addBaustein(self.types.tableRow, new Position(baustein_id, self.getPositionSort(false)));
+                                self.addBaustein(self.types.tableRow, new Position(baustein_id, self.getPositionSort(false)), false);
                             }
                         } else {
                             for (let column = 0; column < baustein.columns; column++) {
-                                self.addBaustein(self.types.bausteinSelector, new Position(baustein_id, self.getPositionSort(false)));
+                                self.addBaustein(self.types.bausteinSelector, new Position(baustein_id, self.getPositionSort(false)), false);
                             }
                         }
                     }
                 }
 
         
-                self.render();
-                if(baustein.renderType !== bausteinRenderType.bausteinSelector) self.selectBaustein(baustein_id);
+                if(do_render) {
+                    self.render();
+                    if(baustein.renderType !== bausteinRenderType.bausteinSelector) self.selectBaustein(baustein_id);
+                }
                 resolve(baustein);
             }
             
@@ -2618,23 +2627,34 @@ class BausteinEditor {
             return text_node;
         } else {
             // IS html node
-            var tag, id;
+            const is_image = baustein.renderType === bausteinRenderType.image;
+
+            var id, tag;
             if (tag_override === null) {
-                tag = baustein.tag;
                 id = baustein.type;
+                if (is_image) {
+                    tag = "div";
+                } else {
+                    tag = baustein.tag;
+                }
             } else {
-                tag = tag_override;
                 id = tag_override;
+                tag = tag_override;
             }
 
             const bausteinElement = document.createElement(tag);
-            for (let i = 0; i < baustein.attributes.length; i++) {
-                const attribute = baustein.attributes[i];
-                bausteinElement.setAttribute(attribute.name, attribute.value);
+
+            if (!is_image) {
+                for (let i = 0; i < baustein.attributes.length; i++) {
+                    const attribute = baustein.attributes[i];
+                    bausteinElement.setAttribute(attribute.name, attribute.value);
+                }
             }
 
             bausteinElement.className = "baustein baustein--"+id;
             if(baustein.class !== "") bausteinElement.className += " "+baustein.class;
+
+            // Styles
             for (var s = 0; s < baustein.style.length; s++) {
                 const style = baustein.style[s];
                 if (style.value !== "" && style.value !== "0" && style.value !== "auto" && style.value !== "initial" && style.value !== "normal" 
@@ -2659,7 +2679,6 @@ class BausteinEditor {
                     }
     
                     if (ok) {
-                        console.log("test_type.style", test_type.style)
                         // IF index === -1, then the style is not in the style list of the type. this is intended and means that the style should be used directly
                         if (test_type_index !== -1 && test_type.style[test_type_index].property.useAsClass) {
                             bausteinElement.classList.add(style.value);
@@ -2671,8 +2690,14 @@ class BausteinEditor {
             }
             
             if (tag_override === null) {
-                if (baustein.renderType === bausteinRenderType.image) {
-                    const bausteinElement_img: HTMLImageElement = <HTMLImageElement> bausteinElement;
+                if (is_image) {
+                    const bausteinElement_img: HTMLImageElement = bausteinElement.appendChild( document.createElement("img") );
+                    for (let i = 0; i < baustein.attributes.length; i++) {
+                        const attribute = baustein.attributes[i];
+                        bausteinElement_img.setAttribute(attribute.name, attribute.value);
+                    }
+                    bausteinElement_img.style.maxWidth = "100%";
+                    bausteinElement_img.style.maxHeight = "100%";
                     bausteinElement_img.src = baustein.content;
                 } else {
                     bausteinElement.innerHTML = baustein.content;
