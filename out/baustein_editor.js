@@ -256,6 +256,10 @@ var BausteinEditor = /** @class */ (function () {
             margin_right: { name: "margin-right", title: "Außenabstand Rechts", type: "number", suffix: ["px"], options: [new Option("auto")], useAsClass: false, showInBausteinAttributesSidebar: false },
             margin_bottom: { name: "margin-bottom", title: "Außenabstand Unten", type: "number", suffix: ["px"], options: [new Option("auto")], useAsClass: false, showInBausteinAttributesSidebar: false },
             margin_left: { name: "margin-left", title: "Außenabstand Links", type: "number", suffix: ["px"], options: [new Option("auto")], useAsClass: false, showInBausteinAttributesSidebar: false },
+            border_width_top: { name: "border-top-width", title: "Border Breite Oben", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+            border_width_right: { name: "border-right-width", title: "Border Breite Rechts", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+            border_width_bottom: { name: "border-bottom-width", title: "Border Breite Unten", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+            border_width_left: { name: "border-left-width", title: "Border Breite Links", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
             padding_top: { name: "padding-top", title: "Innenabstand Oben", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
             padding_right: { name: "padding-right", title: "Innenabstand Rechts", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
             padding_bottom: { name: "padding-bottom", title: "Innenabstand Unten", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
@@ -1660,6 +1664,7 @@ var BausteinEditor = /** @class */ (function () {
         var _this = this;
         var bausteinStyleProperty = this.getStylePropertyByName(styleName);
         var bausteinStyleValue = baustein.getStyleValue(styleName, default_value);
+        console.log("bausteinStyleProperty", bausteinStyleProperty);
         var be_layout_fc = this.formcontrol("baustein", "number", bausteinStyleProperty.name, null, bausteinStyleValue, {
             suffix: bausteinStyleProperty.suffix, html_options: bausteinStyleProperty.options, onchange: function () { return _this.apply_styles(); }
         }).content;
@@ -1969,7 +1974,7 @@ var BausteinEditor = /** @class */ (function () {
         var border_modall = document.createElement("div");
         var tabcontainer = border_modall.appendChild(document.createElement("div"));
         var contentcontainer = border_modall.appendChild(document.createElement("div"));
-        var tabs_name = ["style", "color", "radius"];
+        var tabs_name = ["style", "radius"];
         var tabs_dom = [];
         var tabs_container_dom = [];
         var inputs = [];
@@ -2002,25 +2007,37 @@ var BausteinEditor = /** @class */ (function () {
             new Option("normal", "initial"), new Option("solid", "solid"), new Option("dashed", "dashed"), new Option("dotted", "dotted"), new Option("double", "double")
         ];
         for (var s = 0; s < sides.length; s++) {
+            var tabs_container_style_dom = tabs_container_dom[style_index].appendChild(document.createElement("div"));
+            tabs_container_style_dom.style.border = "1px solid #007cba";
             var side = sides[s];
-            var name_1 = "border-" + side + "-style";
-            var value = baustein.getStyleValue(name_1, "");
-            var fc = this.formcontrol(name_1, "select", name_1, name_1, value, { html_options: style_options });
-            tabs_container_dom[style_index].appendChild(fc.content);
+            // side title
+            var side_dom = tabs_container_style_dom.appendChild(document.createElement("div"));
+            side_dom.innerHTML = side;
+            side_dom.className = "border_modall_undersides";
+            // border width
+            var name = "border-" + side + "-width";
+            var value = baustein.getStyleValue(name, "");
+            var fc = this.formcontrol(name, "number", name, null, value, { suffix: ["px"] });
+            fc.content.className = "border_modall_undersides be_formrow";
+            tabs_container_style_dom.appendChild(fc.content);
             inputs.push(fc.input);
-        }
-        // color
-        var color_index = 1;
-        for (var s = 0; s < sides.length; s++) {
-            var side = sides[s];
-            var name_2 = "border-" + side + "-color";
-            var value = baustein.getStyleValue(name_2, "");
-            var fc = this.formcontrol(name_2, "color", name_2, name_2, value, {});
-            tabs_container_dom[color_index].appendChild(fc.content);
+            // border style type
+            var name = "border-" + side + "-style";
+            var value = baustein.getStyleValue(name, "");
+            var fc = this.formcontrol(name, "select", name, null, value, { html_options: style_options });
+            fc.content.className = "border_modall_undersides be_formrow";
+            tabs_container_style_dom.appendChild(fc.content);
+            inputs.push(fc.input);
+            // color
+            var name = "border-" + side + "-color";
+            var value = baustein.getStyleValue(name, "");
+            var fc = this.formcontrol(name, "color", name, null, value, {});
+            fc.content.className = "border_modall_undersides be_formrow";
+            tabs_container_style_dom.appendChild(fc.content);
             inputs.push(fc.input);
         }
         // radius
-        var radius_index = 2;
+        var radius_index = 1;
         var radius_corners = ["top-left", "top-right", "bottom-left", "bottom-right"];
         radius_corners.forEach(function (corner) {
             var name = "border-" + corner + "-radius";
@@ -2036,7 +2053,9 @@ var BausteinEditor = /** @class */ (function () {
                 var input = inputs[i_4];
                 baustein.setStyle(input.name, input.value);
             }
-            _this.apply_styles();
+            _this.open_baustein_attributes__baustein_id = -1;
+            _this.open_baustein_attributes(baustein.id);
+            _this.render();
             dialog.close();
         }, null, null);
     };

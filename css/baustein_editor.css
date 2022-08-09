@@ -546,7 +546,7 @@ select.be-form-control:not([multiple]) {
 .border_modall_tab {
     display: inline-block;
     vertical-align: top;
-    width: 33.333%;
+    width: 50%;
     padding: 8px;
     color: white;
     background: #007cba;
@@ -558,6 +558,7 @@ select.be-form-control:not([multiple]) {
 .border_modall_tab:not(:first-child) { border-left: 1px solid #ccc; }
 .border_modall_tab:hover, .border_modall_tab.active { background: #006699; }
 .border_modall_tabcontent { border: 2px solid #007cba; }
+.border_modall_undersides { display: inline-block; vertical-align: middle; width: 25%; padding: 8px; margin: 0; }
 
 /* be-ajax-loader */
 .be-ajax-loader {
