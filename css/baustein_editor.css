@@ -297,9 +297,9 @@ select.be-form-control:not([multiple]) {
 
 .be_baustein > .be_baustein { margin: 20px 4px 0px 4px; }
 
-.be_baustein[data-type="table"] { padding: 10px; }
+.be_baustein[data-type="table"] { padding: 10px; padding-top: 20px; }
 .be_baustein[data-type="tableRow"], 
-    .be_baustein[data-type="layout"] { display: flex; flex-direction: row; margin: 20px 4px; }
+    .be_baustein[data-type="layout"] { display: flex; flex-direction: row; margin: 20px 4px; padding-top: 20px; }
 .be_baustein[data-type="tableRow"] > .be_baustein, 
     .be_baustein[data-type="layout"] > .be_baustein { flex-grow: 1; margin: 10px; margin-top: 20px; }
 .be_baustein[data-type="tableRow"] > .be_bausteinSelector_container > .be_bausteinSelector_outer > .be_bausteinSelector,

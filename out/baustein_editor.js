@@ -1457,7 +1457,7 @@ var BausteinEditor = /** @class */ (function () {
                 }
                 baustein.style[baustein_style_index].value = value;
                 var target;
-                if (baustein.renderType === bausteinRenderType.layout) {
+                if (baustein.isParentType() || property_name.indexOf("margin") === 0 || property_name.indexOf("border") === 0 || property_name.indexOf("padding") === 0) {
                     target = this.selected_baustein;
                 }
                 else {
