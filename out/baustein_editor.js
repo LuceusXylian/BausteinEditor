@@ -665,7 +665,7 @@ var BausteinEditor = /** @class */ (function () {
             var category = i;
             be_bausteinSelector_layer_item.addEventListener("click", function () {
                 if (self.addBausteinSelectorItems[category].type === 0) {
-                    self.addBaustein(self.addBausteinSelectorItems[category].items[0], new Position(position.parent, position.sort));
+                    self.addBaustein(self.addBausteinSelectorItems[category].items[0], new Position(position.parent, position.sort), true);
                     self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
                 }
                 else {
@@ -685,7 +685,7 @@ var BausteinEditor = /** @class */ (function () {
                         }
                         var types_array_row = b;
                         be_bausteinSelector_layer_item_1.addEventListener("click", function () {
-                            self.addBaustein(types_array_1[types_array_row], new Position(position.parent, position.sort));
+                            self.addBaustein(types_array_1[types_array_row], new Position(position.parent, position.sort), true);
                             self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
                         });
                     };
@@ -725,7 +725,7 @@ var BausteinEditor = /** @class */ (function () {
                 if (children.length < amount) {
                     // add bausteine of type bausteinSelector
                     for (var j = children.length; j < amount; j++) {
-                        this.addBaustein(new_baustein_type, new Position(baustein.id, this.getPositionSort(false)));
+                        this.addBaustein(new_baustein_type, new Position(baustein.id, this.getPositionSort(false)), false);
                     }
                 }
                 else if (children.length > amount) {
@@ -744,135 +744,126 @@ var BausteinEditor = /** @class */ (function () {
             }
         }
     };
-    BausteinEditor.prototype.addBaustein = function (baustein_template, position) {
+    BausteinEditor.prototype.addBaustein = function (baustein_template, position, do_render) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var self, parent_baustein, baustein_class, _a, baustein_id, baustein, actual_addBaustein;
-                        return __generator(this, function (_b) {
-                            switch (_b.label) {
-                                case 0:
-                                    console.log("addBaustein( type:", baustein_template.type, ", position:", position, " )");
-                                    self = this;
-                                    parent_baustein = position.parent === null ? null : this.getBaustein(position.parent);
-                                    baustein_class = baustein_template.class;
-                                    if (!(parent_baustein !== null)) return [3 /*break*/, 3];
-                                    if (!(parent_baustein.renderType === bausteinRenderType.layout)) return [3 /*break*/, 1];
-                                    // Layout children should have class="col"
-                                    if (baustein_class !== "")
-                                        baustein_class += " ";
-                                    baustein_class += "col";
-                                    return [3 /*break*/, 3];
-                                case 1:
-                                    if (!(parent_baustein.renderType === bausteinRenderType.tableRow && baustein_template.type === self.types.text.type)) return [3 /*break*/, 3];
-                                    // IF parent is tableRow AND child is type "text" then change it to td
-                                    _a = resolve;
-                                    return [4 /*yield*/, self.addBaustein(self.types.td, position)];
-                                case 2:
-                                    // IF parent is tableRow AND child is type "text" then change it to td
-                                    _a.apply(void 0, [_b.sent()]);
-                                    return [2 /*return*/];
-                                case 3:
-                                    baustein_id = this.baustein_id_counter;
-                                    baustein = new Baustein(baustein_id, position, baustein_template.type, baustein_template.title, baustein_template.tag, baustein_template.renderType, baustein_template.toggleableClasses, baustein_template.attributes, baustein_template.style);
-                                    baustein.class = baustein_class;
-                                    actual_addBaustein = function () {
-                                        self.baustein_id_counter += 1;
-                                        // handle default style
-                                        for (var i = 0; i < baustein.style.length; i++) {
-                                            var style = baustein.style[i];
-                                            if (style.value === "" && style.property.options.length > 0) {
-                                                style.value = style.property.options[0].value;
-                                            }
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        var self = _this;
+                        var parent_baustein = position.parent === null ? null : _this.getBaustein(position.parent);
+                        var baustein_class = baustein_template.class;
+                        if (parent_baustein !== null) {
+                            if (parent_baustein.renderType === bausteinRenderType.layout) {
+                                // Layout children should have class="col"
+                                if (baustein_class !== "")
+                                    baustein_class += " ";
+                                baustein_class += "col";
+                            }
+                            else if (parent_baustein.renderType === bausteinRenderType.tableRow && baustein_template.type === self.types.text.type) {
+                                // IF parent is tableRow AND child is type "text" then change it to td
+                                baustein_template = self.types.td;
+                                baustein_class = baustein_template.class;
+                            }
+                        }
+                        console.log("addBaustein( type:", baustein_template.type, ", position:", position, " )");
+                        var baustein_id = _this.baustein_id_counter;
+                        var baustein = new Baustein(baustein_id, position, baustein_template.type, baustein_template.title, baustein_template.tag, baustein_template.renderType, baustein_template.toggleableClasses, baustein_template.attributes, baustein_template.style);
+                        baustein.class = baustein_class;
+                        var actual_addBaustein = function () {
+                            self.baustein_id_counter += 1;
+                            // handle default style
+                            for (var i = 0; i < baustein.style.length; i++) {
+                                var style = baustein.style[i];
+                                if (style.value === "" && style.property.options.length > 0) {
+                                    style.value = style.property.options[0].value;
+                                }
+                            }
+                            if (baustein.getStyle("margin-top") === null)
+                                baustein.setStyle("margin-top", "8px");
+                            if (baustein.getStyle("margin-bottom") === null)
+                                baustein.setStyle("margin-bottom", "8px");
+                            // test if on the same position is a Baustein typeof BausteinSelector
+                            var baustein_type_baustein_selector_index = null;
+                            if (baustein.renderType !== bausteinRenderType.bausteinSelector) {
+                                for (var r = 0; r < self.data.bausteine.length; r++) {
+                                    if (self.data.bausteine[r].position.parent === position.parent && self.data.bausteine[r].position.sort === position.sort) {
+                                        if (self.data.bausteine[r].renderType === bausteinRenderType.bausteinSelector) {
+                                            baustein_type_baustein_selector_index = r;
                                         }
-                                        if (baustein.getStyle("margin-top") === null)
-                                            baustein.setStyle("margin-top", "8px");
-                                        if (baustein.getStyle("margin-bottom") === null)
-                                            baustein.setStyle("margin-bottom", "8px");
-                                        // test if on the same position is a Baustein typeof BausteinSelector
-                                        var baustein_type_baustein_selector_index = null;
-                                        if (baustein.renderType !== bausteinRenderType.bausteinSelector) {
-                                            for (var r = 0; r < self.data.bausteine.length; r++) {
-                                                if (self.data.bausteine[r].position.parent === position.parent && self.data.bausteine[r].position.sort === position.sort) {
-                                                    if (self.data.bausteine[r].renderType === bausteinRenderType.bausteinSelector) {
-                                                        baustein_type_baustein_selector_index = r;
-                                                    }
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        if (baustein_type_baustein_selector_index === null) {
-                                            // any baustein with equel or greater then position.sort += 1
-                                            for (var r = 0; r < self.data.bausteine.length; r++) {
-                                                if (self.data.bausteine[r].position.sort >= position.sort) {
-                                                    self.data.bausteine[r].position.sort++;
-                                                }
-                                            }
-                                            self.data.bausteine.push(baustein);
-                                        }
-                                        else {
-                                            self.data.bausteine.splice(baustein_type_baustein_selector_index, 1);
-                                            self.data.bausteine.push(baustein);
-                                        }
-                                        if (baustein.renderType === bausteinRenderType.spoiler) {
-                                            var spoiler_id_1 = new Date().getTime();
-                                            self.addBaustein(self.types.spoiler_toggler, new Position(baustein_id, self.getPositionSort(false)))
-                                                .then(function (that_baustein) {
-                                                that_baustein.attributes = [
-                                                    new BausteinAttribute("data-bs-toggle", "collapse"),
-                                                    new BausteinAttribute("aria-expanded", "false"),
-                                                    new BausteinAttribute("data-bs-target", "#be-bs-collapse-content" + spoiler_id_1),
-                                                    new BausteinAttribute("aria-controls", "be-bs-collapse-content" + spoiler_id_1),
-                                                ];
-                                            });
-                                            self.addBaustein(self.types.spoiler_content, new Position(baustein_id, self.getPositionSort(false)))
-                                                .then(function (that_baustein) { that_baustein.attributes = [new BausteinAttribute("id", "be-bs-collapse-content" + spoiler_id_1)]; });
-                                        }
-                                        else {
-                                            // IF is ParentType THEN add dummy Bausteine to the Baustein-Array
-                                            if (baustein.isParentType()) {
-                                                if (baustein.renderType === bausteinRenderType.table) {
-                                                    for (var row = 0; row < baustein.rows; row++) {
-                                                        self.addBaustein(self.types.tableRow, new Position(baustein_id, self.getPositionSort(false)));
-                                                    }
-                                                }
-                                                else {
-                                                    for (var column = 0; column < baustein.columns; column++) {
-                                                        self.addBaustein(self.types.bausteinSelector, new Position(baustein_id, self.getPositionSort(false)));
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        self.render();
-                                        if (baustein.renderType !== bausteinRenderType.bausteinSelector)
-                                            self.selectBaustein(baustein_id);
-                                        resolve(baustein);
-                                    };
-                                    if (baustein.renderType === bausteinRenderType.layout || baustein.renderType === bausteinRenderType.table) {
-                                        this.dialog_rowcol(baustein)
-                                            .then(function () { return actual_addBaustein(); })
-                                            .catch(function () { return reject(); });
+                                        break;
                                     }
-                                    else if (baustein.renderType === bausteinRenderType.image) {
-                                        this.dialog_media(baustein.renderType)
-                                            .then(function (image_url) {
-                                            baustein.content = image_url;
-                                            actual_addBaustein();
-                                        })
-                                            .catch(function () { return reject(); });
+                                }
+                            }
+                            if (baustein_type_baustein_selector_index === null) {
+                                // any baustein with equel or greater then position.sort += 1
+                                for (var r = 0; r < self.data.bausteine.length; r++) {
+                                    if (self.data.bausteine[r].position.sort >= position.sort) {
+                                        self.data.bausteine[r].position.sort++;
+                                    }
+                                }
+                                self.data.bausteine.push(baustein);
+                            }
+                            else {
+                                self.data.bausteine.splice(baustein_type_baustein_selector_index, 1);
+                                self.data.bausteine.push(baustein);
+                            }
+                            if (baustein.renderType === bausteinRenderType.spoiler) {
+                                var spoiler_id_1 = new Date().getTime();
+                                self.addBaustein(self.types.spoiler_toggler, new Position(baustein_id, self.getPositionSort(false)), false)
+                                    .then(function (that_baustein) {
+                                    that_baustein.attributes = [
+                                        new BausteinAttribute("data-bs-toggle", "collapse"),
+                                        new BausteinAttribute("aria-expanded", "false"),
+                                        new BausteinAttribute("data-bs-target", "#be-bs-collapse-content" + spoiler_id_1),
+                                        new BausteinAttribute("aria-controls", "be-bs-collapse-content" + spoiler_id_1),
+                                    ];
+                                });
+                                self.addBaustein(self.types.spoiler_content, new Position(baustein_id, self.getPositionSort(false)), false)
+                                    .then(function (that_baustein) { that_baustein.attributes = [new BausteinAttribute("id", "be-bs-collapse-content" + spoiler_id_1)]; });
+                            }
+                            else {
+                                // IF is ParentType THEN add dummy Bausteine to the Baustein-Array
+                                if (baustein.isParentType()) {
+                                    if (baustein.renderType === bausteinRenderType.table) {
+                                        for (var row = 0; row < baustein.rows; row++) {
+                                            self.addBaustein(self.types.tableRow, new Position(baustein_id, self.getPositionSort(false)), false);
+                                        }
                                     }
                                     else {
-                                        if (baustein.renderType === bausteinRenderType.tableRow && parent_baustein !== null) {
-                                            // TableRow inherit columns count from Table
-                                            baustein.columns = parent_baustein.columns;
+                                        for (var column = 0; column < baustein.columns; column++) {
+                                            self.addBaustein(self.types.bausteinSelector, new Position(baustein_id, self.getPositionSort(false)), false);
                                         }
-                                        actual_addBaustein();
                                     }
-                                    return [2 /*return*/];
+                                }
                             }
-                        });
-                    }); })];
+                            if (do_render) {
+                                self.render();
+                                if (baustein.renderType !== bausteinRenderType.bausteinSelector)
+                                    self.selectBaustein(baustein_id);
+                            }
+                            resolve(baustein);
+                        };
+                        if (baustein.renderType === bausteinRenderType.layout || baustein.renderType === bausteinRenderType.table) {
+                            _this.dialog_rowcol(baustein)
+                                .then(function () { return actual_addBaustein(); })
+                                .catch(function () { return reject(); });
+                        }
+                        else if (baustein.renderType === bausteinRenderType.image) {
+                            _this.dialog_media(baustein.renderType)
+                                .then(function (image_url) {
+                                baustein.content = image_url;
+                                actual_addBaustein();
+                            })
+                                .catch(function () { return reject(); });
+                        }
+                        else {
+                            if (baustein.renderType === bausteinRenderType.tableRow && parent_baustein !== null) {
+                                // TableRow inherit columns count from Table
+                                baustein.columns = parent_baustein.columns;
+                            }
+                            actual_addBaustein();
+                        }
+                    })];
             });
         });
     };

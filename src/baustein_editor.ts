@@ -865,8 +865,7 @@ class BausteinEditor {
     }
 
     async addBaustein(baustein_template: BausteinTemplate, position: Position, do_render: boolean): Promise<Baustein> {
-        return new Promise<Baustein>(async (resolve, reject) => {
-            console.log("addBaustein( type:", baustein_template.type, ", position:", position, " )");
+        return new Promise<Baustein>((resolve, reject) => {
             const self = this;
             const parent_baustein = position.parent === null? null : this.getBaustein(position.parent);
             var baustein_class = baustein_template.class;
@@ -878,10 +877,13 @@ class BausteinEditor {
                     baustein_class += "col";
                 } else if (parent_baustein.renderType === bausteinRenderType.tableRow && baustein_template.type === self.types.text.type) {
                     // IF parent is tableRow AND child is type "text" then change it to td
-                    resolve(await self.addBaustein(self.types.td, position, do_render));
-                    return;
+                    baustein_template = self.types.td;
+                    baustein_class = baustein_template.class
                 }
             }
+
+            console.log("addBaustein( type:", baustein_template.type, ", position:", position, " )");
+
             
             const baustein_id = this.baustein_id_counter;
             var baustein = new Baustein(
