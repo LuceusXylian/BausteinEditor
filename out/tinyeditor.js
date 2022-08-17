@@ -262,6 +262,7 @@ var TinyEditor = /** @class */ (function () {
             var link_marker_input_label = row3.appendChild(document.createElement("label"));
             link_marker_input_label.setAttribute("for", "link_marker_input");
             link_marker_input_label.innerHTML = "Link-Marker";
+            link_marker_input_label.className = "link-marker";
             link_marker_input_label.style.userSelect = "none";
             link_marker_input_label.style.cursor = "pointer";
             // class

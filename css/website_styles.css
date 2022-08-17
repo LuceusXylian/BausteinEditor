@@ -2,6 +2,7 @@
 
 
 /* btn */
+.btn { height: fit-content; }
 .btn-cta {
 	color: #fff;
     background-color: #42b72a;
@@ -51,10 +52,11 @@ h3 { font-size: 1.125rem; }
 /* link marker */
 .link-marker {
     background: #8ad88a;
-    padding: 1px;
+    padding: 2px 4px;
     border-radius: 6px;
     display: inline-block;
     border: 1px groove #6c6;
+    line-height: 1;
 }
 
 

@@ -307,6 +307,14 @@ select.be-form-control:not([multiple]) {
 
 
 .be_baustein_item { min-width: 100px; min-height: 10px; width: inherit; height: inherit; } 
+.be_baustein_item_overlay {
+    position: absolute;
+    top: 0; left: 0;
+    bottom: 0; right: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.1);
+    z-index: 1;
+}
 
 .be_baustein textarea {
     width: 100%;
@@ -323,6 +331,7 @@ select.be-form-control:not([multiple]) {
 .baustein_indicator {
     display: block;
     position: absolute;
+    z-index: 2;
     top: -14px;
     left: 4px;
     font-size: 0.7rem;
