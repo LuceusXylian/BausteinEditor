@@ -18,6 +18,7 @@ const bausteinRenderType = {
     spoiler_content: 10,
     iframe: 11,
     container: 12,
+    shortcode: 13,
 
     isParentType: function (renderType: number) {
         return renderType === this.container || renderType === this.layout || renderType === this.table || renderType === this.tableRow || renderType === this.spoiler;
@@ -229,6 +230,26 @@ class BausteinEditor {
 	private cursor_mode: number = 0;
 	private imageUpload: Function|null = null;
 	private preview_iframe_url: string|null = null;
+
+    private tinyeditor_toolbar_options: TinyEditorToolbarOptions = {
+        formatblock: false,
+        fontname: false,
+        bold: true,
+        italic: true,
+        underline: true,
+        textcolor: true,
+        textleft: true,
+        textcenter: true,
+        textright: true,
+        insertorderedlist: true,
+        insertunorderedlist: true,
+        outdent: true,
+        indent: true,
+        image: true,
+        hyperlink: true,
+        removeFormat: true,
+    };
+    tinyeditor_toolbar: TinyEditorToolbar;
     
 	public styleProperties = {
         //font_family: { name: "font-family", title: "Schriftart", type: "string", suffix: [], options:  [new Option("Verdana, Arial, Helvetica, sans-serif")] },
@@ -413,7 +434,7 @@ class BausteinEditor {
             { property: this.styleProperties.width, value:"100%" },
             { property: this.styleProperties.height, value:"300px" },
         ])
-        ,shortcode: new BausteinTemplate("shortcode", "Shortcode", '<b>[..]</b>', "", bausteinRenderType.plaintext, [], [], [])
+        ,shortcode: new BausteinTemplate("shortcode", "Shortcode", '<b>[..]</b>', "", bausteinRenderType.shortcode, [], [], [])
         ,image: new BausteinTemplate("image", "Bild", '<i class="fas fa-image"></i>', "img", bausteinRenderType.image, [], [], [
             { property: this.styleProperties.max_width, value:"100%" },
             { property: this.styleProperties.max_height, value:"" },
@@ -496,6 +517,10 @@ class BausteinEditor {
         image_search: "",
         image_register: "",
     };
+    public shortcodes = [
+        "vorlesen",
+        "bewerten",
+    ]
 
     createElement(_type: string, _id: string, _class: string): HTMLElement {
         var element = document.createElement(_type);
@@ -535,7 +560,11 @@ class BausteinEditor {
             this.createElement("div", this.dom_id+"_sidebar", "be_sidebar")
         );
 
-        this.dom.cursormodechanger = this.dom.main.appendChild(
+        this.dom.toolbar = this.dom.main.appendChild(
+            this.createElement("div", "", "be_toolbar")
+        );
+
+        this.dom.cursormodechanger = this.dom.toolbar.appendChild(
             this.createElement("div", "", "be_cursormodechanger")
         );
         this.dom.cursormodechanger_default = this.dom.cursormodechanger.appendChild(
@@ -546,6 +575,11 @@ class BausteinEditor {
             this.createElement("div", "", "be_cursormodechanger_item be_cursormodechanger_drag")
         );
         this.dom.cursormodechanger_drag.innerHTML = '<i class="fas fa-arrows-alt"></i>';
+
+        this.dom.toolbar_baustein = this.dom.toolbar.appendChild(
+            this.createElement("div", "", "be_toolbar_baustein")
+        );
+
         
         this.dom.content = this.dom.main.appendChild(
             this.createElement("div", this.dom_id+"_content", "be_content")
@@ -632,6 +666,11 @@ class BausteinEditor {
         this.be_bausteinSelector_isOpen = false;
         this.apply_styles();
 
+
+        // TinyEditor Setup
+        this.tinyeditor_toolbar = new TinyEditorToolbar(this.dom.toolbar, this.tinyeditor_toolbar_options);
+        console.log("this.tinyeditor_toolbar.toolbar_dom", this.tinyeditor_toolbar.toolbar_dom)
+        
 
         // Construct ajax loader
         this.dom.ajax_loader = document.body.appendChild( this.createElement("div", this.dom_id+"-ajax-loader", "be-ajax-loader") );
@@ -1252,7 +1291,8 @@ class BausteinEditor {
             baustein_dom.dataset.position_parent = position_parent+"";
             baustein_dom.dataset.position_sort = position_sort+"";
     
-            if (this.selected_baustein_id !== null && this.selected_baustein_id === baustein_id) {
+            const is_selected_baustein = this.selected_baustein_id !== null && this.selected_baustein_id === baustein_id;
+            if (is_selected_baustein) {
                 baustein_dom.classList.add("selected")
             }
     
@@ -1333,6 +1373,73 @@ class BausteinEditor {
                     }
                     break;
                     
+                case bausteinRenderType.shortcode:
+                    const shortcode_trimmed = baustein.content.replace("[", "").replace("]", "").trim();
+                    var disable_editor_input = shortcode_trimmed === "";
+
+                    const editor_select = <HTMLSelectElement> baustein_dom.appendChild( this.createElement("select", "", "form-control") );
+                    editor_select.autocomplete = "off";
+                    editor_select.style.border = "0";
+                    const option_placeholder_dom = <HTMLOptionElement> editor_select.appendChild( document.createElement("option") );
+                    option_placeholder_dom.value = "";
+                    option_placeholder_dom.innerHTML = "Shortcode auswählen";
+                    option_placeholder_dom.style.display = "none";
+
+                    for (let i = 0; i < this.shortcodes.length; i++) {
+                        const shortcode = this.shortcodes[i];
+                        const shortcode_dom = <HTMLOptionElement> editor_select.appendChild( document.createElement("option") );
+                        shortcode_dom.value = shortcode;
+                        shortcode_dom.innerHTML = shortcode;
+                        if (shortcode === shortcode_trimmed) {
+                            disable_editor_input = true;
+                            shortcode_dom.selected = true;
+                        }
+                    }
+
+                    const option_other_dom = <HTMLOptionElement> editor_select.appendChild( document.createElement("option") );
+                    option_other_dom.value = "-1";
+                    option_other_dom.innerHTML = "Benutzerdefiniert / Sonstige";
+
+
+                    const editor_input = <HTMLInputElement> baustein_dom.appendChild( this.createElement("input", "", "form-control") );
+                    editor_input.type = "text";
+                    editor_input.value = baustein.content;
+                    editor_input.style.border = "0";
+
+                    if (disable_editor_input) {
+                        editor_input.style.display = "none";
+                    } else {
+                        editor_select.style.display = "none";
+                    }
+
+                    [editor_select, editor_input].forEach(function(editor) {
+                        ["click", "focusin"].forEach(function(event_type) {
+                            editor.addEventListener(event_type, function() { self.selectBaustein(baustein_id); });
+                        });
+                    });
+
+                    editor_select.addEventListener("change", function() {
+                        if (this.value !== "") {
+                            if (this.value === "-1") {
+                                editor_input.style.display = "block";
+                                editor_select.style.display = "none";
+                            } else {
+                                editor_input.value = "[" + this.value + "]";
+                                baustein.content = editor_input.value;
+                                self.preview_render();
+                            }
+                        }
+                    });
+                    
+                    editor_input.addEventListener("change", function() {
+                        editor_input.value = editor_input.value.trim();
+                        if(editor_input.value.substring(0, 1) !== "[") editor_input.value = "[" + editor_input.value;
+                        if(editor_input.value.substring(editor_input.value.length - 1) !== "]") editor_input.value = editor_input.value + "]";
+                        baustein.content = editor_input.value;
+                        self.preview_render();
+                    });
+                    break;
+                    
                 case bausteinRenderType.image:
                     var image: HTMLImageElement = <HTMLImageElement> baustein_dom.appendChild(
                         this.createElement("img", baustein_editor_id, "be_baustein_item")
@@ -1389,6 +1496,7 @@ class BausteinEditor {
                             editor = baustein_dom.appendChild(
                                 this.createElement("a", baustein_editor_id, "be_baustein_item "+baustein.class)
                             );
+                            editor.style.userSelect = "text";
                             
                             if(baustein.content === "") editor.innerHTML = placeholder_text;
                             else editor.innerHTML = baustein.content;
@@ -1435,20 +1543,8 @@ class BausteinEditor {
                             */
             
                             const tiny_editor = new TinyEditor(editor, {
-                                bold: true,
-                                italic: true,
-                                underline: true,
-                                textcolor: true,
-                                textleft: true,
-                                textcenter: true,
-                                textright: true,
-                                insertorderedlist: true,
-                                insertunorderedlist: true,
-                                indent: true,
-                                outdent: true,
-                                image: true,
-                                hyperlink: true,
-                                removeFormat: true,
+                                toolbar: null,
+        
                                 onchange: function() {
                                     baustein.content = tiny_editor.export();
                                     self.preview_render();
@@ -1463,9 +1559,16 @@ class BausteinEditor {
                                             reject(error);
                                         });
                                     });
-                                }
+                                },
+
+                                tinyeditor_toolbar_options: self.tinyeditor_toolbar_options
                             });
+                            if(is_selected_baustein) this.tinyeditor_toolbar.selected_editor = tiny_editor;
                             tiny_editor.import(baustein.content);
+                            
+                            editor.addEventListener("focusin", function() {
+                                self.tinyeditor_toolbar.selected_editor = tiny_editor;
+                            });
                             break;
                         
                         default:

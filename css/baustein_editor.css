@@ -235,6 +235,8 @@ select.be-form-control:not([multiple]) {
 }
 
 .be_cursormodechanger {
+    display: inline-block; vertical-align: top;
+    width: 74px;
     position: relative;
     z-index: 1;
 }
@@ -247,6 +249,9 @@ select.be-form-control:not([multiple]) {
 .be_cursormodechanger_item.active {
     box-shadow: inset 0 -4px 0 0 #007cba;
     color: #007cba;
+}
+.be_toolbar > * {
+    display: inline-block; vertical-align: middle;
 }
 
 .be_content {

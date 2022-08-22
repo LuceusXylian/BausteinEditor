@@ -1,10 +1,360 @@
 /// <reference path="dialog.ts"/>
 var dialog = new Dialog();
 
+interface ExecCommandCreateImage {
+    (): Promise<string>;
+}
+
+interface TinyEditorOptions {
+    toolbar: TinyEditorToolbar|null;
+    onchange: Function|null;
+    exec_command_create_image: ExecCommandCreateImage;
+    tinyeditor_toolbar_options: TinyEditorToolbarOptions;
+}
+
+interface TinyEditorToolbarOptions {
+    formatblock: boolean;
+    fontname: boolean;
+    bold: boolean;
+    italic: boolean;
+    underline: boolean;
+    textcolor: boolean;
+    textleft: boolean;
+    textcenter: boolean;
+    textright: boolean;
+    insertorderedlist: boolean;
+    insertunorderedlist: boolean;
+    outdent: boolean;
+    indent: boolean;
+    image: boolean;
+    hyperlink: boolean;
+    removeFormat: boolean;
+}
+
+// enables usage of same Toolbar for multiple editors
+class TinyEditorToolbar {
+    TOOLBAR_ITEM: string = '__toolbar-item';
+    toolbar_dom: HTMLElement;
+    selected_editor: TinyEditor|null = null;
+
+    constructor(targetElement: HTMLElement, options: TinyEditorToolbarOptions) {
+        this.toolbar_dom = targetElement;
+        this.toolbar_dom.classList.add('__toolbar');
+    
+        // Styles
+        if (options.formatblock === true) {
+            this.toolbar_dom.appendChild(
+                this.createSelect(
+                    'formatblock',
+                    'Styles',
+                    [
+                        { value: 'h1', text: 'Title 1' },
+                        { value: 'h2', text: 'Title 2' },
+                        { value: 'h3', text: 'Title 3' },
+                        { value: 'h4', text: 'Title 4' },
+                        { value: 'h5', text: 'Title 5' },
+                        { value: 'h6', text: 'Title 6' },
+                        { value: 'p', text: 'Paragraph', selected: true },
+                        { value: 'pre', text: 'Preformatted' },
+                    ])
+            );
+        }
+    
+        // Font
+        if (options.fontname === true) {
+            this.toolbar_dom.appendChild(
+                this.createSelect(
+                    'fontname',
+                    'Font',
+                    [
+                        { value: 'serif', text: 'Serif', selected: true },
+                        { value: 'sans-serif', text: 'Sans Serif' },
+                        { value: 'monospace', text: 'Monospace' },
+                        { value: 'cursive', text: 'Cursive' },
+                        { value: 'fantasy', text: 'Fantasy' },
+                    ])
+            );
+        }
+    
+        // Bold
+        if (options.bold === true) {
+            this.toolbar_dom.appendChild(
+                this.createButton('bold', 'Bold', this.createIcon('fas fa-bold'))
+            );
+        }
+    
+        // Italic
+        if (options.italic === true) {
+            this.toolbar_dom.appendChild(
+                this.createButton('italic', 'Italic', this.createIcon('fas fa-italic'))
+            );
+        }
+    
+        // Underline
+        if (options.underline === true) {
+            this.toolbar_dom.appendChild(
+            this.createButton(
+                'underline',
+                'Underline',
+                this.createIcon('fas fa-underline'))
+            );
+        }
+    
+        // Text color
+        if (options.textcolor === true) {
+            this.toolbar_dom.appendChild(
+            this.createInput('forecolor', 'Text color', 'color')
+            );
+        }
+    
+        // Separator
+        //this.toolbar_dom.appendChild(this.createSeparator());
+    
+        // Left align
+        if (options.textleft === true) {
+            this.toolbar_dom.appendChild(this.createSeparator());
+
+            this.toolbar_dom.appendChild(
+            this.createButton(
+                'justifyleft',
+                'Left align',
+                this.createIcon('fas fa-align-left'))
+            );
+        }
+    
+        // Center align
+        if (options.textcenter === true) {
+            this.toolbar_dom.appendChild(
+            this.createButton(
+                'justifycenter',
+                'Center align',
+                this.createIcon('fas fa-align-center'))
+            );
+        }
+    
+        // Right align
+        if (options.textright === true) {
+            this.toolbar_dom.appendChild(
+            this.createButton(
+                'justifyright',
+                'Right align',
+                this.createIcon('fas fa-align-right'))
+            );
+        }
+    
+        // Separator
+        //this.toolbar_dom.appendChild(this.createSeparator());
+    
+        // Numbered list
+        if (options.insertorderedlist === true) {
+            this.toolbar_dom.appendChild(this.createSeparator());
+
+            this.toolbar_dom.appendChild(
+            this.createButton(
+                'insertorderedlist',
+                'Numbered list',
+                this.createIcon('fas fa-list-ol'))
+            );
+        }
+    
+        // Bulleted list
+        if (options.insertunorderedlist === true) {
+            this.toolbar_dom.appendChild(
+            this.createButton(
+                'insertunorderedlist',
+                'Bulleted list',
+                this.createIcon('fas fa-list-ul'))
+            );
+        }
+    
+        // Decrease indent
+        if (options.outdent === true) {
+            this.toolbar_dom.appendChild(
+            this.createButton(
+                'outdent',
+                'Decrease indent',
+                this.createIcon('fas fa-indent fa-flip-horizontal'))
+            );
+        }
+    
+        // Increase indent
+        if (options.indent === true) {
+            this.toolbar_dom.appendChild(
+            this.createButton(
+                'indent',
+                'Increase indent',
+                this.createIcon('fas fa-indent'))
+            );
+
+            this.toolbar_dom.appendChild(this.createSeparator());
+        }
+    
+        // Create image
+        if (options.image === true) {
+            this.toolbar_dom.appendChild(
+                this.createButton(
+                    'createImage',
+                    'Create Image',
+                    this.createIcon('fas fa-image'))
+            );
+        }
+    
+        // Create Hyperlink
+        if (options.hyperlink === true) {
+            this.toolbar_dom.appendChild(
+                this.createButton(
+                    'createLink',
+                    'Create Hyperlink',
+                    this.createIcon('fas fa-link'))
+            );
+
+            this.toolbar_dom.appendChild(
+                this.createButton(
+                    'removeLink',
+                    'remove Hyperlink',
+                    this.createIcon('fas fa-unlink'))
+            );
+        }
+    
+        // Clear formatting
+        if (options.removeFormat === true) {
+            this.toolbar_dom.appendChild(
+            this.createButton(
+                'removeFormat',
+                'Clear formatting',
+                this.createIcon('fas fa-eraser'))
+            );
+        }
+
+        // Events
+        this.toolbar_dom.addEventListener('click', () => this.updateActiveState() );
+
+    }
+
+    updateActiveState() {
+        const toolbarSelects = this.toolbar_dom.querySelectorAll('select[data-command-id]');
+        for (var i=0; i<toolbarSelects.length; i++) {
+            const select: any = toolbarSelects[i];
+            const value = document.queryCommandValue(select.dataset.commandId);
+            const option: any = Array.from(select.options).find(
+                _option => {
+                    const option: any = _option;
+                    return option.value === value;
+                }
+            );
+            select.selectedIndex = option ? option.index : -1;
+        }
+
+        const toolbarButtons = this.toolbar_dom.querySelectorAll('button[data-command-id]');
+        for (var i=0; i<toolbarButtons.length; i++) {
+            const button: any = toolbarButtons[i];
+            const active = document.queryCommandState(button.dataset.commandId);
+            button.classList.toggle('active', active);
+        }
+
+        const inputButtons = this.toolbar_dom.querySelectorAll('input[data-command-id]');
+        for (var i=0; i<inputButtons.length; i++) {
+            const input: any = inputButtons[i];
+            const value = document.queryCommandValue(input.dataset.commandId);
+            const converted_value = this.rgbToHex(value);
+            if(converted_value) input.value = converted_value;
+        }
+    }
+
+    rgbToHex(color: string) {
+        const digits = /(.*?)rgb\((\d+), (\d+), (\d+)\)/.exec(color);
+        if (digits !== null && digits.length > 5) {
+            const red = parseInt(digits[2]);
+            const green = parseInt(digits[3]);
+            const blue = parseInt(digits[4]);
+            const rgb = blue | (green << 8) | (red << 16);
+        
+            var color_hex = rgb.toString(16);
+            var to = 6 - color_hex.length;
+            for (let i = 0; i < to; i++) {
+                color_hex = "0" + color_hex;
+            }
+            return digits[1] + '#' + color_hex;
+        }
+    }
+
+    createButton(commandId: any, title: any, child: any){
+        const button = document.createElement('button');
+        button.dataset.commandId = commandId;
+        button.className = this.TOOLBAR_ITEM;
+        button.title = title;
+        button.type = 'button';
+        button.appendChild(child);
+        button.addEventListener('click', () => { if(this.selected_editor !== null) this.selected_editor.execCommand(commandId, null); });
+      
+        return button;
+    }
+
+    createOption(value: any, text: any, selected: any) {
+        const option = document.createElement('option');
+        option.innerText = text;
+      
+        if (value) option.setAttribute('value', value);
+        if (selected) option.setAttribute('selected', selected);
+      
+        return option;
+    }
+
+    createSelect(commandId: any, title: any, options: any) {
+        const select = document.createElement('select');
+        select.dataset.commandId = commandId;
+        select.className = this.TOOLBAR_ITEM;
+        select.title = title;
+        select.addEventListener('change', e => {
+            const target: any = e.target;
+            if (e.target === null) {
+                return;
+            } else {
+                if(this.selected_editor !== null) return this.selected_editor.execCommand(commandId, target.options[target.selectedIndex].value);
+            }
+        });
+      
+        for (const option of options) {
+          select.appendChild(
+            this.createOption(option.value, option.text, option.selected)
+          );
+        }
+      
+        return select;
+    }
+    
+    createIcon(className: any) {
+        const icon = document.createElement('i');
+        icon.className = className;
+    
+        return icon;
+    }
+    
+    createInput(commandId: any, title: any, type: any) {
+        const input = document.createElement('input');
+        input.dataset.commandId = commandId;
+        input.className = this.TOOLBAR_ITEM;
+        input.title = title;
+        input.type = type;
+        input.addEventListener('change', e => {
+            const target: any = e.target;
+            if(this.selected_editor !== null) return this.selected_editor.execCommand(commandId, target.value);
+        });
+    
+        return input;
+    }
+    
+    createSeparator() {
+        const separator = document.createElement('span');
+        separator.className = '__toolbar-separator';
+      
+        return separator;
+    }
+}
 
 class TinyEditor {
-    TOOLBAR_ITEM: string = '__toolbar-item';
     private editor: HTMLElement;
+    private toolbar: TinyEditorToolbar;
     callback_onchange: Function|null = null;
     callback_exec_command_create_image: ExecCommandCreateImageEvent;
 
@@ -15,53 +365,29 @@ class TinyEditor {
         return element;
     }
 
-    constructor(editor: HTMLElement, options: any) {
+    constructor(editor: HTMLElement, options: TinyEditorOptions) {
         this.editor = editor;
         editor.classList.add("__editor");
         editor.setAttribute('contentEditable', "true");
         
         if(typeof options.onchange === "function") this.callback_onchange = options.onchange;
         this.callback_exec_command_create_image = options.exec_command_create_image;
-    
+        
         // Create a toolbar
-        const toolbar = this.createToolbar(options);
-        editor.insertAdjacentElement("beforebegin", toolbar);
+        if(options.toolbar === null) {
+            const toolbar_dom = this.editor.appendChild(document.createElement("div"));
+            this.toolbar = new TinyEditorToolbar(toolbar_dom, options.tinyeditor_toolbar_options);
+            this.toolbar.selected_editor = this;
+        } else {
+            this.toolbar = options.toolbar;
+        }
+        this.callback_onchange = options.onchange;
     
         // Listen for events to detect where the caret is
-        const self = this;
-        const updateActiveState = function() {
-            const toolbarSelects = toolbar.querySelectorAll('select[data-command-id]');
-            for (var i=0; i<toolbarSelects.length; i++) {
-                const select: any = toolbarSelects[i];
-                const value = document.queryCommandValue(select.dataset.commandId);
-                const option: any = Array.from(select.options).find(
-                    _option => {
-                        const option: any = _option;
-                        return option.value === value;
-                    }
-                );
-                select.selectedIndex = option ? option.index : -1;
-            }
-    
-            const toolbarButtons = toolbar.querySelectorAll('button[data-command-id]');
-            for (var i=0; i<toolbarButtons.length; i++) {
-                const button: any = toolbarButtons[i];
-                const active = document.queryCommandState(button.dataset.commandId);
-                button.classList.toggle('active', active);
-            }
-    
-            const inputButtons = toolbar.querySelectorAll('input[data-command-id]');
-            for (var i=0; i<inputButtons.length; i++) {
-                const input: any = inputButtons[i];
-                const value = document.queryCommandValue(input.dataset.commandId);
-                const converted_value = self.rgbToHex(value);
-                if(converted_value) input.value = converted_value;
-            }
-        }
-        editor.addEventListener('keydown', updateActiveState);
-        editor.addEventListener('keyup', updateActiveState);
-        editor.addEventListener('click', updateActiveState);
-        toolbar.addEventListener('click', updateActiveState);
+        editor.addEventListener('focusin', () => { this.toolbar.selected_editor = this; console.log("TTTTTTTTTTTT", this.toolbar) } );
+        editor.addEventListener('keydown', () => this.toolbar.updateActiveState() );
+        editor.addEventListener('keyup', () => this.toolbar.updateActiveState() );
+        editor.addEventListener('click', () => this.toolbar.updateActiveState() );
 
 
         document.addEventListener('selectionchange', () => {
@@ -111,8 +437,6 @@ class TinyEditor {
         }
         
     }
-
-    
 
     execCommand(commandId: any, value: any) {
         switch (commandId) {
@@ -362,288 +686,7 @@ class TinyEditor {
         }
     }
 
-    createButton(commandId: any, title: any, child: any){
-        const button = document.createElement('button');
-        button.dataset.commandId = commandId;
-        button.className = this.TOOLBAR_ITEM;
-        button.title = title;
-        button.type = 'button';
-        button.appendChild(child);
-        button.addEventListener('click', () => this.execCommand(commandId, null));
-      
-        return button;
-    }
     
-    createOption(value: any, text: any, selected: any) {
-        const option = document.createElement('option');
-        option.innerText = text;
-      
-        if (value) option.setAttribute('value', value);
-        if (selected) option.setAttribute('selected', selected);
-      
-        return option;
-    }
-
-    createSelect(commandId: any, title: any, options: any) {
-        const select = document.createElement('select');
-        select.dataset.commandId = commandId;
-        select.className = this.TOOLBAR_ITEM;
-        select.title = title;
-        select.addEventListener('change', e => {
-            const target: any = e.target;
-            if (e.target === null) {
-                return;
-            } else {
-                return this.execCommand(commandId,target.options[target.selectedIndex].value);
-            }
-        });
-      
-        for (const option of options) {
-          select.appendChild(
-            this.createOption(option.value, option.text, option.selected)
-          );
-        }
-      
-        return select;
-    }
-    
-    createIcon(className: any) {
-        const icon = document.createElement('i');
-        icon.className = className;
-    
-        return icon;
-    }
-    
-    createInput(commandId: any, title: any, type: any) {
-        const input = document.createElement('input');
-        input.dataset.commandId = commandId;
-        input.className = this.TOOLBAR_ITEM;
-        input.title = title;
-        input.type = type;
-        input.addEventListener('change', e => {
-            const target: any = e.target;
-            return this.execCommand(commandId, target.value);
-        });
-    
-        return input;
-    }
-    
-    createSeparator() {
-        const separator = document.createElement('span');
-        separator.className = '__toolbar-separator';
-      
-        return separator;
-    }
-
-    createToolbar(options: any) {
-        const toolbar = document.createElement('div');
-        toolbar.className = '__toolbar';
-    
-        // Styles
-        if (options.formatblock === true) {
-            toolbar.appendChild(
-                this.createSelect(
-                    'formatblock',
-                    'Styles',
-                    [
-                        { value: 'h1', text: 'Title 1' },
-                        { value: 'h2', text: 'Title 2' },
-                        { value: 'h3', text: 'Title 3' },
-                        { value: 'h4', text: 'Title 4' },
-                        { value: 'h5', text: 'Title 5' },
-                        { value: 'h6', text: 'Title 6' },
-                        { value: 'p', text: 'Paragraph', selected: true },
-                        { value: 'pre', text: 'Preformatted' },
-                    ])
-            );
-        }
-    
-        // Font
-        if (options.fontname === true) {
-            toolbar.appendChild(
-                this.createSelect(
-                    'fontname',
-                    'Font',
-                    [
-                        { value: 'serif', text: 'Serif', selected: true },
-                        { value: 'sans-serif', text: 'Sans Serif' },
-                        { value: 'monospace', text: 'Monospace' },
-                        { value: 'cursive', text: 'Cursive' },
-                        { value: 'fantasy', text: 'Fantasy' },
-                    ])
-            );
-        }
-    
-        // Bold
-        if (options.bold === true) {
-            toolbar.appendChild(
-                this.createButton('bold', 'Bold', this.createIcon('fas fa-bold'))
-            );
-        }
-    
-        // Italic
-        if (options.italic === true) {
-            toolbar.appendChild(
-                this.createButton('italic', 'Italic', this.createIcon('fas fa-italic'))
-            );
-        }
-    
-        // Underline
-        if (options.underline === true) {
-            toolbar.appendChild(
-            this.createButton(
-                'underline',
-                'Underline',
-                this.createIcon('fas fa-underline'))
-            );
-        }
-    
-        // Text color
-        if (options.textcolor === true) {
-            toolbar.appendChild(
-            this.createInput('forecolor', 'Text color', 'color')
-            );
-        }
-    
-        // Separator
-        //toolbar.appendChild(this.createSeparator());
-    
-        // Left align
-        if (options.textleft === true) {
-            toolbar.appendChild(this.createSeparator());
-
-            toolbar.appendChild(
-            this.createButton(
-                'justifyleft',
-                'Left align',
-                this.createIcon('fas fa-align-left'))
-            );
-        }
-    
-        // Center align
-        if (options.textcenter === true) {
-            toolbar.appendChild(
-            this.createButton(
-                'justifycenter',
-                'Center align',
-                this.createIcon('fas fa-align-center'))
-            );
-        }
-    
-        // Right align
-        if (options.textright === true) {
-            toolbar.appendChild(
-            this.createButton(
-                'justifyright',
-                'Right align',
-                this.createIcon('fas fa-align-right'))
-            );
-        }
-    
-        // Separator
-        //toolbar.appendChild(this.createSeparator());
-    
-        // Numbered list
-        if (options.insertorderedlist === true) {
-            toolbar.appendChild(this.createSeparator());
-
-            toolbar.appendChild(
-            this.createButton(
-                'insertorderedlist',
-                'Numbered list',
-                this.createIcon('fas fa-list-ol'))
-            );
-        }
-    
-        // Bulleted list
-        if (options.insertunorderedlist === true) {
-            toolbar.appendChild(
-            this.createButton(
-                'insertunorderedlist',
-                'Bulleted list',
-                this.createIcon('fas fa-list-ul'))
-            );
-        }
-    
-        // Decrease indent
-        if (options.outdent === true) {
-            toolbar.appendChild(
-            this.createButton(
-                'outdent',
-                'Decrease indent',
-                this.createIcon('fas fa-indent fa-flip-horizontal'))
-            );
-        }
-    
-        // Increase indent
-        if (options.indent === true) {
-            toolbar.appendChild(
-            this.createButton(
-                'indent',
-                'Increase indent',
-                this.createIcon('fas fa-indent'))
-            );
-
-            toolbar.appendChild(this.createSeparator());
-        }
-    
-        // Create image
-        if (options.image === true) {
-            toolbar.appendChild(
-                this.createButton(
-                    'createImage',
-                    'Create Image',
-                    this.createIcon('fas fa-image'))
-            );
-        }
-    
-        // Create Hyperlink
-        if (options.hyperlink === true) {
-            toolbar.appendChild(
-                this.createButton(
-                    'createLink',
-                    'Create Hyperlink',
-                    this.createIcon('fas fa-link'))
-            );
-
-            toolbar.appendChild(
-                this.createButton(
-                    'removeLink',
-                    'remove Hyperlink',
-                    this.createIcon('fas fa-unlink'))
-            );
-        }
-    
-        // Clear formatting
-        if (options.removeFormat === true) {
-            toolbar.appendChild(
-            this.createButton(
-                'removeFormat',
-                'Clear formatting',
-                this.createIcon('fas fa-eraser'))
-            );
-        }
-    
-        return toolbar;
-    }
-    
-    rgbToHex(color: string) {
-        const digits = /(.*?)rgb\((\d+), (\d+), (\d+)\)/.exec(color);
-        if (digits !== null && digits.length > 5) {
-            const red = parseInt(digits[2]);
-            const green = parseInt(digits[3]);
-            const blue = parseInt(digits[4]);
-            const rgb = blue | (green << 8) | (red << 16);
-        
-            var color_hex = rgb.toString(16);
-            var to = 6 - color_hex.length;
-            for (let i = 0; i < to; i++) {
-                color_hex = "0" + color_hex;
-            }
-            return digits[1] + '#' + color_hex;
-        }
-    }
-
     saveSelection(): Range[] {
         if(window.getSelection) {
             var selection = window.getSelection();

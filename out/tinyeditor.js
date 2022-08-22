@@ -1,10 +1,220 @@
 "use strict";
 /// <reference path="dialog.ts"/>
 var dialog = new Dialog();
+// enables usage of same Toolbar for multiple editors
+var TinyEditorToolbar = /** @class */ (function () {
+    function TinyEditorToolbar(targetElement, options) {
+        var _this = this;
+        this.TOOLBAR_ITEM = '__toolbar-item';
+        this.selected_editor = null;
+        this.toolbar_dom = targetElement;
+        this.toolbar_dom.classList.add('__toolbar');
+        // Styles
+        if (options.formatblock === true) {
+            this.toolbar_dom.appendChild(this.createSelect('formatblock', 'Styles', [
+                { value: 'h1', text: 'Title 1' },
+                { value: 'h2', text: 'Title 2' },
+                { value: 'h3', text: 'Title 3' },
+                { value: 'h4', text: 'Title 4' },
+                { value: 'h5', text: 'Title 5' },
+                { value: 'h6', text: 'Title 6' },
+                { value: 'p', text: 'Paragraph', selected: true },
+                { value: 'pre', text: 'Preformatted' },
+            ]));
+        }
+        // Font
+        if (options.fontname === true) {
+            this.toolbar_dom.appendChild(this.createSelect('fontname', 'Font', [
+                { value: 'serif', text: 'Serif', selected: true },
+                { value: 'sans-serif', text: 'Sans Serif' },
+                { value: 'monospace', text: 'Monospace' },
+                { value: 'cursive', text: 'Cursive' },
+                { value: 'fantasy', text: 'Fantasy' },
+            ]));
+        }
+        // Bold
+        if (options.bold === true) {
+            this.toolbar_dom.appendChild(this.createButton('bold', 'Bold', this.createIcon('fas fa-bold')));
+        }
+        // Italic
+        if (options.italic === true) {
+            this.toolbar_dom.appendChild(this.createButton('italic', 'Italic', this.createIcon('fas fa-italic')));
+        }
+        // Underline
+        if (options.underline === true) {
+            this.toolbar_dom.appendChild(this.createButton('underline', 'Underline', this.createIcon('fas fa-underline')));
+        }
+        // Text color
+        if (options.textcolor === true) {
+            this.toolbar_dom.appendChild(this.createInput('forecolor', 'Text color', 'color'));
+        }
+        // Separator
+        //this.toolbar_dom.appendChild(this.createSeparator());
+        // Left align
+        if (options.textleft === true) {
+            this.toolbar_dom.appendChild(this.createSeparator());
+            this.toolbar_dom.appendChild(this.createButton('justifyleft', 'Left align', this.createIcon('fas fa-align-left')));
+        }
+        // Center align
+        if (options.textcenter === true) {
+            this.toolbar_dom.appendChild(this.createButton('justifycenter', 'Center align', this.createIcon('fas fa-align-center')));
+        }
+        // Right align
+        if (options.textright === true) {
+            this.toolbar_dom.appendChild(this.createButton('justifyright', 'Right align', this.createIcon('fas fa-align-right')));
+        }
+        // Separator
+        //this.toolbar_dom.appendChild(this.createSeparator());
+        // Numbered list
+        if (options.insertorderedlist === true) {
+            this.toolbar_dom.appendChild(this.createSeparator());
+            this.toolbar_dom.appendChild(this.createButton('insertorderedlist', 'Numbered list', this.createIcon('fas fa-list-ol')));
+        }
+        // Bulleted list
+        if (options.insertunorderedlist === true) {
+            this.toolbar_dom.appendChild(this.createButton('insertunorderedlist', 'Bulleted list', this.createIcon('fas fa-list-ul')));
+        }
+        // Decrease indent
+        if (options.outdent === true) {
+            this.toolbar_dom.appendChild(this.createButton('outdent', 'Decrease indent', this.createIcon('fas fa-indent fa-flip-horizontal')));
+        }
+        // Increase indent
+        if (options.indent === true) {
+            this.toolbar_dom.appendChild(this.createButton('indent', 'Increase indent', this.createIcon('fas fa-indent')));
+            this.toolbar_dom.appendChild(this.createSeparator());
+        }
+        // Create image
+        if (options.image === true) {
+            this.toolbar_dom.appendChild(this.createButton('createImage', 'Create Image', this.createIcon('fas fa-image')));
+        }
+        // Create Hyperlink
+        if (options.hyperlink === true) {
+            this.toolbar_dom.appendChild(this.createButton('createLink', 'Create Hyperlink', this.createIcon('fas fa-link')));
+            this.toolbar_dom.appendChild(this.createButton('removeLink', 'remove Hyperlink', this.createIcon('fas fa-unlink')));
+        }
+        // Clear formatting
+        if (options.removeFormat === true) {
+            this.toolbar_dom.appendChild(this.createButton('removeFormat', 'Clear formatting', this.createIcon('fas fa-eraser')));
+        }
+        // Events
+        this.toolbar_dom.addEventListener('click', function () { return _this.updateActiveState(); });
+    }
+    TinyEditorToolbar.prototype.updateActiveState = function () {
+        var toolbarSelects = this.toolbar_dom.querySelectorAll('select[data-command-id]');
+        var _loop_1 = function () {
+            var select = toolbarSelects[i];
+            var value = document.queryCommandValue(select.dataset.commandId);
+            var option = Array.from(select.options).find(function (_option) {
+                var option = _option;
+                return option.value === value;
+            });
+            select.selectedIndex = option ? option.index : -1;
+        };
+        for (var i = 0; i < toolbarSelects.length; i++) {
+            _loop_1();
+        }
+        var toolbarButtons = this.toolbar_dom.querySelectorAll('button[data-command-id]');
+        for (var i = 0; i < toolbarButtons.length; i++) {
+            var button = toolbarButtons[i];
+            var active = document.queryCommandState(button.dataset.commandId);
+            button.classList.toggle('active', active);
+        }
+        var inputButtons = this.toolbar_dom.querySelectorAll('input[data-command-id]');
+        for (var i = 0; i < inputButtons.length; i++) {
+            var input = inputButtons[i];
+            var value = document.queryCommandValue(input.dataset.commandId);
+            var converted_value = this.rgbToHex(value);
+            if (converted_value)
+                input.value = converted_value;
+        }
+    };
+    TinyEditorToolbar.prototype.rgbToHex = function (color) {
+        var digits = /(.*?)rgb\((\d+), (\d+), (\d+)\)/.exec(color);
+        if (digits !== null && digits.length > 5) {
+            var red = parseInt(digits[2]);
+            var green = parseInt(digits[3]);
+            var blue = parseInt(digits[4]);
+            var rgb = blue | (green << 8) | (red << 16);
+            var color_hex = rgb.toString(16);
+            var to = 6 - color_hex.length;
+            for (var i = 0; i < to; i++) {
+                color_hex = "0" + color_hex;
+            }
+            return digits[1] + '#' + color_hex;
+        }
+    };
+    TinyEditorToolbar.prototype.createButton = function (commandId, title, child) {
+        var _this = this;
+        var button = document.createElement('button');
+        button.dataset.commandId = commandId;
+        button.className = this.TOOLBAR_ITEM;
+        button.title = title;
+        button.type = 'button';
+        button.appendChild(child);
+        button.addEventListener('click', function () { if (_this.selected_editor !== null)
+            _this.selected_editor.execCommand(commandId, null); });
+        return button;
+    };
+    TinyEditorToolbar.prototype.createOption = function (value, text, selected) {
+        var option = document.createElement('option');
+        option.innerText = text;
+        if (value)
+            option.setAttribute('value', value);
+        if (selected)
+            option.setAttribute('selected', selected);
+        return option;
+    };
+    TinyEditorToolbar.prototype.createSelect = function (commandId, title, options) {
+        var _this = this;
+        var select = document.createElement('select');
+        select.dataset.commandId = commandId;
+        select.className = this.TOOLBAR_ITEM;
+        select.title = title;
+        select.addEventListener('change', function (e) {
+            var target = e.target;
+            if (e.target === null) {
+                return;
+            }
+            else {
+                if (_this.selected_editor !== null)
+                    return _this.selected_editor.execCommand(commandId, target.options[target.selectedIndex].value);
+            }
+        });
+        for (var _i = 0, options_1 = options; _i < options_1.length; _i++) {
+            var option = options_1[_i];
+            select.appendChild(this.createOption(option.value, option.text, option.selected));
+        }
+        return select;
+    };
+    TinyEditorToolbar.prototype.createIcon = function (className) {
+        var icon = document.createElement('i');
+        icon.className = className;
+        return icon;
+    };
+    TinyEditorToolbar.prototype.createInput = function (commandId, title, type) {
+        var _this = this;
+        var input = document.createElement('input');
+        input.dataset.commandId = commandId;
+        input.className = this.TOOLBAR_ITEM;
+        input.title = title;
+        input.type = type;
+        input.addEventListener('change', function (e) {
+            var target = e.target;
+            if (_this.selected_editor !== null)
+                return _this.selected_editor.execCommand(commandId, target.value);
+        });
+        return input;
+    };
+    TinyEditorToolbar.prototype.createSeparator = function () {
+        var separator = document.createElement('span');
+        separator.className = '__toolbar-separator';
+        return separator;
+    };
+    return TinyEditorToolbar;
+}());
 var TinyEditor = /** @class */ (function () {
     function TinyEditor(editor, options) {
         var _this = this;
-        this.TOOLBAR_ITEM = '__toolbar-item';
         this.callback_onchange = null;
         this.editor = editor;
         editor.classList.add("__editor");
@@ -13,43 +223,20 @@ var TinyEditor = /** @class */ (function () {
             this.callback_onchange = options.onchange;
         this.callback_exec_command_create_image = options.exec_command_create_image;
         // Create a toolbar
-        var toolbar = this.createToolbar(options);
-        editor.insertAdjacentElement("beforebegin", toolbar);
+        if (options.toolbar === null) {
+            var toolbar_dom = this.editor.appendChild(document.createElement("div"));
+            this.toolbar = new TinyEditorToolbar(toolbar_dom, options.tinyeditor_toolbar_options);
+            this.toolbar.selected_editor = this;
+        }
+        else {
+            this.toolbar = options.toolbar;
+        }
+        this.callback_onchange = options.onchange;
         // Listen for events to detect where the caret is
-        var self = this;
-        var updateActiveState = function () {
-            var toolbarSelects = toolbar.querySelectorAll('select[data-command-id]');
-            var _loop_1 = function () {
-                var select = toolbarSelects[i];
-                var value = document.queryCommandValue(select.dataset.commandId);
-                var option = Array.from(select.options).find(function (_option) {
-                    var option = _option;
-                    return option.value === value;
-                });
-                select.selectedIndex = option ? option.index : -1;
-            };
-            for (var i = 0; i < toolbarSelects.length; i++) {
-                _loop_1();
-            }
-            var toolbarButtons = toolbar.querySelectorAll('button[data-command-id]');
-            for (var i = 0; i < toolbarButtons.length; i++) {
-                var button = toolbarButtons[i];
-                var active = document.queryCommandState(button.dataset.commandId);
-                button.classList.toggle('active', active);
-            }
-            var inputButtons = toolbar.querySelectorAll('input[data-command-id]');
-            for (var i = 0; i < inputButtons.length; i++) {
-                var input = inputButtons[i];
-                var value = document.queryCommandValue(input.dataset.commandId);
-                var converted_value = self.rgbToHex(value);
-                if (converted_value)
-                    input.value = converted_value;
-            }
-        };
-        editor.addEventListener('keydown', updateActiveState);
-        editor.addEventListener('keyup', updateActiveState);
-        editor.addEventListener('click', updateActiveState);
-        toolbar.addEventListener('click', updateActiveState);
+        editor.addEventListener('focusin', function () { _this.toolbar.selected_editor = _this; console.log("TTTTTTTTTTTT", _this.toolbar); });
+        editor.addEventListener('keydown', function () { return _this.toolbar.updateActiveState(); });
+        editor.addEventListener('keyup', function () { return _this.toolbar.updateActiveState(); });
+        editor.addEventListener('click', function () { return _this.toolbar.updateActiveState(); });
         document.addEventListener('selectionchange', function () {
             var selection = window.getSelection();
             if (selection.anchorNode !== null && !editor.contains(selection.anchorNode.parentNode))
@@ -335,177 +522,6 @@ var TinyEditor = /** @class */ (function () {
             else {
                 selected_element.outerHTML = selected_element.innerHTML;
             }
-        }
-    };
-    TinyEditor.prototype.createButton = function (commandId, title, child) {
-        var _this = this;
-        var button = document.createElement('button');
-        button.dataset.commandId = commandId;
-        button.className = this.TOOLBAR_ITEM;
-        button.title = title;
-        button.type = 'button';
-        button.appendChild(child);
-        button.addEventListener('click', function () { return _this.execCommand(commandId, null); });
-        return button;
-    };
-    TinyEditor.prototype.createOption = function (value, text, selected) {
-        var option = document.createElement('option');
-        option.innerText = text;
-        if (value)
-            option.setAttribute('value', value);
-        if (selected)
-            option.setAttribute('selected', selected);
-        return option;
-    };
-    TinyEditor.prototype.createSelect = function (commandId, title, options) {
-        var _this = this;
-        var select = document.createElement('select');
-        select.dataset.commandId = commandId;
-        select.className = this.TOOLBAR_ITEM;
-        select.title = title;
-        select.addEventListener('change', function (e) {
-            var target = e.target;
-            if (e.target === null) {
-                return;
-            }
-            else {
-                return _this.execCommand(commandId, target.options[target.selectedIndex].value);
-            }
-        });
-        for (var _i = 0, options_1 = options; _i < options_1.length; _i++) {
-            var option = options_1[_i];
-            select.appendChild(this.createOption(option.value, option.text, option.selected));
-        }
-        return select;
-    };
-    TinyEditor.prototype.createIcon = function (className) {
-        var icon = document.createElement('i');
-        icon.className = className;
-        return icon;
-    };
-    TinyEditor.prototype.createInput = function (commandId, title, type) {
-        var _this = this;
-        var input = document.createElement('input');
-        input.dataset.commandId = commandId;
-        input.className = this.TOOLBAR_ITEM;
-        input.title = title;
-        input.type = type;
-        input.addEventListener('change', function (e) {
-            var target = e.target;
-            return _this.execCommand(commandId, target.value);
-        });
-        return input;
-    };
-    TinyEditor.prototype.createSeparator = function () {
-        var separator = document.createElement('span');
-        separator.className = '__toolbar-separator';
-        return separator;
-    };
-    TinyEditor.prototype.createToolbar = function (options) {
-        var toolbar = document.createElement('div');
-        toolbar.className = '__toolbar';
-        // Styles
-        if (options.formatblock === true) {
-            toolbar.appendChild(this.createSelect('formatblock', 'Styles', [
-                { value: 'h1', text: 'Title 1' },
-                { value: 'h2', text: 'Title 2' },
-                { value: 'h3', text: 'Title 3' },
-                { value: 'h4', text: 'Title 4' },
-                { value: 'h5', text: 'Title 5' },
-                { value: 'h6', text: 'Title 6' },
-                { value: 'p', text: 'Paragraph', selected: true },
-                { value: 'pre', text: 'Preformatted' },
-            ]));
-        }
-        // Font
-        if (options.fontname === true) {
-            toolbar.appendChild(this.createSelect('fontname', 'Font', [
-                { value: 'serif', text: 'Serif', selected: true },
-                { value: 'sans-serif', text: 'Sans Serif' },
-                { value: 'monospace', text: 'Monospace' },
-                { value: 'cursive', text: 'Cursive' },
-                { value: 'fantasy', text: 'Fantasy' },
-            ]));
-        }
-        // Bold
-        if (options.bold === true) {
-            toolbar.appendChild(this.createButton('bold', 'Bold', this.createIcon('fas fa-bold')));
-        }
-        // Italic
-        if (options.italic === true) {
-            toolbar.appendChild(this.createButton('italic', 'Italic', this.createIcon('fas fa-italic')));
-        }
-        // Underline
-        if (options.underline === true) {
-            toolbar.appendChild(this.createButton('underline', 'Underline', this.createIcon('fas fa-underline')));
-        }
-        // Text color
-        if (options.textcolor === true) {
-            toolbar.appendChild(this.createInput('forecolor', 'Text color', 'color'));
-        }
-        // Separator
-        //toolbar.appendChild(this.createSeparator());
-        // Left align
-        if (options.textleft === true) {
-            toolbar.appendChild(this.createSeparator());
-            toolbar.appendChild(this.createButton('justifyleft', 'Left align', this.createIcon('fas fa-align-left')));
-        }
-        // Center align
-        if (options.textcenter === true) {
-            toolbar.appendChild(this.createButton('justifycenter', 'Center align', this.createIcon('fas fa-align-center')));
-        }
-        // Right align
-        if (options.textright === true) {
-            toolbar.appendChild(this.createButton('justifyright', 'Right align', this.createIcon('fas fa-align-right')));
-        }
-        // Separator
-        //toolbar.appendChild(this.createSeparator());
-        // Numbered list
-        if (options.insertorderedlist === true) {
-            toolbar.appendChild(this.createSeparator());
-            toolbar.appendChild(this.createButton('insertorderedlist', 'Numbered list', this.createIcon('fas fa-list-ol')));
-        }
-        // Bulleted list
-        if (options.insertunorderedlist === true) {
-            toolbar.appendChild(this.createButton('insertunorderedlist', 'Bulleted list', this.createIcon('fas fa-list-ul')));
-        }
-        // Decrease indent
-        if (options.outdent === true) {
-            toolbar.appendChild(this.createButton('outdent', 'Decrease indent', this.createIcon('fas fa-indent fa-flip-horizontal')));
-        }
-        // Increase indent
-        if (options.indent === true) {
-            toolbar.appendChild(this.createButton('indent', 'Increase indent', this.createIcon('fas fa-indent')));
-            toolbar.appendChild(this.createSeparator());
-        }
-        // Create image
-        if (options.image === true) {
-            toolbar.appendChild(this.createButton('createImage', 'Create Image', this.createIcon('fas fa-image')));
-        }
-        // Create Hyperlink
-        if (options.hyperlink === true) {
-            toolbar.appendChild(this.createButton('createLink', 'Create Hyperlink', this.createIcon('fas fa-link')));
-            toolbar.appendChild(this.createButton('removeLink', 'remove Hyperlink', this.createIcon('fas fa-unlink')));
-        }
-        // Clear formatting
-        if (options.removeFormat === true) {
-            toolbar.appendChild(this.createButton('removeFormat', 'Clear formatting', this.createIcon('fas fa-eraser')));
-        }
-        return toolbar;
-    };
-    TinyEditor.prototype.rgbToHex = function (color) {
-        var digits = /(.*?)rgb\((\d+), (\d+), (\d+)\)/.exec(color);
-        if (digits !== null && digits.length > 5) {
-            var red = parseInt(digits[2]);
-            var green = parseInt(digits[3]);
-            var blue = parseInt(digits[4]);
-            var rgb = blue | (green << 8) | (red << 16);
-            var color_hex = rgb.toString(16);
-            var to = 6 - color_hex.length;
-            for (var i = 0; i < to; i++) {
-                color_hex = "0" + color_hex;
-            }
-            return digits[1] + '#' + color_hex;
         }
     };
     TinyEditor.prototype.saveSelection = function () {
