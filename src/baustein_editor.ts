@@ -91,7 +91,7 @@ class BausteinTemplate {
 	public type: string;
 	public title: string;
 	public tag: string;
-	public renderType: any;
+	public renderType: number;
 	public style: BausteinStyle[];
 	public content: string = "";
 	public class: string = "";
@@ -669,7 +669,7 @@ class BausteinEditor {
 
         // TinyEditor Setup
         this.tinyeditor_toolbar = new TinyEditorToolbar(this.dom.toolbar, this.tinyeditor_toolbar_options);
-        console.log("this.tinyeditor_toolbar.toolbar_dom", this.tinyeditor_toolbar.toolbar_dom)
+        this.tinyeditor_toolbar.hideAllItems();
         
 
         // Construct ajax loader
@@ -1053,11 +1053,30 @@ class BausteinEditor {
     }
 
     selectBaustein(baustein_id: number) {
-        this.dom.content.querySelectorAll(".be_baustein").forEach(function(be_baustein: HTMLElement) { be_baustein.classList.remove("selected"); });
+        this.dom.bausteine.forEach(function(be_baustein: HTMLElement) { be_baustein.classList.remove("selected"); });
         this.selected_baustein = document.getElementById(this.dom_id+'_be_baustein_item'+baustein_id);
         this.selected_baustein?.classList.add("selected");
         this.selected_baustein_id = baustein_id;
         this.open_baustein_attributes(baustein_id);
+
+        // TinyEditorToolbar show/hide Handler
+        const baustein = this.getBaustein(baustein_id);
+        switch (baustein.renderType) {
+            case bausteinRenderType.richtext:
+            case bausteinRenderType.tableCell:
+                this.tinyeditor_toolbar.showAllItems();
+                break;
+                
+            case bausteinRenderType.button:
+                this.tinyeditor_toolbar.showTheseItems([
+                    "bold", "italic", "underline", "forecolor", "createImage", "removeFormat"
+                ]);
+                break;
+                
+            default:
+                this.tinyeditor_toolbar.hideAllItems();
+                break;
+        }
     }
 
     getBaustein(baustein_id: number): Baustein {
@@ -1491,56 +1510,43 @@ class BausteinEditor {
                     var editor: HTMLElement;
                     switch (baustein.renderType) {
                         case bausteinRenderType.button:
-                            const placeholder_text = "Buttontext eingeben";
-
-                            editor = baustein_dom.appendChild(
-                                this.createElement("a", baustein_editor_id, "be_baustein_item "+baustein.class)
-                            );
-                            editor.style.userSelect = "text";
-                            
-                            if(baustein.content === "") editor.innerHTML = placeholder_text;
-                            else editor.innerHTML = baustein.content;
-                            editor.setAttribute("contenteditable", "true");
-
-                            editor.addEventListener("input", function() {
-                                baustein.content = editor.innerHTML;
-                                self.preview_render();
-                            });
-
-                            editor.addEventListener("focusin", function() {
-                                if(baustein.content === "") {
-                                    editor.innerHTML = "";
-                                }
-                            });
-
-                            editor.addEventListener("focusout", function() {
-                                if(baustein.content === "") {
-                                    editor.innerHTML = placeholder_text;
-                                }
-                            });
-                            break;
                         case bausteinRenderType.tableCell:
                         case bausteinRenderType.richtext:
-                            editor = baustein_dom.appendChild(
-                                this.createElement("div", baustein_editor_id, "be_baustein_item")
-                            );
-                            editor.style.minHeight = "100px";
-            
-                            /*
-                                formatblock
-                                fontname
-                                bold
-                                italic
-                                underline
-                                textcolor
-                                textleft
-                                textcenter
-                                textright
-                                insertorderedlist
-                                insertunorderedlist
-                                outdent
-                                removeFormat
-                            */
+                            if (baustein.renderType === bausteinRenderType.button) {
+                                const placeholder_text = "Buttontext eingeben";
+    
+                                editor = baustein_dom.appendChild(
+                                    this.createElement("a", baustein_editor_id, "be_baustein_item "+baustein.class)
+                                );
+                                editor.style.userSelect = "text";
+                                
+                                if(baustein.content === "") editor.innerHTML = placeholder_text;
+                                else editor.innerHTML = baustein.content;
+                                editor.setAttribute("contenteditable", "true");
+    
+                                editor.addEventListener("input", function() {
+                                    baustein.content = editor.innerHTML;
+                                    self.preview_render();
+                                });
+    
+                                editor.addEventListener("focusin", function() {
+                                    if(baustein.content === "") {
+                                        editor.innerHTML = "";
+                                    }
+                                });
+    
+                                editor.addEventListener("focusout", function() {
+                                    if(baustein.content === "") {
+                                        editor.innerHTML = placeholder_text;
+                                    }
+                                });
+                                
+                            } else {
+                                editor = baustein_dom.appendChild(
+                                    this.createElement("div", baustein_editor_id, "be_baustein_item")
+                                );
+                                editor.style.minHeight = "100px";
+                            }
             
                             const tiny_editor = new TinyEditor(editor, {
                                 toolbar: null,
@@ -1548,8 +1554,10 @@ class BausteinEditor {
                                 onchange: function() {
                                     baustein.content = tiny_editor.export();
                                     self.preview_render();
-                                    editor.style.height = '1px';
-                                    editor.style.height = editor.scrollHeight + 'px';
+                                    if (baustein.renderType !== bausteinRenderType.button) {
+                                        editor.style.height = '1px';
+                                        editor.style.height = editor.scrollHeight + 'px';
+                                    }
                                 },
                                 exec_command_create_image: function(): Promise<string> {
                                     return new Promise((resolve, reject) => {
@@ -1685,7 +1693,7 @@ class BausteinEditor {
                         }
         
                         if (typeof reciever_element.dataset.position_parent !== "string") {
-                            console.error("[BausteinEditor]", "reciever_element.dataset.position_parent is not a string");
+                            console.info("[BausteinEditor]", "reciever_element.dataset.position_parent is not a string");
                         } else if (typeof reciever_element.dataset.position_sort !== "string") {
                             console.error("[BausteinEditor]", "reciever_element.dataset.position_sort is not a string");
                         } else {
@@ -1711,6 +1719,7 @@ class BausteinEditor {
             }
         }
 
+        this.dom.bausteine.push(baustein_dom);
         return baustein_dom;
     }
     
@@ -1718,6 +1727,7 @@ class BausteinEditor {
     render() {
         this.dom.content.innerHTML = "";
         this.baustein_counter = 0;
+        this.dom.bausteine = [];
 
         /*  Bausteine Recursive Graph Array
             this.data.bausteine[row] :: .parent :: .position

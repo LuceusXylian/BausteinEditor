@@ -6,12 +6,13 @@ var TinyEditorToolbar = /** @class */ (function () {
     function TinyEditorToolbar(targetElement, options) {
         var _this = this;
         this.TOOLBAR_ITEM = '__toolbar-item';
+        this.toolbar_dom_items = [];
         this.selected_editor = null;
         this.toolbar_dom = targetElement;
         this.toolbar_dom.classList.add('__toolbar');
         // Styles
         if (options.formatblock === true) {
-            this.toolbar_dom.appendChild(this.createSelect('formatblock', 'Styles', [
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSelect('formatblock', 'Styles', [
                 { value: 'h1', text: 'Title 1' },
                 { value: 'h2', text: 'Title 2' },
                 { value: 'h3', text: 'Title 3' },
@@ -24,7 +25,7 @@ var TinyEditorToolbar = /** @class */ (function () {
         }
         // Font
         if (options.fontname === true) {
-            this.toolbar_dom.appendChild(this.createSelect('fontname', 'Font', [
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSelect('fontname', 'Font', [
                 { value: 'serif', text: 'Serif', selected: true },
                 { value: 'sans-serif', text: 'Sans Serif' },
                 { value: 'monospace', text: 'Monospace' },
@@ -34,67 +35,63 @@ var TinyEditorToolbar = /** @class */ (function () {
         }
         // Bold
         if (options.bold === true) {
-            this.toolbar_dom.appendChild(this.createButton('bold', 'Bold', this.createIcon('fas fa-bold')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('bold', 'Bold', this.createIcon('fas fa-bold')));
         }
         // Italic
         if (options.italic === true) {
-            this.toolbar_dom.appendChild(this.createButton('italic', 'Italic', this.createIcon('fas fa-italic')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('italic', 'Italic', this.createIcon('fas fa-italic')));
         }
         // Underline
         if (options.underline === true) {
-            this.toolbar_dom.appendChild(this.createButton('underline', 'Underline', this.createIcon('fas fa-underline')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('underline', 'Underline', this.createIcon('fas fa-underline')));
         }
         // Text color
         if (options.textcolor === true) {
-            this.toolbar_dom.appendChild(this.createInput('forecolor', 'Text color', 'color'));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createInput('forecolor', 'Text color', 'color'));
         }
-        // Separator
-        //this.toolbar_dom.appendChild(this.createSeparator());
         // Left align
         if (options.textleft === true) {
-            this.toolbar_dom.appendChild(this.createSeparator());
-            this.toolbar_dom.appendChild(this.createButton('justifyleft', 'Left align', this.createIcon('fas fa-align-left')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('justifyleft', 'Left align', this.createIcon('fas fa-align-left')));
         }
         // Center align
         if (options.textcenter === true) {
-            this.toolbar_dom.appendChild(this.createButton('justifycenter', 'Center align', this.createIcon('fas fa-align-center')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('justifycenter', 'Center align', this.createIcon('fas fa-align-center')));
         }
         // Right align
         if (options.textright === true) {
-            this.toolbar_dom.appendChild(this.createButton('justifyright', 'Right align', this.createIcon('fas fa-align-right')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('justifyright', 'Right align', this.createIcon('fas fa-align-right')));
         }
-        // Separator
-        //this.toolbar_dom.appendChild(this.createSeparator());
         // Numbered list
         if (options.insertorderedlist === true) {
-            this.toolbar_dom.appendChild(this.createSeparator());
-            this.toolbar_dom.appendChild(this.createButton('insertorderedlist', 'Numbered list', this.createIcon('fas fa-list-ol')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('insertorderedlist', 'Numbered list', this.createIcon('fas fa-list-ol')));
         }
         // Bulleted list
         if (options.insertunorderedlist === true) {
-            this.toolbar_dom.appendChild(this.createButton('insertunorderedlist', 'Bulleted list', this.createIcon('fas fa-list-ul')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('insertunorderedlist', 'Bulleted list', this.createIcon('fas fa-list-ul')));
         }
         // Decrease indent
         if (options.outdent === true) {
-            this.toolbar_dom.appendChild(this.createButton('outdent', 'Decrease indent', this.createIcon('fas fa-indent fa-flip-horizontal')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('outdent', 'Decrease indent', this.createIcon('fas fa-indent fa-flip-horizontal')));
         }
         // Increase indent
         if (options.indent === true) {
-            this.toolbar_dom.appendChild(this.createButton('indent', 'Increase indent', this.createIcon('fas fa-indent')));
-            this.toolbar_dom.appendChild(this.createSeparator());
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('indent', 'Increase indent', this.createIcon('fas fa-indent')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
         }
         // Create image
         if (options.image === true) {
-            this.toolbar_dom.appendChild(this.createButton('createImage', 'Create Image', this.createIcon('fas fa-image')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('createImage', 'Create Image', this.createIcon('fas fa-image')));
         }
         // Create Hyperlink
         if (options.hyperlink === true) {
-            this.toolbar_dom.appendChild(this.createButton('createLink', 'Create Hyperlink', this.createIcon('fas fa-link')));
-            this.toolbar_dom.appendChild(this.createButton('removeLink', 'remove Hyperlink', this.createIcon('fas fa-unlink')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('createLink', 'Create Hyperlink', this.createIcon('fas fa-link')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('removeLink', 'remove Hyperlink', this.createIcon('fas fa-unlink')));
         }
         // Clear formatting
         if (options.removeFormat === true) {
-            this.toolbar_dom.appendChild(this.createButton('removeFormat', 'Clear formatting', this.createIcon('fas fa-eraser')));
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('removeFormat', 'Clear formatting', this.createIcon('fas fa-eraser')));
         }
         // Events
         this.toolbar_dom.addEventListener('click', function () { return _this.updateActiveState(); });
@@ -210,6 +207,29 @@ var TinyEditorToolbar = /** @class */ (function () {
         separator.className = '__toolbar-separator';
         return separator;
     };
+    TinyEditorToolbar.prototype.showAllItems = function () {
+        for (var i = 0; i < this.toolbar_dom_items.length; i++) {
+            this.toolbar_dom_items[i].style.display = "";
+        }
+    };
+    TinyEditorToolbar.prototype.hideAllItems = function () {
+        for (var i = 0; i < this.toolbar_dom_items.length; i++) {
+            this.toolbar_dom_items[i].style.display = "none";
+        }
+    };
+    TinyEditorToolbar.prototype.showTheseItems = function (commandIds) {
+        for (var a = 0; a < this.toolbar_dom_items.length; a++) {
+            var item = this.toolbar_dom_items[a];
+            item.style.display = "none";
+            for (var b = 0; b < commandIds.length; b++) {
+                var commandId = commandIds[b];
+                if (item.getAttribute("data-command-id") === commandId) {
+                    item.style.display = "";
+                    break;
+                }
+            }
+        }
+    };
     return TinyEditorToolbar;
 }());
 var TinyEditor = /** @class */ (function () {
@@ -233,7 +253,7 @@ var TinyEditor = /** @class */ (function () {
         }
         this.callback_onchange = options.onchange;
         // Listen for events to detect where the caret is
-        editor.addEventListener('focusin', function () { _this.toolbar.selected_editor = _this; console.log("TTTTTTTTTTTT", _this.toolbar); });
+        editor.addEventListener('focusin', function () { _this.toolbar.selected_editor = _this; });
         editor.addEventListener('keydown', function () { return _this.toolbar.updateActiveState(); });
         editor.addEventListener('keyup', function () { return _this.toolbar.updateActiveState(); });
         editor.addEventListener('click', function () { return _this.toolbar.updateActiveState(); });

@@ -35,6 +35,7 @@ interface TinyEditorToolbarOptions {
 class TinyEditorToolbar {
     TOOLBAR_ITEM: string = '__toolbar-item';
     toolbar_dom: HTMLElement;
+    toolbar_dom_items: HTMLElement[] = [];
     selected_editor: TinyEditor|null = null;
 
     constructor(targetElement: HTMLElement, options: TinyEditorToolbarOptions) {
@@ -43,7 +44,7 @@ class TinyEditorToolbar {
     
         // Styles
         if (options.formatblock === true) {
-            this.toolbar_dom.appendChild(
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
                 this.createSelect(
                     'formatblock',
                     'Styles',
@@ -62,7 +63,7 @@ class TinyEditorToolbar {
     
         // Font
         if (options.fontname === true) {
-            this.toolbar_dom.appendChild(
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
                 this.createSelect(
                     'fontname',
                     'Font',
@@ -78,120 +79,90 @@ class TinyEditorToolbar {
     
         // Bold
         if (options.bold === true) {
-            this.toolbar_dom.appendChild(
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
                 this.createButton('bold', 'Bold', this.createIcon('fas fa-bold'))
             );
         }
     
         // Italic
         if (options.italic === true) {
-            this.toolbar_dom.appendChild(
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
                 this.createButton('italic', 'Italic', this.createIcon('fas fa-italic'))
             );
         }
     
         // Underline
         if (options.underline === true) {
-            this.toolbar_dom.appendChild(
-            this.createButton(
-                'underline',
-                'Underline',
-                this.createIcon('fas fa-underline'))
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton('underline', 'Underline', this.createIcon('fas fa-underline'))
             );
         }
     
         // Text color
         if (options.textcolor === true) {
-            this.toolbar_dom.appendChild(
-            this.createInput('forecolor', 'Text color', 'color')
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createInput('forecolor', 'Text color', 'color')
             );
         }
     
-        // Separator
-        //this.toolbar_dom.appendChild(this.createSeparator());
-    
         // Left align
         if (options.textleft === true) {
-            this.toolbar_dom.appendChild(this.createSeparator());
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
 
-            this.toolbar_dom.appendChild(
-            this.createButton(
-                'justifyleft',
-                'Left align',
-                this.createIcon('fas fa-align-left'))
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton('justifyleft', 'Left align', this.createIcon('fas fa-align-left'))
             );
         }
     
         // Center align
         if (options.textcenter === true) {
-            this.toolbar_dom.appendChild(
-            this.createButton(
-                'justifycenter',
-                'Center align',
-                this.createIcon('fas fa-align-center'))
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton('justifycenter', 'Center align',  this.createIcon('fas fa-align-center'))
             );
         }
     
         // Right align
         if (options.textright === true) {
-            this.toolbar_dom.appendChild(
-            this.createButton(
-                'justifyright',
-                'Right align',
-                this.createIcon('fas fa-align-right'))
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton('justifyright', 'Right align', this.createIcon('fas fa-align-right'))
             );
         }
     
-        // Separator
-        //this.toolbar_dom.appendChild(this.createSeparator());
-    
         // Numbered list
         if (options.insertorderedlist === true) {
-            this.toolbar_dom.appendChild(this.createSeparator());
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
 
-            this.toolbar_dom.appendChild(
-            this.createButton(
-                'insertorderedlist',
-                'Numbered list',
-                this.createIcon('fas fa-list-ol'))
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton('insertorderedlist', 'Numbered list', this.createIcon('fas fa-list-ol'))
             );
         }
     
         // Bulleted list
         if (options.insertunorderedlist === true) {
-            this.toolbar_dom.appendChild(
-            this.createButton(
-                'insertunorderedlist',
-                'Bulleted list',
-                this.createIcon('fas fa-list-ul'))
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton('insertunorderedlist', 'Bulleted list', this.createIcon('fas fa-list-ul'))
             );
         }
     
         // Decrease indent
         if (options.outdent === true) {
-            this.toolbar_dom.appendChild(
-            this.createButton(
-                'outdent',
-                'Decrease indent',
-                this.createIcon('fas fa-indent fa-flip-horizontal'))
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton('outdent', 'Decrease indent', this.createIcon('fas fa-indent fa-flip-horizontal'))
             );
         }
     
         // Increase indent
         if (options.indent === true) {
-            this.toolbar_dom.appendChild(
-            this.createButton(
-                'indent',
-                'Increase indent',
-                this.createIcon('fas fa-indent'))
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton('indent', 'Increase indent', this.createIcon('fas fa-indent'))
             );
 
-            this.toolbar_dom.appendChild(this.createSeparator());
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
         }
     
         // Create image
         if (options.image === true) {
-            this.toolbar_dom.appendChild(
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
                 this.createButton(
                     'createImage',
                     'Create Image',
@@ -201,34 +172,24 @@ class TinyEditorToolbar {
     
         // Create Hyperlink
         if (options.hyperlink === true) {
-            this.toolbar_dom.appendChild(
-                this.createButton(
-                    'createLink',
-                    'Create Hyperlink',
-                    this.createIcon('fas fa-link'))
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton('createLink', 'Create Hyperlink', this.createIcon('fas fa-link'))
             );
 
-            this.toolbar_dom.appendChild(
-                this.createButton(
-                    'removeLink',
-                    'remove Hyperlink',
-                    this.createIcon('fas fa-unlink'))
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton('removeLink', 'remove Hyperlink', this.createIcon('fas fa-unlink'))
             );
         }
     
         // Clear formatting
         if (options.removeFormat === true) {
-            this.toolbar_dom.appendChild(
-            this.createButton(
-                'removeFormat',
-                'Clear formatting',
-                this.createIcon('fas fa-eraser'))
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton('removeFormat', 'Clear formatting', this.createIcon('fas fa-eraser'))
             );
         }
 
         // Events
         this.toolbar_dom.addEventListener('click', () => this.updateActiveState() );
-
     }
 
     updateActiveState() {
@@ -350,6 +311,32 @@ class TinyEditorToolbar {
       
         return separator;
     }
+
+    showAllItems() {
+        for (let i = 0; i < this.toolbar_dom_items.length; i++) {
+            this.toolbar_dom_items[i].style.display = "";
+        }
+    }
+
+    hideAllItems() {
+        for (let i = 0; i < this.toolbar_dom_items.length; i++) {
+            this.toolbar_dom_items[i].style.display = "none";
+        }
+    }
+
+    showTheseItems(commandIds: string[]) {
+        for (let a = 0; a < this.toolbar_dom_items.length; a++) {
+            const item = this.toolbar_dom_items[a];
+            item.style.display = "none";
+            for (let b = 0; b < commandIds.length; b++) {
+                const commandId = commandIds[b];
+                if (item.getAttribute("data-command-id") === commandId) {
+                    item.style.display = "";
+                    break;
+                }
+            }
+        }
+    }
 }
 
 class TinyEditor {
@@ -384,7 +371,7 @@ class TinyEditor {
         this.callback_onchange = options.onchange;
     
         // Listen for events to detect where the caret is
-        editor.addEventListener('focusin', () => { this.toolbar.selected_editor = this; console.log("TTTTTTTTTTTT", this.toolbar) } );
+        editor.addEventListener('focusin', () => { this.toolbar.selected_editor = this; } );
         editor.addEventListener('keydown', () => this.toolbar.updateActiveState() );
         editor.addEventListener('keyup', () => this.toolbar.updateActiveState() );
         editor.addEventListener('click', () => this.toolbar.updateActiveState() );
