@@ -1,4 +1,5 @@
 /// <reference path="dialog.ts"/>
+/// <reference path="fontawsome_data.ts"/>
 var dialog = new Dialog();
 
 interface ExecCommandCreateImage {
@@ -26,9 +27,10 @@ interface TinyEditorToolbarOptions {
     insertunorderedlist: boolean;
     outdent: boolean;
     indent: boolean;
-    image: boolean;
-    hyperlink: boolean;
     removeFormat: boolean;
+    image: boolean;
+    icons: boolean;
+    hyperlink: boolean;
 }
 
 // enables usage of same Toolbar for multiple editors
@@ -37,10 +39,76 @@ class TinyEditorToolbar {
     toolbar_dom: HTMLElement;
     toolbar_dom_items: HTMLElement[] = [];
     selected_editor: TinyEditor|null = null;
+    icon_selector_modal_is_shown: boolean = false;
+    icon_selector_modal_dom: HTMLElement;
+    icon_selector_modal_dom_close: HTMLElement;
+    icon_selector_modal_dom_search: HTMLInputElement;
+    icon_selector_modal_dom_content: HTMLElement;
+    icon_selector_modal_dom_resolve: Function|null = null;
+
+    icon_selector_modal_close() {
+        this.icon_selector_modal_is_shown = false;
+        this.icon_selector_modal_dom.style.display = "none";
+        this.icon_selector_modal_dom_resolve = null;
+    }
+
+    icon_selector_modal_render(search_text: string) {
+        this.icon_selector_modal_dom_content.innerHTML = '';
+        for (let i = 0; i < FONTAWSOME_DATA.icons.length; i++) {
+            const icon_class = FONTAWSOME_DATA.icons[i];
+            if (search_text === "" || icon_class.indexOf(search_text) !== -1) {
+                const icon = this.icon_selector_modal_dom_content.appendChild(document.createElement("i"));
+                icon.className = icon_class;
+                icon.title = icon_class;
+                icon.addEventListener("click", () => {
+                    if (this.icon_selector_modal_dom_resolve === null) {
+                        console.error("this.icon_selector_modal_dom_resolve is null");
+                    } else {
+                        this.icon_selector_modal_dom_resolve(icon.className);
+                    }
+                    
+                    this.icon_selector_modal_close();
+                });
+            }
+        }
+    }
+
+    icon_selector_modal(): Promise<string> {
+        return new Promise((resolve: Function, reject: Function) => {
+            if (this.icon_selector_modal_is_shown) {
+                this.icon_selector_modal_close();
+                reject();
+            } else {
+                this.icon_selector_modal_is_shown = true;
+                this.icon_selector_modal_dom.style.display = "";
+                this.icon_selector_modal_dom_resolve = resolve;
+                this.icon_selector_modal_render("");
+            }
+        });
+    }
 
     constructor(targetElement: HTMLElement, options: TinyEditorToolbarOptions) {
         this.toolbar_dom = targetElement;
         this.toolbar_dom.classList.add('__toolbar');
+
+        this.icon_selector_modal_dom = document.body.appendChild( document.createElement("div") );
+        this.icon_selector_modal_dom.className = "__icon-selector";
+        this.icon_selector_modal_dom.style.display = "none";
+
+        this.icon_selector_modal_dom_search = this.icon_selector_modal_dom.appendChild( document.createElement("input") );
+        this.icon_selector_modal_dom_search.placeholder = "Suche nach Icon..";
+        this.icon_selector_modal_dom_search.className = "__icon-selector-search form-control";
+        this.icon_selector_modal_dom_search.addEventListener("input", () => {
+            this.icon_selector_modal_render(this.icon_selector_modal_dom_search.value);
+        });
+
+        this.icon_selector_modal_dom_close = this.icon_selector_modal_dom.appendChild( document.createElement("div") );
+        this.icon_selector_modal_dom_close.className = "__icon-selector-close";
+        this.icon_selector_modal_dom_close.innerHTML = '<i class="fas fa-times" title="fas fa-times"></i>';
+        this.icon_selector_modal_dom_close.addEventListener("click", () => this.icon_selector_modal_close() );
+
+        this.icon_selector_modal_dom_content = this.icon_selector_modal_dom.appendChild( document.createElement("div") );
+        this.icon_selector_modal_dom_content.className = "__icon-selector-content";
     
         // Styles
         if (options.formatblock === true) {
@@ -160,6 +228,13 @@ class TinyEditorToolbar {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
         }
     
+        // Clear formatting
+        if (options.removeFormat === true) {
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton('removeFormat', 'Clear formatting', this.createIcon('fas fa-eraser'))
+            );
+        }
+    
         // Create image
         if (options.image === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
@@ -167,6 +242,16 @@ class TinyEditorToolbar {
                     'createImage',
                     'Create Image',
                     this.createIcon('fas fa-image'))
+            );
+        }
+    
+        // Create image
+        if (options.image === true) {
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+                this.createButton(
+                    'createIcon',
+                    'Create Icon',
+                    this.createIcon('fab fa-font-awesome-flag'))
             );
         }
     
@@ -178,13 +263,6 @@ class TinyEditorToolbar {
 
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
                 this.createButton('removeLink', 'remove Hyperlink', this.createIcon('fas fa-unlink'))
-            );
-        }
-    
-        // Clear formatting
-        if (options.removeFormat === true) {
-            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('removeFormat', 'Clear formatting', this.createIcon('fas fa-eraser'))
             );
         }
 
@@ -430,6 +508,9 @@ class TinyEditor {
             case "createImage":
                 this.execCommand_createImage();
                 break;
+            case "createIcon":
+                this.execCommand_createIcon();
+                break;
             case "createLink":
                 this.execCommand_createLink();
                 break;
@@ -471,6 +552,41 @@ class TinyEditor {
                     }
                 } else {
                     selected_element.style.backgroundImage = "url('" + image_url + "')";
+                }
+
+                if(this.callback_onchange !== null) this.callback_onchange();
+            });
+
+        }
+    }
+
+    execCommand_createIcon() {  
+        var selection_ranges = this.saveSelection();
+        if (selection_ranges.length === 0) {
+            console.info("[TinyEditor] User tried to create a icon without selecting text");
+        } else {
+            if(!this.editor.contains(selection_ranges[0].startContainer.parentNode) 
+                && selection_ranges[0].startContainer.parentNode === null || this.editor !== selection_ranges[0].startContainer.parentNode) {
+                console.info("[TinyEditor] User tried to create a icon without selecting text");
+                this.editor.focus();
+                selection_ranges = this.saveSelection();
+            }
+
+            const selected_element = <HTMLElement|null> this.getElementFromSelection(selection_ranges[0]);
+
+            this.toolbar.icon_selector_modal().then((className: string) => {
+                if(selected_element === null) {
+                    if (selection_ranges !== null) this.restoreSelection(selection_ranges);
+                
+                    var newSelection = window.getSelection();
+                    if(newSelection !== null) {
+                        const new_element = document.createElement("i");
+                        new_element.className = className;
+                        newSelection.getRangeAt(0).insertNode(new_element);
+                        setTimeout(() => new_element.focus(), 100);
+                    }
+                } else {
+                    selected_element.className = className;
                 }
 
                 if(this.callback_onchange !== null) this.callback_onchange();

@@ -245,9 +245,10 @@ class BausteinEditor {
         insertunorderedlist: true,
         outdent: true,
         indent: true,
-        image: true,
-        hyperlink: true,
         removeFormat: true,
+        image: true,
+        icons: true,
+        hyperlink: true,
     };
     tinyeditor_toolbar: TinyEditorToolbar;
     
@@ -1069,7 +1070,7 @@ class BausteinEditor {
                 
             case bausteinRenderType.button:
                 this.tinyeditor_toolbar.showTheseItems([
-                    "bold", "italic", "underline", "forecolor", "createImage", "removeFormat"
+                    "bold", "italic", "underline", "forecolor", "removeFormat", "createImage", "createIcon"
                 ]);
                 break;
                 

@@ -1,5 +1,6 @@
 "use strict";
 /// <reference path="dialog.ts"/>
+/// <reference path="fontawsome_data.ts"/>
 var dialog = new Dialog();
 // enables usage of same Toolbar for multiple editors
 var TinyEditorToolbar = /** @class */ (function () {
@@ -8,8 +9,25 @@ var TinyEditorToolbar = /** @class */ (function () {
         this.TOOLBAR_ITEM = '__toolbar-item';
         this.toolbar_dom_items = [];
         this.selected_editor = null;
+        this.icon_selector_modal_is_shown = false;
+        this.icon_selector_modal_dom_resolve = null;
         this.toolbar_dom = targetElement;
         this.toolbar_dom.classList.add('__toolbar');
+        this.icon_selector_modal_dom = document.body.appendChild(document.createElement("div"));
+        this.icon_selector_modal_dom.className = "__icon-selector";
+        this.icon_selector_modal_dom.style.display = "none";
+        this.icon_selector_modal_dom_search = this.icon_selector_modal_dom.appendChild(document.createElement("input"));
+        this.icon_selector_modal_dom_search.placeholder = "Suche nach Icon..";
+        this.icon_selector_modal_dom_search.className = "__icon-selector-search form-control";
+        this.icon_selector_modal_dom_search.addEventListener("input", function () {
+            _this.icon_selector_modal_render(_this.icon_selector_modal_dom_search.value);
+        });
+        this.icon_selector_modal_dom_close = this.icon_selector_modal_dom.appendChild(document.createElement("div"));
+        this.icon_selector_modal_dom_close.className = "__icon-selector-close";
+        this.icon_selector_modal_dom_close.innerHTML = '<i class="fas fa-times" title="fas fa-times"></i>';
+        this.icon_selector_modal_dom_close.addEventListener("click", function () { return _this.icon_selector_modal_close(); });
+        this.icon_selector_modal_dom_content = this.icon_selector_modal_dom.appendChild(document.createElement("div"));
+        this.icon_selector_modal_dom_content.className = "__icon-selector-content";
         // Styles
         if (options.formatblock === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSelect('formatblock', 'Styles', [
@@ -80,25 +98,74 @@ var TinyEditorToolbar = /** @class */ (function () {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('indent', 'Increase indent', this.createIcon('fas fa-indent')));
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
         }
+        // Clear formatting
+        if (options.removeFormat === true) {
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('removeFormat', 'Clear formatting', this.createIcon('fas fa-eraser')));
+        }
         // Create image
         if (options.image === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('createImage', 'Create Image', this.createIcon('fas fa-image')));
+        }
+        // Create image
+        if (options.image === true) {
+            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('createIcon', 'Create Icon', this.createIcon('fab fa-font-awesome-flag')));
         }
         // Create Hyperlink
         if (options.hyperlink === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('createLink', 'Create Hyperlink', this.createIcon('fas fa-link')));
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('removeLink', 'remove Hyperlink', this.createIcon('fas fa-unlink')));
         }
-        // Clear formatting
-        if (options.removeFormat === true) {
-            this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createButton('removeFormat', 'Clear formatting', this.createIcon('fas fa-eraser')));
-        }
         // Events
         this.toolbar_dom.addEventListener('click', function () { return _this.updateActiveState(); });
     }
+    TinyEditorToolbar.prototype.icon_selector_modal_close = function () {
+        this.icon_selector_modal_is_shown = false;
+        this.icon_selector_modal_dom.style.display = "none";
+        this.icon_selector_modal_dom_resolve = null;
+    };
+    TinyEditorToolbar.prototype.icon_selector_modal_render = function (search_text) {
+        var _this = this;
+        this.icon_selector_modal_dom_content.innerHTML = '';
+        var _loop_1 = function (i) {
+            var icon_class = FONTAWSOME_DATA.icons[i];
+            if (search_text === "" || icon_class.indexOf(search_text) !== -1) {
+                var icon_1 = this_1.icon_selector_modal_dom_content.appendChild(document.createElement("i"));
+                icon_1.className = icon_class;
+                icon_1.title = icon_class;
+                icon_1.addEventListener("click", function () {
+                    if (_this.icon_selector_modal_dom_resolve === null) {
+                        console.error("this.icon_selector_modal_dom_resolve is null");
+                    }
+                    else {
+                        _this.icon_selector_modal_dom_resolve(icon_1.className);
+                    }
+                    _this.icon_selector_modal_close();
+                });
+            }
+        };
+        var this_1 = this;
+        for (var i = 0; i < FONTAWSOME_DATA.icons.length; i++) {
+            _loop_1(i);
+        }
+    };
+    TinyEditorToolbar.prototype.icon_selector_modal = function () {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            if (_this.icon_selector_modal_is_shown) {
+                _this.icon_selector_modal_close();
+                reject();
+            }
+            else {
+                _this.icon_selector_modal_is_shown = true;
+                _this.icon_selector_modal_dom.style.display = "";
+                _this.icon_selector_modal_dom_resolve = resolve;
+                _this.icon_selector_modal_render("");
+            }
+        });
+    };
     TinyEditorToolbar.prototype.updateActiveState = function () {
         var toolbarSelects = this.toolbar_dom.querySelectorAll('select[data-command-id]');
-        var _loop_1 = function () {
+        var _loop_2 = function () {
             var select = toolbarSelects[i];
             var value = document.queryCommandValue(select.dataset.commandId);
             var option = Array.from(select.options).find(function (_option) {
@@ -108,7 +175,7 @@ var TinyEditorToolbar = /** @class */ (function () {
             select.selectedIndex = option ? option.index : -1;
         };
         for (var i = 0; i < toolbarSelects.length; i++) {
-            _loop_1();
+            _loop_2();
         }
         var toolbarButtons = this.toolbar_dom.querySelectorAll('button[data-command-id]');
         for (var i = 0; i < toolbarButtons.length; i++) {
@@ -312,6 +379,9 @@ var TinyEditor = /** @class */ (function () {
             case "createImage":
                 this.execCommand_createImage();
                 break;
+            case "createIcon":
+                this.execCommand_createIcon();
+                break;
             case "createLink":
                 this.execCommand_createLink();
                 break;
@@ -353,6 +423,40 @@ var TinyEditor = /** @class */ (function () {
                 }
                 else {
                     selected_element_1.style.backgroundImage = "url('" + image_url + "')";
+                }
+                if (_this.callback_onchange !== null)
+                    _this.callback_onchange();
+            });
+        }
+    };
+    TinyEditor.prototype.execCommand_createIcon = function () {
+        var _this = this;
+        var selection_ranges = this.saveSelection();
+        if (selection_ranges.length === 0) {
+            console.info("[TinyEditor] User tried to create a icon without selecting text");
+        }
+        else {
+            if (!this.editor.contains(selection_ranges[0].startContainer.parentNode)
+                && selection_ranges[0].startContainer.parentNode === null || this.editor !== selection_ranges[0].startContainer.parentNode) {
+                console.info("[TinyEditor] User tried to create a icon without selecting text");
+                this.editor.focus();
+                selection_ranges = this.saveSelection();
+            }
+            var selected_element_2 = this.getElementFromSelection(selection_ranges[0]);
+            this.toolbar.icon_selector_modal().then(function (className) {
+                if (selected_element_2 === null) {
+                    if (selection_ranges !== null)
+                        _this.restoreSelection(selection_ranges);
+                    var newSelection = window.getSelection();
+                    if (newSelection !== null) {
+                        var new_element_2 = document.createElement("i");
+                        new_element_2.className = className;
+                        newSelection.getRangeAt(0).insertNode(new_element_2);
+                        setTimeout(function () { return new_element_2.focus(); }, 100);
+                    }
+                }
+                else {
+                    selected_element_2.className = className;
                 }
                 if (_this.callback_onchange !== null)
                     _this.callback_onchange();

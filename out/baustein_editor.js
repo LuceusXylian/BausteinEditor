@@ -247,9 +247,10 @@ var BausteinEditor = /** @class */ (function () {
             insertunorderedlist: true,
             outdent: true,
             indent: true,
-            image: true,
-            hyperlink: true,
             removeFormat: true,
+            image: true,
+            icons: true,
+            hyperlink: true,
         };
         this.styleProperties = {
             //font_family: { name: "font-family", title: "Schriftart", type: "string", suffix: [], options:  [new Option("Verdana, Arial, Helvetica, sans-serif")] },
@@ -936,7 +937,7 @@ var BausteinEditor = /** @class */ (function () {
                 break;
             case bausteinRenderType.button:
                 this.tinyeditor_toolbar.showTheseItems([
-                    "bold", "italic", "underline", "forecolor", "createImage", "removeFormat"
+                    "bold", "italic", "underline", "forecolor", "removeFormat", "createImage", "createIcon"
                 ]);
                 break;
             default:
