@@ -2,6 +2,7 @@
 /// <reference path="tinyeditor.ts"/>
 var dialog = new Dialog();
 
+type FormControl = HTMLInputElement|HTMLSelectElement|HTMLButtonElement;
 
 const bausteinRenderType = {
     bausteinSelector: -1,
@@ -301,15 +302,8 @@ class BausteinEditor {
         return new BausteinStyleProperty(name, "", "", [], [], false, false);
     }
 
-	public data: {page: {style: BausteinStyle[]}, bausteine: Baustein[]} = {
-        page: {
-            style: [
-                //{ property: this.styleProperties.font_family, value: this.styleProperties.font_family.options[0].value },
-            ],
-            //styleClasses: [
-            //    { property: this.styleProperties.font_size, value: this.styleProperties.font_size.options[0].value },
-            //]
-        },
+	public data: {page: {}, bausteine: Baustein[]} = {
+        page: {},
         bausteine: []
     };
 
@@ -428,7 +422,7 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
             ])
         ,script: new BausteinTemplate("script", "JavaScript", '<i class="fas fa-code"></i>', "script", bausteinRenderType.plaintext, [], [], [])
-        ,iframe: new BausteinTemplate("iframe", "iframe einbinden", '<i class="fas fa-code"></i>', "iframe", bausteinRenderType.iframe, [], [
+        ,iframe: new BausteinTemplate("iframe", "iframe einbinden", '<i class="fas fa-code"></i>', "iframe", bausteinRenderType.iframe, [ new ToggleableClass("d-block", true, false) ], [
             new BausteinAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"),
             new BausteinAttribute("allowfullscreen", "allowfullscreen")
         ], [
@@ -511,6 +505,7 @@ class BausteinEditor {
 	public selected_baustein: HTMLElement | null = null;
 	public selected_baustein_id: number | null = null;
 	public open_baustein_attributes__baustein_id: number | null = null;
+	public open_baustein_attributes__formcontrols: (HTMLInputElement | HTMLSelectElement | HTMLButtonElement)[] = [];
     public assets = {
         baustein_image_placeholder: "/img/baustein-image-placeholder.png"
     };
@@ -551,9 +546,6 @@ class BausteinEditor {
         );
         this.dom.underlay.style.display = "none";
 
-        this.dom.page_styles = this.dom.be.appendChild(
-            this.createElement("style", this.dom_id+'_page_styles', "")
-        );
         this.dom.main = this.dom.be.appendChild(
             this.createElement("div", this.dom_id+"_main", "be_main")
         );
@@ -621,9 +613,9 @@ class BausteinEditor {
         );
         this.dom.preview_content.style.display = "none";
 
-        this.dom.sidebar_header = this.dom.sidebar.appendChild(
-            this.createElement("div", this.dom_id+"_sidebar_header", "be_sidebar_header")
-        );
+        //this.dom.sidebar_header = this.dom.sidebar.appendChild(
+        //    this.createElement("div", this.dom_id+"_sidebar_header", "be_sidebar_header")
+        //);
         this.dom.sidebar_content__site = this.dom.sidebar.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_content__site", "be_sidebar_content")
         );
@@ -634,38 +626,20 @@ class BausteinEditor {
         this.dom.sidebar_content__baustein_styles = this.dom.sidebar_content__baustein.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_content__baustein_styles", "")
         );
-        this.dom.sidebar_content__baustein_misc = this.dom.sidebar_content__baustein.appendChild(
-            this.createElement("div", this.dom_id+"_sidebar_content__baustein_misc", "")
-        );
         
+        /*
         this.dom.sidebar_header_col__site = this.dom.sidebar_header.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_header_col__site", "be_sidebar_header_col active")
         );
         this.dom.sidebar_header_col__site.innerHTML = "Artikel";
+
         this.dom.sidebar_header_col__baustein = this.dom.sidebar_header.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_header_col__baustein", "be_sidebar_header_col disabled")
         );
         this.dom.sidebar_header_col__baustein.innerHTML = "Baustein";
-
-        //for (var i = 0; i < this.data.page.styleClasses.length; i++) {
-        //    const element = this.data.page.styleClasses[i];
-        //    this.dom.sidebar_content__site.appendChild(
-        //        this.formcontrol("page-sc", element.property.type, element.property.name, element.property.title, 
-        //            element.value, element.property.suffix, element.property.options).content
-        //    );
-        //}
-
-        for (var i = 0; i < this.data.page.style.length; i++) {
-            const element = this.data.page.style[i];
-            this.dom.sidebar_content__site.appendChild(
-                this.formcontrol("page", element.property.type, element.property.name, element.property.title, element.value, {
-                    suffix: element.property.suffix, html_options: element.property.options, onchange: () => this.apply_styles()
-                }).content
-            );
-        }
+        */
 
         this.be_bausteinSelector_isOpen = false;
-        this.apply_styles();
 
 
         // TinyEditor Setup
@@ -732,6 +706,7 @@ class BausteinEditor {
             self.dom.preview_content.classList.add("mobile");
         });
         
+        /*
         this.dom.sidebar_header_col__site.addEventListener("click", function() {
             self.dom.sidebar_header_col__site.classList.add("active")
             self.dom.sidebar_header_col__baustein.classList.remove("active")
@@ -746,6 +721,7 @@ class BausteinEditor {
                 self.dom.sidebar_content__baustein.style.display = "";
             }
         });
+        */
 
         this.render();
     }
@@ -1618,11 +1594,13 @@ class BausteinEditor {
                 for (var a = 0; a < baustein.style.length; a++) {
                     const element = baustein.style[a];
                     if (element.value !== "") {
-                        var property_name: any = element.property.name;
+                        const property_name: string = element.property.name;
+                        const property_name_any: any = property_name;
+
                         if (property_name.indexOf("width") !== -1 || property_name.indexOf("height") !== -1 || property_name.indexOf("margin") !== -1 || property_name.indexOf("border") !== -1 || property_name.indexOf("padding") !== -1) {
-                            baustein_dom.style[property_name] = element.value;
+                            baustein_dom.style[property_name_any] = element.value;
                         } else {
-                            baustein_item.style[property_name] = element.value;
+                            baustein_item.style[property_name_any] = element.value;
                         }
                     }
                 }
@@ -1785,28 +1763,15 @@ class BausteinEditor {
     }
     
     apply_styles() { 
-        // Apply Page Styles
-        /*
-        var style_string = ".be_baustein  {";
-
-        for (var i = 0; i < this.data.page.style.length; i++) {
-            const formfield: HTMLFormElement = <HTMLFormElement> document.getElementById(this.dom_id+"_page_fc_"+this.data.page.style[i].property.name);
-            this.data.page.style[i].value = formfield.value;
-            style_string += this.data.page.style[i].property.name + ':' + this.data.page.style[i].value + ';';
-        }
-        style_string += '}';
-        this.dom.page_styles.innerHTML = style_string;
-        */
-
         // Apply Baustein Styles
         if (this.selected_baustein !== null && this.selected_baustein_id !== null) {
             const baustein = this.getBaustein(this.selected_baustein_id);
             var selected_baustein_editor: HTMLElement = <HTMLElement> this.selected_baustein.lastChild;
             
-            var nodes = this.dom.sidebar_content__baustein_styles.querySelectorAll(".be_formrow .be-form-control");
-            for (var i = 0; i < nodes.length; i++) {
-                const property_name: string = nodes[i].name;
-                const value = typeof nodes[i].dataset.value === "undefined"? nodes[i].value : nodes[i].dataset.value;
+            for (var i = 0; i < this.open_baustein_attributes__formcontrols.length; i++) {
+                const formcontrol = this.open_baustein_attributes__formcontrols[i];
+                const property_name: string = formcontrol.name;
+                const value = typeof formcontrol.dataset.value === "undefined"? formcontrol.value : formcontrol.dataset.value;
 
                 var baustein_style_index: number = baustein.style.length;
                 for (var b = 0; b < baustein.style.length; b++) {
@@ -1819,7 +1784,7 @@ class BausteinEditor {
                 if(baustein_style_index === baustein.style.length) {
                     if(value === "" || value === "0" || value === "auto") continue;
                     var new_style = new BausteinStyle(this.getStylePropertyByName(property_name), "");
-                    if(new_style.property.options.length > 0 && new_style.property.options[0] === value) continue;
+                    if(new_style.property.options.length > 0 && new_style.property.options[0].value === value) continue;
                     baustein.style[baustein_style_index] = new_style;
                 }
 
@@ -1850,14 +1815,14 @@ class BausteinEditor {
     /// create a forminput. first options item is default value. Returns {content: HTMLElement, input: HTMLInputElement|HTMLSelectElement}
     formcontrol(domArk: string, type: string, name: string, title: string | null, value: string
         , options: { suffix?: string[], html_options?: HTMLOptionElement[], number_default?: number, number_min?: number, number_max?: number, onchange?: Function }
-    ): {content: HTMLElement, input: HTMLInputElement|HTMLSelectElement} {
+    ): {content: HTMLElement, input: FormControl} {
         var fc_dom_id = (this.dom_id+'_'+domArk+'_fc_'+name);
         var useDataValue = false;
         const suffix_const: string[] = options.suffix || [];
         const suffix_default: string = suffix_const.length? suffix_const[0] : "";
 
         var be_formrow = this.createElement("div", "", "be_formrow");
-        var form_control: any;
+        var form_control: FormControl;
 
         if (type === "image") {
             const image_source_text = be_formrow.appendChild( document.createElement("div") );
@@ -1865,7 +1830,7 @@ class BausteinEditor {
             image_source_text.style.fontSize = "0.6rem";
             image_source_text.style.marginBottom = "2px";
             
-            const form_control: HTMLButtonElement = <HTMLButtonElement> be_formrow.appendChild(
+            form_control = <HTMLButtonElement> be_formrow.appendChild(
                 this.createElement("button", fc_dom_id, "be-form-control")
             );
             form_control.type = "button";
@@ -1947,7 +1912,7 @@ class BausteinEditor {
                         useDataValue = true;
                     } else if (type === "number") {
                         form_control.type = "text";
-                        form_control.dataset.suffix = suffix_const;
+                        form_control.dataset.suffix = suffix_default;
         
                         var form_control_container_up: HTMLInputElement = <HTMLInputElement> form_control_container.appendChild(
                             this.createElement("div", "", "be-form-control-container_up")
@@ -1985,7 +1950,7 @@ class BausteinEditor {
                             if (isNaN(num)) {
                                 num = number_default;
                             } else {
-                                let cmp_suffix = form_control.value.replace(num, "");
+                                let cmp_suffix = form_control.value.replace(num.toString(), "");
                                 for(var i = 0; i < suffix_const.length; i++) {
                                     if (cmp_suffix === suffix_const[i]) {
                                         thus_suffix = suffix_const[i];
@@ -2062,13 +2027,11 @@ class BausteinEditor {
     layout_fc(baustein: Baustein, styleName: string, default_value: string, top: string | null, right: string | null, bottom: string | null, left: string | null) {
         const bausteinStyleProperty = this.getStylePropertyByName(styleName);
         const bausteinStyleValue = baustein.getStyleValue(styleName, default_value);
-        console.log("bausteinStyleProperty", bausteinStyleProperty);
         
-        const be_layout_fc: HTMLInputElement = <HTMLInputElement>
-            this.formcontrol("baustein", "number", bausteinStyleProperty.name, null, bausteinStyleValue, {
-                suffix: bausteinStyleProperty.suffix, html_options: bausteinStyleProperty.options, onchange: () => this.apply_styles()
-            }).content
-        ;
+        const formcontrol = this.formcontrol("baustein", "number", bausteinStyleProperty.name, null, bausteinStyleValue, {
+            suffix: bausteinStyleProperty.suffix, html_options: bausteinStyleProperty.options, onchange: () => this.apply_styles()
+        });
+        const be_layout_fc: HTMLInputElement = <HTMLInputElement> formcontrol.content;
         be_layout_fc.style.width = "34px";
         be_layout_fc.style.height = "30px";
 
@@ -2077,6 +2040,7 @@ class BausteinEditor {
         if(left !== null) be_layout_fc.style.left = left === ""? "calc(50% - ("+be_layout_fc.style.width+" / 2))" : left;
         if(right !== null) be_layout_fc.style.right = right === ""? "calc(50% - ("+be_layout_fc.style.width+" / 2))" : right;
 
+        this.open_baustein_attributes__formcontrols.push(formcontrol.input);
         return be_layout_fc;
     }
 
@@ -2084,10 +2048,10 @@ class BausteinEditor {
         if (this.open_baustein_attributes__baustein_id === null || this.open_baustein_attributes__baustein_id !== baustein_id) {
             const current_baustein = this.getBaustein(baustein_id);
             this.open_baustein_attributes__baustein_id = baustein_id;
+            this.open_baustein_attributes__formcontrols = [];
             const self = this;
 
             this.dom.sidebar_content__baustein_styles.innerHTML = "";
-            this.dom.sidebar_content__baustein_misc.innerHTML = "";
 
 
             // Layout view like Firefox DevTools
@@ -2104,6 +2068,7 @@ class BausteinEditor {
             );
             be_layout_view_margin_indicator.innerHTML = "margin";
 
+            be_layout_view_margin.appendChild(this.layout_fc(current_baustein, "margin-top", "0", "-6px", null, null, ""));
             be_layout_view_margin.appendChild(this.layout_fc(current_baustein, "margin-top", "0", "-6px", null, null, ""));
             be_layout_view_margin.appendChild(this.layout_fc(current_baustein, "margin-bottom", "0", null, null, "-6px", ""));
             be_layout_view_margin.appendChild(this.layout_fc(current_baustein, "margin-left", "0", "", null, null, "-6px"));
@@ -2163,7 +2128,7 @@ class BausteinEditor {
                         }
                     }
                 });
-                self.dom.sidebar_content__baustein_misc.appendChild(image_fcr.content);
+                self.dom.sidebar_content__baustein_styles.appendChild(image_fcr.content);
 
                 const alt_formcontroll = this.formcontrol("baustein_alt", "text", "alt", 'Alternativtext (alt)', current_baustein.getAttribute("alt")||"", {
                     onchange: function() {
@@ -2191,7 +2156,7 @@ class BausteinEditor {
                         }
                     }
                 });
-                self.dom.sidebar_content__baustein_misc.appendChild(iframe_fcr.content);
+                self.dom.sidebar_content__baustein_styles.appendChild(iframe_fcr.content);
 
             } else if (current_baustein.renderType === bausteinRenderType.container || current_baustein.renderType === bausteinRenderType.layout || current_baustein.renderType === bausteinRenderType.table) {
                 const rowcol_container = this.dom.sidebar_content__baustein_styles.appendChild(this.createElement("div", "", "be_rowcol_container"));
@@ -2268,11 +2233,13 @@ class BausteinEditor {
                     // styleProperty is necessery to fix the bug where a refernce points to an undefined object
                     var styleProperty = this.getStylePropertyByName(element.property.name);
     
-                    this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein", styleProperty.type, styleProperty.name, styleProperty.title, element.value, {
+                    const formcontrol = this.formcontrol("baustein", styleProperty.type, styleProperty.name, styleProperty.title, element.value, {
                         suffix: styleProperty.suffix, html_options: styleProperty.options, onchange: function() {
                             self.apply_styles();
                         }
-                    }).content);
+                    });
+                    this.dom.sidebar_content__baustein_styles.appendChild(formcontrol.content)
+                    this.open_baustein_attributes__formcontrols.push(formcontrol.input)
                 }
             }
 
@@ -2316,11 +2283,11 @@ class BausteinEditor {
                         current_baustein.class = class_formcontroll.input.value;
                     }
             });
-            this.dom.sidebar_content__baustein_misc.appendChild(class_formcontroll.content);
+            this.dom.sidebar_content__baustein_styles.appendChild(class_formcontroll.content);
 
 
             if (current_baustein.renderType !== bausteinRenderType.spoiler_toggler && current_baustein.renderType !== bausteinRenderType.spoiler_content) {
-                var baustein_delete_button: HTMLButtonElement = <HTMLButtonElement> this.dom.sidebar_content__baustein_misc.appendChild(
+                var baustein_delete_button: HTMLButtonElement = <HTMLButtonElement> this.dom.sidebar_content__baustein_styles.appendChild(
                     this.createElement("button", this.dom_id+'_deleteBaustein', "be-form-control bautstein-delete")
                 )
                 baustein_delete_button.innerHTML = "Baustein löschen";
@@ -2336,10 +2303,10 @@ class BausteinEditor {
             }
     
             this.dom.sidebar_content__site.style.display = "none";
-            this.dom.sidebar_header_col__site.classList.remove("active");
             this.dom.sidebar_content__baustein.style.display = "";
-            this.dom.sidebar_header_col__baustein.classList.add("active");
-            this.dom.sidebar_header_col__baustein.classList.remove("disabled");
+            //this.dom.sidebar_header_col__site.classList.remove("active");
+            //this.dom.sidebar_header_col__baustein.classList.add("active");
+            //this.dom.sidebar_header_col__baustein.classList.remove("disabled");
         }
     }
     
@@ -2355,10 +2322,10 @@ class BausteinEditor {
 
     close_baustein_attributes() {
         this.dom.sidebar_content__site.style.display = "";
-        this.dom.sidebar_header_col__site.classList.add("active");
         this.dom.sidebar_content__baustein.style.display = "none";
-        this.dom.sidebar_header_col__baustein.classList.remove("active");
-        this.dom.sidebar_header_col__baustein.classList.add("disabled");
+        //this.dom.sidebar_header_col__site.classList.add("active");
+        //this.dom.sidebar_header_col__baustein.classList.remove("active");
+        //this.dom.sidebar_header_col__baustein.classList.add("disabled");
     }
 
     preview_render() {
@@ -2438,7 +2405,7 @@ class BausteinEditor {
         var tabs_name = ["style", "radius"];
         var tabs_dom: HTMLDivElement[] = [];
         var tabs_container_dom: HTMLDivElement[] = [];
-        var inputs: (HTMLSelectElement | HTMLInputElement)[] = [];
+        var inputs: (FormControl)[] = [];
 
         for (var i = 0; i < tabs_name.length; i++) {
             const index_const = i;
@@ -2928,12 +2895,6 @@ class BausteinEditor {
 
     export() {
         var export_html_dom = this.createElement("div", "", "be-article");
-        for (var s = 0; s < this.data.page.style.length; s++) {
-            const style = this.data.page.style[s];
-            if (style.value !== "" && style.value !== "0" && style.value !== "auto" && (style.property.options.length === 0 && style.value !== style.property.options[0])) {
-                export_html_dom.style.setProperty(style.property.name, style.value);
-            }
-        }
 
         var bausteine = this.getBausteineChildren(null);
         for (var row = 0; row < bausteine.length; row++) {

@@ -227,7 +227,6 @@ var Baustein = /** @class */ (function (_super) {
 }(BausteinTemplate));
 var BausteinEditor = /** @class */ (function () {
     function BausteinEditor(dom_id, options) {
-        var _this = this;
         this.baustein_counter = 0;
         this.baustein_id_counter = 0;
         this.cursor_mode = 0;
@@ -288,14 +287,7 @@ var BausteinEditor = /** @class */ (function () {
         };
         this.stylePropertiesArray = Object.values(this.styleProperties);
         this.data = {
-            page: {
-                style: [
-                //{ property: this.styleProperties.font_family, value: this.styleProperties.font_family.options[0].value },
-                ],
-                //styleClasses: [
-                //    { property: this.styleProperties.font_size, value: this.styleProperties.font_size.options[0].value },
-                //]
-            },
+            page: {},
             bausteine: []
         };
         this.types = {
@@ -413,7 +405,7 @@ var BausteinEditor = /** @class */ (function () {
                 { property: this.styleProperties.color, value: "" },
             ]),
             script: new BausteinTemplate("script", "JavaScript", '<i class="fas fa-code"></i>', "script", bausteinRenderType.plaintext, [], [], []),
-            iframe: new BausteinTemplate("iframe", "iframe einbinden", '<i class="fas fa-code"></i>', "iframe", bausteinRenderType.iframe, [], [
+            iframe: new BausteinTemplate("iframe", "iframe einbinden", '<i class="fas fa-code"></i>', "iframe", bausteinRenderType.iframe, [new ToggleableClass("d-block", true, false)], [
                 new BausteinAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"),
                 new BausteinAttribute("allowfullscreen", "allowfullscreen")
             ], [
@@ -485,6 +477,7 @@ var BausteinEditor = /** @class */ (function () {
         this.selected_baustein = null;
         this.selected_baustein_id = null;
         this.open_baustein_attributes__baustein_id = null;
+        this.open_baustein_attributes__formcontrols = [];
         this.assets = {
             baustein_image_placeholder: "/img/baustein-image-placeholder.png"
         };
@@ -513,7 +506,6 @@ var BausteinEditor = /** @class */ (function () {
         this.dom.be = document.getElementById(this.dom_id);
         this.dom.underlay = this.dom.be.appendChild(this.createElement("div", this.dom_id + '_underlay', "__dialog"));
         this.dom.underlay.style.display = "none";
-        this.dom.page_styles = this.dom.be.appendChild(this.createElement("style", this.dom_id + '_page_styles', ""));
         this.dom.main = this.dom.be.appendChild(this.createElement("div", this.dom_id + "_main", "be_main"));
         this.dom.sidebar = this.dom.be.appendChild(this.createElement("div", this.dom_id + "_sidebar", "be_sidebar"));
         this.dom.toolbar = this.dom.main.appendChild(this.createElement("div", "", "be_toolbar"));
@@ -542,31 +534,25 @@ var BausteinEditor = /** @class */ (function () {
         this.dom.preview_close_button.type = "button";
         this.dom.preview_content = this.dom.preview.appendChild(this.createElement("div", this.dom_id + "_preview_content", "be_preview_content"));
         this.dom.preview_content.style.display = "none";
-        this.dom.sidebar_header = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_header", "be_sidebar_header"));
+        //this.dom.sidebar_header = this.dom.sidebar.appendChild(
+        //    this.createElement("div", this.dom_id+"_sidebar_header", "be_sidebar_header")
+        //);
         this.dom.sidebar_content__site = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__site", "be_sidebar_content"));
         this.dom.sidebar_content__baustein = this.dom.sidebar.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__baustein", "be_sidebar_content"));
         this.dom.sidebar_content__baustein.style.display = "none";
         this.dom.sidebar_content__baustein_styles = this.dom.sidebar_content__baustein.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__baustein_styles", ""));
-        this.dom.sidebar_content__baustein_misc = this.dom.sidebar_content__baustein.appendChild(this.createElement("div", this.dom_id + "_sidebar_content__baustein_misc", ""));
-        this.dom.sidebar_header_col__site = this.dom.sidebar_header.appendChild(this.createElement("div", this.dom_id + "_sidebar_header_col__site", "be_sidebar_header_col active"));
+        /*
+        this.dom.sidebar_header_col__site = this.dom.sidebar_header.appendChild(
+            this.createElement("div", this.dom_id+"_sidebar_header_col__site", "be_sidebar_header_col active")
+        );
         this.dom.sidebar_header_col__site.innerHTML = "Artikel";
-        this.dom.sidebar_header_col__baustein = this.dom.sidebar_header.appendChild(this.createElement("div", this.dom_id + "_sidebar_header_col__baustein", "be_sidebar_header_col disabled"));
+
+        this.dom.sidebar_header_col__baustein = this.dom.sidebar_header.appendChild(
+            this.createElement("div", this.dom_id+"_sidebar_header_col__baustein", "be_sidebar_header_col disabled")
+        );
         this.dom.sidebar_header_col__baustein.innerHTML = "Baustein";
-        //for (var i = 0; i < this.data.page.styleClasses.length; i++) {
-        //    const element = this.data.page.styleClasses[i];
-        //    this.dom.sidebar_content__site.appendChild(
-        //        this.formcontrol("page-sc", element.property.type, element.property.name, element.property.title, 
-        //            element.value, element.property.suffix, element.property.options).content
-        //    );
-        //}
-        for (var i = 0; i < this.data.page.style.length; i++) {
-            var element = this.data.page.style[i];
-            this.dom.sidebar_content__site.appendChild(this.formcontrol("page", element.property.type, element.property.name, element.property.title, element.value, {
-                suffix: element.property.suffix, html_options: element.property.options, onchange: function () { return _this.apply_styles(); }
-            }).content);
-        }
+        */
         this.be_bausteinSelector_isOpen = false;
-        this.apply_styles();
         // TinyEditor Setup
         this.tinyeditor_toolbar = new TinyEditorToolbar(this.dom.toolbar, this.tinyeditor_toolbar_options);
         this.tinyeditor_toolbar.hideAllItems();
@@ -620,20 +606,22 @@ var BausteinEditor = /** @class */ (function () {
             self.dom.preview_content.style.width = "320px";
             self.dom.preview_content.classList.add("mobile");
         });
-        this.dom.sidebar_header_col__site.addEventListener("click", function () {
-            self.dom.sidebar_header_col__site.classList.add("active");
-            self.dom.sidebar_header_col__baustein.classList.remove("active");
+        /*
+        this.dom.sidebar_header_col__site.addEventListener("click", function() {
+            self.dom.sidebar_header_col__site.classList.add("active")
+            self.dom.sidebar_header_col__baustein.classList.remove("active")
             self.dom.sidebar_content__site.style.display = "";
             self.dom.sidebar_content__baustein.style.display = "none";
         });
-        this.dom.sidebar_header_col__baustein.addEventListener("click", function () {
+        this.dom.sidebar_header_col__baustein.addEventListener("click", function() {
             if (self.dom.sidebar_header_col__baustein.classList.contains("disabled") === false) {
-                self.dom.sidebar_header_col__site.classList.remove("active");
-                self.dom.sidebar_header_col__baustein.classList.add("active");
+                self.dom.sidebar_header_col__site.classList.remove("active")
+                self.dom.sidebar_header_col__baustein.classList.add("active")
                 self.dom.sidebar_content__site.style.display = "none";
                 self.dom.sidebar_content__baustein.style.display = "";
             }
         });
+        */
         this.render();
     }
     BausteinEditor.prototype.getStylePropertyByName = function (name) {
@@ -1411,12 +1399,13 @@ var BausteinEditor = /** @class */ (function () {
                 for (var a = 0; a < baustein.style.length; a++) {
                     var element = baustein.style[a];
                     if (element.value !== "") {
-                        var property_name = element.property.name;
-                        if (property_name.indexOf("width") !== -1 || property_name.indexOf("height") !== -1 || property_name.indexOf("margin") !== -1 || property_name.indexOf("border") !== -1 || property_name.indexOf("padding") !== -1) {
-                            baustein_dom.style[property_name] = element.value;
+                        var property_name_1 = element.property.name;
+                        var property_name_any = property_name_1;
+                        if (property_name_1.indexOf("width") !== -1 || property_name_1.indexOf("height") !== -1 || property_name_1.indexOf("margin") !== -1 || property_name_1.indexOf("border") !== -1 || property_name_1.indexOf("padding") !== -1) {
+                            baustein_dom.style[property_name_any] = element.value;
                         }
                         else {
-                            baustein_item.style[property_name] = element.value;
+                            baustein_item.style[property_name_any] = element.value;
                         }
                     }
                 }
@@ -1561,26 +1550,14 @@ var BausteinEditor = /** @class */ (function () {
         }
     };
     BausteinEditor.prototype.apply_styles = function () {
-        // Apply Page Styles
-        /*
-        var style_string = ".be_baustein  {";
-
-        for (var i = 0; i < this.data.page.style.length; i++) {
-            const formfield: HTMLFormElement = <HTMLFormElement> document.getElementById(this.dom_id+"_page_fc_"+this.data.page.style[i].property.name);
-            this.data.page.style[i].value = formfield.value;
-            style_string += this.data.page.style[i].property.name + ':' + this.data.page.style[i].value + ';';
-        }
-        style_string += '}';
-        this.dom.page_styles.innerHTML = style_string;
-        */
         // Apply Baustein Styles
         if (this.selected_baustein !== null && this.selected_baustein_id !== null) {
             var baustein = this.getBaustein(this.selected_baustein_id);
             var selected_baustein_editor = this.selected_baustein.lastChild;
-            var nodes = this.dom.sidebar_content__baustein_styles.querySelectorAll(".be_formrow .be-form-control");
-            for (var i = 0; i < nodes.length; i++) {
-                var property_name = nodes[i].name;
-                var value = typeof nodes[i].dataset.value === "undefined" ? nodes[i].value : nodes[i].dataset.value;
+            for (var i = 0; i < this.open_baustein_attributes__formcontrols.length; i++) {
+                var formcontrol = this.open_baustein_attributes__formcontrols[i];
+                var property_name = formcontrol.name;
+                var value = typeof formcontrol.dataset.value === "undefined" ? formcontrol.value : formcontrol.dataset.value;
                 var baustein_style_index = baustein.style.length;
                 for (var b = 0; b < baustein.style.length; b++) {
                     if (baustein.style[b].property.name === property_name) {
@@ -1592,7 +1569,7 @@ var BausteinEditor = /** @class */ (function () {
                     if (value === "" || value === "0" || value === "auto")
                         continue;
                     var new_style = new BausteinStyle(this.getStylePropertyByName(property_name), "");
-                    if (new_style.property.options.length > 0 && new_style.property.options[0] === value)
+                    if (new_style.property.options.length > 0 && new_style.property.options[0].value === value)
                         continue;
                     baustein.style[baustein_style_index] = new_style;
                 }
@@ -1634,18 +1611,18 @@ var BausteinEditor = /** @class */ (function () {
             image_source_text_1.innerText = value;
             image_source_text_1.style.fontSize = "0.6rem";
             image_source_text_1.style.marginBottom = "2px";
-            var form_control_1 = be_formrow.appendChild(this.createElement("button", fc_dom_id, "be-form-control"));
-            form_control_1.type = "button";
-            form_control_1.innerHTML = title + " setzen";
-            form_control_1.name = name;
-            form_control_1.value = value;
-            form_control_1.addEventListener("click", function () {
+            form_control = be_formrow.appendChild(this.createElement("button", fc_dom_id, "be-form-control"));
+            form_control.type = "button";
+            form_control.innerHTML = title + " setzen";
+            form_control.name = name;
+            form_control.value = value;
+            form_control.addEventListener("click", function () {
                 if (_this.selected_baustein_id !== null) {
                     _this.dialog_media(bausteinRenderType.image).then(function (image_url) {
                         image_source_text_1.innerText = image_url;
-                        form_control_1.value = image_url;
+                        form_control.value = image_url;
                         if (options.onchange)
-                            options.onchange(form_control_1);
+                            options.onchange(form_control);
                     });
                 }
             });
@@ -1697,7 +1674,7 @@ var BausteinEditor = /** @class */ (function () {
                     }
                     else if (type === "number") {
                         form_control.type = "text";
-                        form_control.dataset.suffix = suffix_const;
+                        form_control.dataset.suffix = suffix_default;
                         var form_control_container_up = form_control_container.appendChild(this.createElement("div", "", "be-form-control-container_up"));
                         form_control_container_up.innerHTML = '⮝';
                         var form_control_container_down = form_control_container.appendChild(this.createElement("div", "", "be-form-control-container_down"));
@@ -1724,7 +1701,7 @@ var BausteinEditor = /** @class */ (function () {
                                 num = number_default_1;
                             }
                             else {
-                                var cmp_suffix = form_control.value.replace(num, "");
+                                var cmp_suffix = form_control.value.replace(num.toString(), "");
                                 for (var i = 0; i < suffix_const.length; i++) {
                                     if (cmp_suffix === suffix_const[i]) {
                                         thus_suffix = suffix_const[i];
@@ -1802,10 +1779,10 @@ var BausteinEditor = /** @class */ (function () {
         var _this = this;
         var bausteinStyleProperty = this.getStylePropertyByName(styleName);
         var bausteinStyleValue = baustein.getStyleValue(styleName, default_value);
-        console.log("bausteinStyleProperty", bausteinStyleProperty);
-        var be_layout_fc = this.formcontrol("baustein", "number", bausteinStyleProperty.name, null, bausteinStyleValue, {
+        var formcontrol = this.formcontrol("baustein", "number", bausteinStyleProperty.name, null, bausteinStyleValue, {
             suffix: bausteinStyleProperty.suffix, html_options: bausteinStyleProperty.options, onchange: function () { return _this.apply_styles(); }
-        }).content;
+        });
+        var be_layout_fc = formcontrol.content;
         be_layout_fc.style.width = "34px";
         be_layout_fc.style.height = "30px";
         if (top !== null)
@@ -1816,21 +1793,23 @@ var BausteinEditor = /** @class */ (function () {
             be_layout_fc.style.left = left === "" ? "calc(50% - (" + be_layout_fc.style.width + " / 2))" : left;
         if (right !== null)
             be_layout_fc.style.right = right === "" ? "calc(50% - (" + be_layout_fc.style.width + " / 2))" : right;
+        this.open_baustein_attributes__formcontrols.push(formcontrol.input);
         return be_layout_fc;
     };
     BausteinEditor.prototype.open_baustein_attributes = function (baustein_id) {
         if (this.open_baustein_attributes__baustein_id === null || this.open_baustein_attributes__baustein_id !== baustein_id) {
             var current_baustein_1 = this.getBaustein(baustein_id);
             this.open_baustein_attributes__baustein_id = baustein_id;
+            this.open_baustein_attributes__formcontrols = [];
             var self_1 = this;
             this.dom.sidebar_content__baustein_styles.innerHTML = "";
-            this.dom.sidebar_content__baustein_misc.innerHTML = "";
             // Layout view like Firefox DevTools
             var be_layout_view = this.dom.sidebar_content__baustein_styles.appendChild(this.createElement("div", "", "be_layout_view"));
             // margin
             var be_layout_view_margin = be_layout_view.appendChild(this.createElement("div", "", "be_layout_view_margin"));
             var be_layout_view_margin_indicator = be_layout_view_margin.appendChild(this.createElement("div", "", "be_layout_view_indicator"));
             be_layout_view_margin_indicator.innerHTML = "margin";
+            be_layout_view_margin.appendChild(this.layout_fc(current_baustein_1, "margin-top", "0", "-6px", null, null, ""));
             be_layout_view_margin.appendChild(this.layout_fc(current_baustein_1, "margin-top", "0", "-6px", null, null, ""));
             be_layout_view_margin.appendChild(this.layout_fc(current_baustein_1, "margin-bottom", "0", null, null, "-6px", ""));
             be_layout_view_margin.appendChild(this.layout_fc(current_baustein_1, "margin-left", "0", "", null, null, "-6px"));
@@ -1872,7 +1851,7 @@ var BausteinEditor = /** @class */ (function () {
                         }
                     }
                 });
-                self_1.dom.sidebar_content__baustein_misc.appendChild(image_fcr.content);
+                self_1.dom.sidebar_content__baustein_styles.appendChild(image_fcr.content);
                 var alt_formcontroll_1 = this.formcontrol("baustein_alt", "text", "alt", 'Alternativtext (alt)', current_baustein_1.getAttribute("alt") || "", {
                     onchange: function () {
                         current_baustein_1.setAttribute("alt", alt_formcontroll_1.input.value);
@@ -1898,7 +1877,7 @@ var BausteinEditor = /** @class */ (function () {
                         }
                     }
                 });
-                self_1.dom.sidebar_content__baustein_misc.appendChild(iframe_fcr.content);
+                self_1.dom.sidebar_content__baustein_styles.appendChild(iframe_fcr.content);
             }
             else if (current_baustein_1.renderType === bausteinRenderType.container || current_baustein_1.renderType === bausteinRenderType.layout || current_baustein_1.renderType === bausteinRenderType.table) {
                 var rowcol_container = this.dom.sidebar_content__baustein_styles.appendChild(this.createElement("div", "", "be_rowcol_container"));
@@ -1969,11 +1948,13 @@ var BausteinEditor = /** @class */ (function () {
                 if (element.property.showInBausteinAttributesSidebar) {
                     // styleProperty is necessery to fix the bug where a refernce points to an undefined object
                     var styleProperty = this.getStylePropertyByName(element.property.name);
-                    this.dom.sidebar_content__baustein_styles.appendChild(this.formcontrol("baustein", styleProperty.type, styleProperty.name, styleProperty.title, element.value, {
+                    var formcontrol = this.formcontrol("baustein", styleProperty.type, styleProperty.name, styleProperty.title, element.value, {
                         suffix: styleProperty.suffix, html_options: styleProperty.options, onchange: function () {
                             self_1.apply_styles();
                         }
-                    }).content);
+                    });
+                    this.dom.sidebar_content__baustein_styles.appendChild(formcontrol.content);
+                    this.open_baustein_attributes__formcontrols.push(formcontrol.input);
                 }
             }
             // toggleableClasses
@@ -2013,9 +1994,9 @@ var BausteinEditor = /** @class */ (function () {
                     current_baustein_1.class = class_formcontroll_1.input.value;
                 }
             });
-            this.dom.sidebar_content__baustein_misc.appendChild(class_formcontroll_1.content);
+            this.dom.sidebar_content__baustein_styles.appendChild(class_formcontroll_1.content);
             if (current_baustein_1.renderType !== bausteinRenderType.spoiler_toggler && current_baustein_1.renderType !== bausteinRenderType.spoiler_content) {
-                var baustein_delete_button = this.dom.sidebar_content__baustein_misc.appendChild(this.createElement("button", this.dom_id + '_deleteBaustein', "be-form-control bautstein-delete"));
+                var baustein_delete_button = this.dom.sidebar_content__baustein_styles.appendChild(this.createElement("button", this.dom_id + '_deleteBaustein', "be-form-control bautstein-delete"));
                 baustein_delete_button.innerHTML = "Baustein löschen";
                 baustein_delete_button.type = "button";
                 baustein_delete_button.addEventListener("click", function () {
@@ -2027,10 +2008,10 @@ var BausteinEditor = /** @class */ (function () {
                 });
             }
             this.dom.sidebar_content__site.style.display = "none";
-            this.dom.sidebar_header_col__site.classList.remove("active");
             this.dom.sidebar_content__baustein.style.display = "";
-            this.dom.sidebar_header_col__baustein.classList.add("active");
-            this.dom.sidebar_header_col__baustein.classList.remove("disabled");
+            //this.dom.sidebar_header_col__site.classList.remove("active");
+            //this.dom.sidebar_header_col__baustein.classList.add("active");
+            //this.dom.sidebar_header_col__baustein.classList.remove("disabled");
         }
     };
     // returns the value of the pointed array item OR attribute def on fail
@@ -2044,10 +2025,10 @@ var BausteinEditor = /** @class */ (function () {
     };
     BausteinEditor.prototype.close_baustein_attributes = function () {
         this.dom.sidebar_content__site.style.display = "";
-        this.dom.sidebar_header_col__site.classList.add("active");
         this.dom.sidebar_content__baustein.style.display = "none";
-        this.dom.sidebar_header_col__baustein.classList.remove("active");
-        this.dom.sidebar_header_col__baustein.classList.add("disabled");
+        //this.dom.sidebar_header_col__site.classList.add("active");
+        //this.dom.sidebar_header_col__baustein.classList.remove("active");
+        //this.dom.sidebar_header_col__baustein.classList.add("disabled");
     };
     BausteinEditor.prototype.preview_render = function () {
         var _this = this;
@@ -2573,12 +2554,6 @@ var BausteinEditor = /** @class */ (function () {
     };
     BausteinEditor.prototype.export = function () {
         var export_html_dom = this.createElement("div", "", "be-article");
-        for (var s = 0; s < this.data.page.style.length; s++) {
-            var style = this.data.page.style[s];
-            if (style.value !== "" && style.value !== "0" && style.value !== "auto" && (style.property.options.length === 0 && style.value !== style.property.options[0])) {
-                export_html_dom.style.setProperty(style.property.name, style.value);
-            }
-        }
         var bausteine = this.getBausteineChildren(null);
         for (var row = 0; row < bausteine.length; row++) {
             var baustein = bausteine[row];
