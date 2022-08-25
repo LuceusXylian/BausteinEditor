@@ -664,8 +664,6 @@ select.be-form-control:not([multiple]) {
 
 /* TinyEditor */
 .__editor {
-    background: inherit;
-    color: inherit;
     font-family: inherit;
     overflow: auto;
     padding: 10px;

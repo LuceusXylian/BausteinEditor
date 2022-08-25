@@ -20,7 +20,7 @@ var TinyEditorToolbar = /** @class */ (function () {
         this.icon_selector_modal_dom_search.placeholder = "Suche nach Icon..";
         this.icon_selector_modal_dom_search.className = "__icon-selector-search form-control";
         this.icon_selector_modal_dom_search.addEventListener("input", function () {
-            _this.icon_selector_modal_render(_this.icon_selector_modal_dom_search.value);
+            _this.icon_selector_modal_render();
         });
         this.icon_selector_modal_dom_close = this.icon_selector_modal_dom.appendChild(document.createElement("div"));
         this.icon_selector_modal_dom_close.className = "__icon-selector-close";
@@ -123,9 +123,10 @@ var TinyEditorToolbar = /** @class */ (function () {
         this.icon_selector_modal_dom.style.display = "none";
         this.icon_selector_modal_dom_resolve = null;
     };
-    TinyEditorToolbar.prototype.icon_selector_modal_render = function (search_text) {
+    TinyEditorToolbar.prototype.icon_selector_modal_render = function () {
         var _this = this;
         this.icon_selector_modal_dom_content.innerHTML = '';
+        var search_text = this.icon_selector_modal_dom_search.value;
         var _loop_1 = function (i) {
             var icon_class = FONTAWSOME_DATA.icons[i];
             if (search_text === "" || icon_class.indexOf(search_text) !== -1) {
@@ -153,13 +154,12 @@ var TinyEditorToolbar = /** @class */ (function () {
         return new Promise(function (resolve, reject) {
             if (_this.icon_selector_modal_is_shown) {
                 _this.icon_selector_modal_close();
-                reject();
             }
             else {
                 _this.icon_selector_modal_is_shown = true;
                 _this.icon_selector_modal_dom.style.display = "";
                 _this.icon_selector_modal_dom_resolve = resolve;
-                _this.icon_selector_modal_render("");
+                _this.icon_selector_modal_render();
             }
         });
     };
@@ -442,21 +442,15 @@ var TinyEditor = /** @class */ (function () {
                 this.editor.focus();
                 selection_ranges = this.saveSelection();
             }
-            var selected_element_2 = this.getElementFromSelection(selection_ranges[0]);
             this.toolbar.icon_selector_modal().then(function (className) {
-                if (selected_element_2 === null) {
-                    if (selection_ranges !== null)
-                        _this.restoreSelection(selection_ranges);
-                    var newSelection = window.getSelection();
-                    if (newSelection !== null) {
-                        var new_element_2 = document.createElement("i");
-                        new_element_2.className = className;
-                        newSelection.getRangeAt(0).insertNode(new_element_2);
-                        setTimeout(function () { return new_element_2.focus(); }, 100);
-                    }
-                }
-                else {
-                    selected_element_2.className = className;
+                if (selection_ranges !== null)
+                    _this.restoreSelection(selection_ranges);
+                var newSelection = window.getSelection();
+                if (newSelection !== null) {
+                    var new_element_2 = document.createElement("i");
+                    new_element_2.className = className;
+                    newSelection.getRangeAt(0).insertNode(new_element_2);
+                    setTimeout(function () { return new_element_2.focus(); }, 100);
                 }
                 if (_this.callback_onchange !== null)
                     _this.callback_onchange();

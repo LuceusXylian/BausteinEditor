@@ -52,8 +52,9 @@ class TinyEditorToolbar {
         this.icon_selector_modal_dom_resolve = null;
     }
 
-    icon_selector_modal_render(search_text: string) {
+    icon_selector_modal_render() {
         this.icon_selector_modal_dom_content.innerHTML = '';
+        const search_text = this.icon_selector_modal_dom_search.value;
         for (let i = 0; i < FONTAWSOME_DATA.icons.length; i++) {
             const icon_class = FONTAWSOME_DATA.icons[i];
             if (search_text === "" || icon_class.indexOf(search_text) !== -1) {
@@ -77,12 +78,11 @@ class TinyEditorToolbar {
         return new Promise((resolve: Function, reject: Function) => {
             if (this.icon_selector_modal_is_shown) {
                 this.icon_selector_modal_close();
-                reject();
             } else {
                 this.icon_selector_modal_is_shown = true;
                 this.icon_selector_modal_dom.style.display = "";
                 this.icon_selector_modal_dom_resolve = resolve;
-                this.icon_selector_modal_render("");
+                this.icon_selector_modal_render();
             }
         });
     }
@@ -99,7 +99,7 @@ class TinyEditorToolbar {
         this.icon_selector_modal_dom_search.placeholder = "Suche nach Icon..";
         this.icon_selector_modal_dom_search.className = "__icon-selector-search form-control";
         this.icon_selector_modal_dom_search.addEventListener("input", () => {
-            this.icon_selector_modal_render(this.icon_selector_modal_dom_search.value);
+            this.icon_selector_modal_render();
         });
 
         this.icon_selector_modal_dom_close = this.icon_selector_modal_dom.appendChild( document.createElement("div") );
@@ -572,23 +572,17 @@ class TinyEditor {
                 selection_ranges = this.saveSelection();
             }
 
-            const selected_element = <HTMLElement|null> this.getElementFromSelection(selection_ranges[0]);
-
             this.toolbar.icon_selector_modal().then((className: string) => {
-                if(selected_element === null) {
-                    if (selection_ranges !== null) this.restoreSelection(selection_ranges);
-                
-                    var newSelection = window.getSelection();
-                    if(newSelection !== null) {
-                        const new_element = document.createElement("i");
-                        new_element.className = className;
-                        newSelection.getRangeAt(0).insertNode(new_element);
-                        setTimeout(() => new_element.focus(), 100);
-                    }
-                } else {
-                    selected_element.className = className;
+                if (selection_ranges !== null) this.restoreSelection(selection_ranges);
+            
+                var newSelection = window.getSelection();
+                if(newSelection !== null) {
+                    const new_element = document.createElement("i");
+                    new_element.className = className;
+                    newSelection.getRangeAt(0).insertNode(new_element);
+                    setTimeout(() => new_element.focus(), 100);
                 }
-
+                
                 if(this.callback_onchange !== null) this.callback_onchange();
             });
 
