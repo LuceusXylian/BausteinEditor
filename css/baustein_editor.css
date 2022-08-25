@@ -253,6 +253,9 @@ select.be-form-control:not([multiple]) {
 }
 .be_toolbar {
     padding: 0 !important;
+    height: 49px;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 .be_toolbar > * {
     display: inline-block; vertical-align: middle;
