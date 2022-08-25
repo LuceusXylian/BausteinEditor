@@ -1863,7 +1863,7 @@ var BausteinEditor = /** @class */ (function () {
                         current_baustein_1.setAttribute("title", title_formcontroll_1.input.value);
                     }
                 });
-                this.dom.sidebar_content__baustein_styles.appendChild(alt_formcontroll_1.content);
+                this.dom.sidebar_content__baustein_styles.appendChild(title_formcontroll_1.content);
             }
             else if (current_baustein_1.renderType === bausteinRenderType.iframe) {
                 var iframe_fcr = self_1.formcontrol("src_input", "text", "", "Webseiten URL", current_baustein_1.getAttribute("src") || "", {

@@ -2142,7 +2142,7 @@ class BausteinEditor {
                         current_baustein.setAttribute("title", title_formcontroll.input.value);
                     }
                 });
-                this.dom.sidebar_content__baustein_styles.appendChild(alt_formcontroll.content);
+                this.dom.sidebar_content__baustein_styles.appendChild(title_formcontroll.content);
 
             } else if (current_baustein.renderType === bausteinRenderType.iframe) {
                 const iframe_fcr = self.formcontrol("src_input", "text", "", "Webseiten URL", current_baustein.getAttribute("src")||"", {
