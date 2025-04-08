@@ -1,0 +1,236 @@
+interface LocaleData {
+    [key: string]: string;
+}
+
+interface Locales {
+    __locales: {
+        [key: string]: LocaleData;
+    };
+    selected_locale: string;
+    select_locale: (locale: string) => boolean;
+    get_item: (key: string) => string;
+}
+
+export const LOCALES: Locales = {
+    __locales: {
+        "en": {
+            "add_new_block": "Add new block",
+            "delete_block": "Delete block", 
+            "confirm_delete": "Are you sure you want to delete this block?",
+            "delete": "Delete",
+            "cancel": "Cancel",
+            "finish": "Finish",
+            "create": "Create",
+            "save": "Save",
+            "search": "Search",
+            "search_placeholder": "Search terms...",
+            "back": "Back",
+            "forward": "Forward",
+            "preview": "Preview",
+            "close_preview": "Close preview",
+            "select": "Select",
+            "load_image": "Load Image",
+            "refresh_view": "Refresh view",
+            "upload_image": "Upload image",
+            "set_image": "Set image",
+            "custom_other": "Custom / Other",
+            "toggleable_classes": "Toggleable classes",
+            "css_classes": "CSS Classes",
+            "css_classes_advanced": "(for advanced users)",
+            "columns": "Columns",
+            "rows": "Rows",
+            "border_settings": "Border Settings",
+
+            "font-size": "Font Size",
+            "font-weight": "Text Weight",
+            "text-decoration": "Text Underline",
+            "font-style": "Text Italic",
+            "text-align": "Text Alignment",
+            "color": "Text Color",
+            "background-color": "Background Color",
+            "background-image": "Background Image",
+            "width": "Width",
+            "height": "Height",
+            "max-width": "Maximum Width",
+            "max-height": "Maximum Height",
+            "margin-top": "Top Margin",
+            "margin-right": "Right Margin",
+            "margin-bottom": "Bottom Margin",
+            "margin-left": "Left Margin",
+            "border-top-width": "Top Border Width",
+            "border-right-width": "Right Border Width",
+            "border-bottom-width": "Bottom Border Width",
+            "border-left-width": "Border Width Left",
+            "padding-top": "Padding Top",
+            "padding-right": "Padding Right",
+            "padding-bottom": "Padding Bottom",
+            "padding-left": "Padding Left",
+
+            "normal": "Normal",
+            "smaller": "Smaller (~10px)",
+            "small": "Small (~11px)",
+            "medium": "Medium (~14px)",
+            "large": "Large (~17px)",
+            "larger": "Larger (~20px)",
+            "bold": "Bold",
+            "bolder": "Bolder",
+            "lighter": "Lighter",
+            "underline": "Underlined",
+            "dotted": "Dotted underline",
+            "italic": "Italic",
+            "oblique": "Oblique",
+            "left": "Left",
+            "center": "Centered",
+            "right": "Right",
+
+            "h1": "Heading 1",
+            "h2": "Heading 2",
+            "h3": "Heading 3",
+            "h4": "Heading 4",
+            "h5": "Heading 5",
+            "h6": "Heading 6",
+            "text": "Text",
+            "btn_primary": "Primary Button",
+            "btn_seccond": "Primary Button",
+            "btn_cta": "Call-To-Action Button",
+            "iframe": "Insert iframe",
+            "shortcode": "Shortcode",
+            "image": "Image",
+            "spoiler": "Toggle",
+            "spoiler_toggler": "Toggle visible content",
+            "spoiler_content": "Toggle hidden content",
+            "layout": "Layout",
+            "container": "Container",
+            "table": "Table",
+            "tableRow": "Table Row",
+            "th": "Table title row",
+            "td": "Table row",
+            "buttons": "Buttons",
+            "titles": "Headings",
+            "misc": "Miscellaneous",
+            "shortcode_select": "Select Shortcode",
+            "page_content": "Your page content will appear here. Move this block to where you want the page content appear.",
+        },
+        "de": {
+            "add_new_block": "Neuen Baustein hinzufügen",
+            "delete_block": "Baustein löschen",
+            "confirm_delete": "Sind Sie sich sicher, dass Sie diesen Baustein löschen wollen?",
+            "delete": "Löschen", 
+            "cancel": "Abbrechen",
+            "finish": "Fertigstellen",
+            "create": "Erstellen",
+            "save": "Speichern",
+            "search": "Suchen",
+            "search_placeholder": "Suchbegriffe..",
+            "back": "Zurück", 
+            "forward": "Vorwärts",
+            "preview": "Vorschau",
+            "close_preview": "Vorschau schließen",
+            "select": "Auswählen",
+            "load_image": "Bild laden",
+            "refresh_view": "Ansicht aktualisieren",
+            "upload_image": "Bild hochladen",
+            "set_image": "Bild setzen",
+            "custom_other": "Benutzerdefiniert / Sonstige",
+            "toggleable_classes": "Togglebale Klassen",
+            "css_classes": "CSS Klassen",
+            "css_classes_advanced": "(für Fortgeschrittene Nutzer)",
+            "columns": "Spalten",
+            "rows": "Reihen",
+            "border_settings": "Border Einstellungen",
+
+            "font-size": "Schriftgröße",
+            "font-weight": "Textdicke",
+            "text-decoration": "Textunterschreichung",
+            "font-style": "Textkursion",
+            "text-align": "Textausrichtung",
+            "color": "Textfarbe",
+            "background-color": "Hintergrundfarbe",
+            "background-image": "Hintergrundbild",
+            "width": "Breite",
+            "height": "Höhe",
+            "max-width": "Maximale Breite",
+            "max-height": "Maximale Höhe",
+            "margin-top": "Außenabstand Oben",
+            "margin-right": "Außenabstand Rechts",
+            "margin-bottom": "Außenabstand Unten",
+            "margin-left": "Außenabstand Links",
+            "border-top-width": "Border Breite Oben",
+            "border-right-width": "Border Breite Rechts",
+            "border-bottom-width": "Border Breite Unten",
+            "border-left-width": "Border Breite Links",
+            "padding-top": "Innenabstand Oben",
+            "padding-right": "Innenabstand Rechts",
+            "padding-bottom": "Innenabstand Unten",
+            "padding-left": "Innenabstand Links",
+
+            "normal": "Normal",
+            "smaller": "Kleiner (~10px)",
+            "small": "Klein (~11px)",
+            "medium": "Medium (~14px)",
+            "large": "Groß (~17px)",
+            "larger": "Größer (~20px)",
+            "bold": "Fett",
+            "bolder": "Fetter",
+            "lighter": "Leichter",
+            "underline": "Unterstrichen",
+            "dotted": "Unterstrichen gepunktet",
+            "italic": "Kursiv",
+            "oblique": "Schräg",
+            "left": "Links",
+            "center": "Zentriert",
+            "right": "Rechts",
+
+            "h1": "Überschrift 1",
+            "h2": "Überschrift 2",
+            "h3": "Überschrift 3",
+            "h4": "Überschrift 4",
+            "h5": "Überschrift 5",
+            "h6": "Überschrift 6",
+            "text": "Text",
+            "btn_primary": "Primary Button",
+            "btn_seccond": "Primary Button",
+            "btn_cta": "Call-To-Action Button",
+            "iframe": "iframe einbinden",
+            "shortcode": "Shortcode",
+            "image": "Bild",
+            "spoiler": "Auf-Zu-Klappfunktion",
+            "spoiler_toggler": "Auf-Zu-Klappfunktion sichtbarer Inhalt",
+            "spoiler_content": "Auf-Zu-Klappfunktion versteckter Inhalt",
+            "layout": "Layout",
+            "container": "Kontainer",
+            "table": "Tabelle",
+            "tableRow": "Tabellenreihe",
+            "th": "Tabellentitelzeile",
+            "td": "Tabellenzeile",
+            "buttons": "Buttons",
+            "titles": "Überschriften",
+            "misc": "Sonstiges",
+            "shortcode_select": "Shortcode auswählen",
+            "page_content": "Hier wird Ihr Seiteninhalt angezeigt. Verschieben Sie diesen Block an die gewünschte Stelle.",
+        }
+    },
+    selected_locale: "en",
+    select_locale: function(locale: string): boolean {
+        if (this.__locales[locale] === undefined) {
+            console.error("[BausteinEditor] LOCALES locale '"+locale+"' does not exist");
+            return false;
+        } else {
+            this.selected_locale = locale;
+            return true;
+        }
+    },
+    get_item: function(key: string): string {
+        if(key === "auto") return "auto";
+        if(key === "html") return "HTML";
+        if(key === "script") return "JavaScript";
+        if(key === "bausteinSelector") return "";
+
+        if (this.__locales[this.selected_locale][key] === undefined) {
+            console.error("[BausteinEditor] missing LOCALES key '"+key+"'");
+            return key;
+        } else {
+            return this.__locales[this.selected_locale][key];
+        }
+    }
+}

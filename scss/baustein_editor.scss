@@ -1,7 +1,5 @@
-/* @name baustein_editor.css
- * @author Scheifele
- * @description Stylesheet für den Baustein-Editor
- */
+@import './tinyeditor.scss';
+@import './website_styles.scss';
 
 
 /* Allgemein */
@@ -210,24 +208,24 @@ select.be-form-control:not([multiple]) {
     display: block;
     max-height: 100vh;
 }
-.be_main { 
-    width: calc(100% - 280px);
+.be_main {
+    width: calc(100% - 320px);
 }
-.be_sidebar { 
+.be_sidebar {
     width: 320px;
     height: 100%;
     border-left: 1px solid #ccc;
 }
-.be_sidebar_header { 
+.be_sidebar_header {
     border-bottom: 1px solid #ccc;
 }
-.be_sidebar_header_col { 
+.be_sidebar_header_col {
     display: inline-block; vertical-align: top;
     padding: 12px;
     user-select: none;
     cursor: pointer;
 }
-.be_sidebar_header_col.active { 
+.be_sidebar_header_col.active {
     box-shadow: inset 0 -4px 0 0 #007cba;
 }
 .be_sidebar_header_col.disabled {
@@ -263,6 +261,7 @@ select.be-form-control:not([multiple]) {
 .be_toolbar > .__toolbar-separator {
     height: 48px;
 }
+.be_toolbar.__toolbar { border-radius: 0; }
 
 .be_content {
     height: calc(100% - 20px - 30px - 46px);
@@ -279,13 +278,13 @@ select.be-form-control:not([multiple]) {
 .be_preview_button_desktop, .be_preview_button_mobile { margin-right: 8px; }
 .be_preview_button_desktop, .be_preview_button_mobile, .be_preview_button, .be_preview_close_button { cursor: pointer; border-radius: 6px; }
 
-.be_preview_content { 
+.be_preview_content {
     overflow-y: auto;
     overflow-x: hidden;
     text-align: left;
     padding-top: 8px;
 }
-.be_preview_content.mobile { 
+.be_preview_content.mobile {
     border: 1px solid #ccc;
     border-radius: 6px;
     margin-left: auto;
@@ -301,6 +300,7 @@ select.be-form-control:not([multiple]) {
 .be_baustein {
     display: block;
     min-width: 138px;
+    max-width: calc(100% - 8px);
     margin: 4px;
     border-radius: 6px;
     border: 1px dashed #ccc;
@@ -313,15 +313,15 @@ select.be-form-control:not([multiple]) {
 .be_baustein > .be_baustein { margin: 20px 4px 0px 4px; }
 
 .be_baustein[data-type="table"] { padding: 10px; padding-top: 20px; }
-.be_baustein[data-type="tableRow"], 
+.be_baustein[data-type="tableRow"],
     .be_baustein[data-type="layout"] { display: flex; flex-direction: row; margin: 20px 4px; padding-top: 20px; }
-.be_baustein[data-type="tableRow"] > .be_baustein, 
+.be_baustein[data-type="tableRow"] > .be_baustein,
     .be_baustein[data-type="layout"] > .be_baustein { flex-grow: 1; margin: 10px; margin-top: 20px; }
 .be_baustein[data-type="tableRow"] > .be_bausteinSelector_container > .be_bausteinSelector_outer > .be_bausteinSelector,
     .be_baustein[data-type="layout"] > .be_bausteinSelector_container > .be_bausteinSelector_outer > .be_bausteinSelector { padding: 1rem; }
 
 
-.be_baustein_item { min-width: 100px; min-height: 10px; width: inherit; height: inherit; } 
+.be_baustein_item { min-width: 100px; min-height: 10px; width: inherit; height: inherit; }
 .be_baustein_item_overlay {
     position: absolute;
     top: 0; left: 0;
@@ -353,7 +353,6 @@ select.be-form-control:not([multiple]) {
     font-weight: normal;
     padding: 2px;
     border-radius: 4px;
-    color: black;
     background: white;
     border: 1px dashed #ccc;
     user-select: none;
@@ -362,6 +361,7 @@ select.be-form-control:not([multiple]) {
 .baustein_indicator > * {
     display: inline-block;
     vertical-align: middle;
+    color: black;
 }
 
 .baustein_indicator_position {
@@ -456,7 +456,7 @@ select.be-form-control:not([multiple]) {
     background: white;
     border: 3px solid #007cba;
     border-radius: 6px;
-    position: fixed;
+    position: absolute;
     z-index: 1160;
     max-width: 100%;
 }
@@ -506,6 +506,7 @@ select.be-form-control:not([multiple]) {
     height: 50%;
     font-size: 0.85rem;
     line-height: 1.4;
+    white-space: wrap;
 }
 
 .be_baustein_row {
@@ -610,7 +611,7 @@ select.be-form-control:not([multiple]) {
     }
 }
 
-@keyframes rainbow { 
+@keyframes rainbow {
     0% {background-position:0% 82% }
     50% {background-position:100% 19% }
     100% {background-position:0% 82% }
@@ -666,98 +667,6 @@ select.be-form-control:not([multiple]) {
 
 
 /* TinyEditor */
-.__editor {
-    font-family: inherit;
-    overflow: auto;
-    padding: 10px;
-    border-radius: inherit;
-}
-
-.__editor:focus {
-    outline: none;
-}
-
-.__toolbar {
-    flex-wrap: wrap;
-    padding: 5px;
-    border-bottom: solid 1px #e0e0e0;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-    background: white;
-}
 .be_baustein > .__toolbar { display: none; }
 .be_baustein.selected > .__toolbar { display: flex; }
 .be_baustein.ondrag > .__toolbar { display: none; }
-
-.__toolbar-item {
-    background: #ffffff;
-    border: 0;
-    border-radius: 3px;
-    cursor: pointer;
-    margin-right: 7px;
-    min-width: 30px;
-    padding: 5px;
-    font-size: 14px;
-}
-
-.__toolbar-item:hover,
-.__toolbar-item.active {
-    background: #f0f0f0;
-}
-
-.__toolbar-separator {
-    border-left: solid 1px #e0e0e0;
-    margin-right: 7px;
-}
-
-.__toolbar-separator:last-child {
-    display: none;
-}
-
-.__context_menu {
-    position: fixed;
-    color: #fff;
-    background: #2b2a33;
-    border: 1px solid #5b5b66;
-    border-radius: 4px;
-    z-index: 100;
-}
-
-.__context_menu_item {
-    padding: 10px;
-    cursor: pointer;
-}
-.__context_menu_item:hover {
-    background: #3f3f4c;
-}
-
-.__icon-selector {
-    position: fixed; z-index: 1000;
-    top: 60px;
-    left: calc(50% - 300px);
-    background: white;
-    padding: 10px;
-    width: 300px;
-    height: 300px;
-    overflow: hidden;
-    border: 2px solid #007cba;
-    border-radius: 6px;
-}
-.__icon-selector-search {
-    display: inline-block; vertical-align: middle;
-    width: calc(100% - 36px);
-}
-.__icon-selector-close {
-    display: inline-block; vertical-align: middle;
-    padding: 4px 10px;
-    font-size: 1.4rem;
-    cursor: pointer;
-}
-.__icon-selector-content {
-    margin-top: 10px;
-    height: 220px;
-    overflow-y: scroll;
-    padding: 4px;
-}
-.__icon-selector-content > i { margin: 4px; cursor: pointer; font-size: 1.2rem; }
-/* TinyEditor \\ */

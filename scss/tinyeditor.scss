@@ -1,0 +1,90 @@
+.__editor {
+	font-family: inherit;
+	overflow: auto;
+	padding: 10px;
+	border-radius: inherit;
+}
+
+.__editor:focus { outline: none; }
+
+.__toolbar {
+	flex-wrap: wrap;
+	padding: 5px;
+	border-bottom: solid 1px #e0e0e0;
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	background: white;
+}
+
+.__toolbar-item {
+	background: #ffffff;
+	border: 0;
+	border-radius: 3px;
+	cursor: pointer;
+	margin-right: 7px;
+	min-width: 30px;
+	padding: 5px;
+	font-size: 14px;
+}
+
+.__toolbar-item:hover,
+.__toolbar-item.active {
+	background: #f0f0f0;
+}
+
+.__toolbar-separator {
+	border-left: solid 1px #e0e0e0;
+	margin-right: 7px;
+}
+
+.__toolbar-separator:last-child {
+	display: none;
+}
+
+.__context_menu {
+	position: fixed;
+	color: #fff;
+	background: #2b2a33;
+	border: 1px solid #5b5b66;
+	border-radius: 4px;
+	z-index: 100;
+}
+
+.__context_menu_item {
+	padding: 10px;
+	cursor: pointer;
+}
+.__context_menu_item:hover {
+	background: #3f3f4c;
+}
+
+.__icon-selector {
+	position: fixed; z-index: 1000;
+	top: 60px;
+	left: calc(50% - 300px);
+	background: white;
+	padding: 10px;
+	width: 300px;
+	height: 300px;
+	overflow: hidden;
+	border: 2px solid #007cba;
+	border-radius: 6px;
+}
+.__icon-selector-search {
+	display: inline-block; vertical-align: middle;
+	width: calc(100% - 36px) !important;
+}
+.__icon-selector-close {
+	display: inline-block; vertical-align: middle;
+	width: 36px;
+	padding: 4px 10px;
+	font-size: 1.4rem;
+	cursor: pointer;
+}
+.__icon-selector-content {
+	margin-top: 10px;
+	height: 220px;
+	overflow-y: scroll;
+	padding: 4px;
+}
+.__icon-selector-content > i { margin: 4px; cursor: pointer; font-size: 1.2rem; }

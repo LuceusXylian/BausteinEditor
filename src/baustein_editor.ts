@@ -1,6 +1,8 @@
-/// <reference path="dialog.ts"/>
-/// <reference path="tinyeditor.ts"/>
-var dialog = new Dialog();
+// deno-lint-ignore-file no-window
+import { Dialog } from "./dialog.ts";
+import { LOCALES } from './locales.ts';
+import { LuxDragDrop } from './lux_drag_drop.ts';
+import { TinyEditor, TinyEditorToolbar, TinyEditorToolbarOptions } from "./tinyeditor.ts";
 
 type FormControl = HTMLInputElement|HTMLSelectElement|HTMLButtonElement;
 
@@ -20,13 +22,14 @@ const bausteinRenderType = {
     iframe: 11,
     container: 12,
     shortcode: 13,
+    static_undeletable: 14,
 
     isParentType: function (renderType: number) {
         return renderType === this.container || renderType === this.layout || renderType === this.table || renderType === this.tableRow || renderType === this.spoiler;
     }   
 };
 
-class Position {
+export class Position {
     public parent: number | null;
     public sort: number;
 
@@ -36,29 +39,42 @@ class Position {
     }
 }
 
+interface BausteinStylePropertyOption { locale_key: string, value: string }
+export interface MediaImageData { file_id: number, name: string, url: string }
+
 class BausteinStyleProperty {
 	public name: string;
-	public title: string;
 	public type: string;
 	public suffix: string[];
-	public options: HTMLOptionElement[];
+	public options: BausteinStylePropertyOption[];
 	public useAsClass: boolean;
 	public showInBausteinAttributesSidebar: boolean;
 
-    constructor(name: string, title: string, type: string, suffix: string[], options: HTMLOptionElement[], useAsClass: boolean, showInBausteinAttributesSidebar: boolean) {
+    constructor(name: string, type: string, suffix: string[], options: BausteinStylePropertyOption[], useAsClass: boolean, showInBausteinAttributesSidebar: boolean) {
         this.name = name;
-        this.title = title;
         this.type = type;
         this.suffix = suffix;
         this.options = options;
         this.useAsClass = useAsClass;
         this.showInBausteinAttributesSidebar = showInBausteinAttributesSidebar;
     }
+
+    get_html_options(): HTMLOptionElement[] {
+        const html_options = [];
+
+        for (let b = 0; b < this.options.length; b++) {
+            html_options[b] = document.createElement("option");
+            html_options[b].innerHTML = LOCALES.get_item(this.options[b].locale_key);
+            html_options[b].value = this.options[b].value;
+        }
+
+        return html_options;
+    }
 }
 
 class BausteinStyle {
 	public property: BausteinStyleProperty;
-	public value: any;
+	public value: string;
 
     constructor(property: BausteinStyleProperty, value: string) {
         this.property = property;
@@ -90,7 +106,6 @@ class ToggleableClass {
 
 class BausteinTemplate {
 	public type: string;
-	public title: string;
 	public tag: string;
 	public renderType: number;
 	public style: BausteinStyle[];
@@ -104,9 +119,8 @@ class BausteinTemplate {
 	public columns: number = 0;
 	public rows: number = 0;
 
-    constructor(type: string, title: string, icon: string|null, tag: string, renderType: number, toggleableClasses: ToggleableClass[], attributes: BausteinAttribute[], style: BausteinStyle[]) {
+    constructor(type: string, icon: string|null, tag: string, renderType: number, toggleableClasses: ToggleableClass[], attributes: BausteinAttribute[], style: BausteinStyle[]) {
         this.type = type;
-        this.title = title;
         this.icon = icon;
         this.tag = tag; // empty string for text node
         this.renderType = renderType;
@@ -122,13 +136,13 @@ class BausteinTemplate {
 
         this.attributes = [];
         // Objects are reference types, we need to use clone here
-        for (var i = 0; i < attributes.length; i++) {
+        for (let i = 0; i < attributes.length; i++) {
             this.attributes[i] = new BausteinAttribute(attributes[i].name, attributes[i].value);
         }
         
         this.style = [];
         // Objects are reference types, we need to use clone here
-        for (var i = 0; i < style.length; i++) {
+        for (let i = 0; i < style.length; i++) {
             this.style[i] = new BausteinStyle(style[i].property, style[i].value);
         }
     }
@@ -151,7 +165,7 @@ class BausteinTemplate {
     }
 
     getAttribute(name: string) {
-        for (var i = 0; i < this.attributes.length; i++) {
+        for (let i = 0; i < this.attributes.length; i++) {
             if (this.attributes[i].name === name) {
                 return this.attributes[i].value;
             }
@@ -160,7 +174,7 @@ class BausteinTemplate {
     }
 
     setAttribute(name: string, value: string) {
-        for (var i = 0; i < this.attributes.length; i++) {
+        for (let i = 0; i < this.attributes.length; i++) {
             if (this.attributes[i].name === name) {
                 this.attributes[i].value = value;
                 return;
@@ -174,7 +188,7 @@ class BausteinTemplate {
     }
 
     getStyle(name: string) {
-        for (var i = 0; i < this.style.length; i++) {
+        for (let i = 0; i < this.style.length; i++) {
             if (this.style[i].property.name === name) {
                 return this.style[i];
             }
@@ -182,8 +196,8 @@ class BausteinTemplate {
         return null;
     }
 
-    getStyleValue(name: string, def: any) {
-        var style = this.getStyle(name);
+    getStyleValue(name: string, def: string) {
+        const style = this.getStyle(name);
         if (style) {
             return style.value;
         }
@@ -191,7 +205,7 @@ class BausteinTemplate {
     }
 
     setStyle(name: string, value: string) {
-        for (var i = 0; i < this.style.length; i++) {
+        for (let i = 0; i < this.style.length; i++) {
             if (this.style[i].property.name === name) {
                 this.style[i].value = value;
                 return;
@@ -201,36 +215,51 @@ class BausteinTemplate {
     }
 
     private addStyle(name: string, value: string) {
-        this.style.push(new BausteinStyle(new BausteinStyleProperty(name, name, "", [], [], false, false), value));
+        this.style.push(new BausteinStyle(new BausteinStyleProperty(name, name, [], [], false, false), value));
     }
 
 }
 
 class Baustein extends BausteinTemplate {
     public id: number;
+    public title: string;
 	public position: Position;
 
-    constructor(id: number, position: Position, type: string, title: string, tag: string, renderType: number, toggleableClasses: ToggleableClass[], attributes: BausteinAttribute[], style: BausteinStyle[]) {
-        var newToggleableClasses: ToggleableClass[] = [];
-        for (var i = 0; i < toggleableClasses.length; i++) {
+    constructor(id: number, position: Position, type: string, tag: string, renderType: number, toggleableClasses: ToggleableClass[], attributes: BausteinAttribute[], style: BausteinStyle[]) {
+        const newToggleableClasses: ToggleableClass[] = [];
+        for (let i = 0; i < toggleableClasses.length; i++) {
             toggleableClasses[i] = new ToggleableClass(toggleableClasses[i].name, toggleableClasses[i].active, toggleableClasses[i].toggleable);
         }
 
-        super(type, title, null, tag, renderType, newToggleableClasses, attributes, style);
+        super(type, null, tag, renderType, newToggleableClasses, attributes, style);
 
         this.id = id;
+        this.title = LOCALES.get_item(type);
         this.position = position;
     }
 }
 
-class BausteinEditor {
-	public dom_id: any;
-	public dom: any;
+interface BausteinEditorOptions {
+    assets?: { baustein_image_placeholder: string },
+    api_endpoints?: { image_search: string },
+    image_upload?: ()=>Promise<MediaImageData>,
+    media_register?: (media_data: MediaImageData)=>void,
+    preview_iframe_url?: string,
+    locale?: string,
+}
+
+interface BausteinEditorData {bausteine: Baustein[]}
+
+export class BausteinEditor {
+	public dom_id: string;
 	private baustein_counter: number = 0;
 	private baustein_id_counter: number = 0;
 	private cursor_mode: number = 0;
-	private imageUpload: Function|null = null;
+	private image_upload: (()=>Promise<MediaImageData>)|null = null;
+	private media_register: ((media_data: MediaImageData)=>void)|null = null;
 	private preview_iframe_url: string|null = null;
+    private dialog: Dialog;
+
 
     private tinyeditor_toolbar_options: TinyEditorToolbarOptions = {
         formatblock: false,
@@ -254,63 +283,105 @@ class BausteinEditor {
     tinyeditor_toolbar: TinyEditorToolbar;
     
 	public styleProperties = {
-        //font_family: { name: "font-family", title: "Schriftart", type: "string", suffix: [], options:  [new Option("Verdana, Arial, Helvetica, sans-serif")] },
-        font_size: { name: "font-size", title: "Schriftgröße", type: "select", suffix: []
-            , options: [new Option("Normal", ""), new Option("Kleiner (~10px)", "smaller"), new Option("Klein (~11px)", "small")
-                , new Option("Medium (~14px)", "medium"), new Option("Groß (~17px)", "large"), new Option("Größer (~20px)", "larger")]
-            , useAsClass: true, showInBausteinAttributesSidebar: true },
-        font_weight: { name: "font-weight", title: "Textdicke", type: "select", suffix: []
-            , options: [ new Option("Normal", ""), new Option("Fett", "bold"), new Option("Fetter", "bolder"), new Option("Leichter", "lighter") ], useAsClass: false, showInBausteinAttributesSidebar: true },
-        text_decoration: { name: "text-decoration", title: "Textunterschreichung", type: "select", suffix: []
-            , options: [ new Option("Normal", ""), new Option("underline", "underline"), new Option("dotted", "dotted") ], useAsClass: false, showInBausteinAttributesSidebar: true },
-        font_style: { name: "font-style", title: "Textkursion", type: "select", suffix: []
-            , options: [ new Option("Normal", ""), new Option("italic", "italic"), new Option("oblique", "oblique") ], useAsClass: false, showInBausteinAttributesSidebar: true },
-        text_align: { name: "text-align", title: "Textausrichtung", type: "select", suffix: []
-            , options: [ new Option("Normal", ""), new Option("left", "left"), new Option("center", "center"), new Option("right", "right") ], useAsClass: false, showInBausteinAttributesSidebar: true },
-
-        color: { name: "color", title: "Farbe", type: "color", suffix: [], options: [], useAsClass: false, showInBausteinAttributesSidebar: true },
-        background_color: { name: "background-color", title: "Background Color", type: "color", suffix: [], options: [], useAsClass: false, showInBausteinAttributesSidebar: true },
-        background_image: { name: "background-image", title: "Background Image", type: "image", suffix: [], options: [], useAsClass: false, showInBausteinAttributesSidebar: true },
-
-        width: { name: "width", title: "Breite", type: "number", suffix: ["px", "%"], options: [new Option("auto")], useAsClass: false, showInBausteinAttributesSidebar: false },
-        height: { name: "height", title: "Höhe", type: "number", suffix: ["px", "%"], options: [new Option("auto")], useAsClass: false, showInBausteinAttributesSidebar: false },
-        max_width: { name: "max-width", title: "Maximale Breite", type: "number", suffix: ["px", "%"], options: [new Option("auto")], useAsClass: false, showInBausteinAttributesSidebar: true },
-        max_height: { name: "max-height", title: "Maximale Höhe", type: "number", suffix: ["px", "%"], options: [new Option("auto")], useAsClass: false, showInBausteinAttributesSidebar: true },
-
-        margin_top: { name: "margin-top", title: "Außenabstand Oben", type: "number", suffix: ["px"], options: [new Option("auto")], useAsClass: false, showInBausteinAttributesSidebar: false },
-        margin_right: { name: "margin-right", title: "Außenabstand Rechts", type: "number", suffix: ["px"], options: [new Option("auto")], useAsClass: false, showInBausteinAttributesSidebar: false },
-        margin_bottom: { name: "margin-bottom", title: "Außenabstand Unten", type: "number", suffix: ["px"], options: [new Option("auto")], useAsClass: false, showInBausteinAttributesSidebar: false },
-        margin_left: { name: "margin-left", title: "Außenabstand Links", type: "number", suffix: ["px"], options: [new Option("auto")], useAsClass: false, showInBausteinAttributesSidebar: false },
-
-        border_width_top: { name: "border-top-width", title: "Border Breite Oben", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
-        border_width_right: { name: "border-right-width", title: "Border Breite Rechts", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
-        border_width_bottom: { name: "border-bottom-width", title: "Border Breite Unten", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
-        border_width_left: { name: "border-left-width", title: "Border Breite Links", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
-
-        padding_top: { name: "padding-top", title: "Innenabstand Oben", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
-        padding_right: { name: "padding-right", title: "Innenabstand Rechts", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
-        padding_bottom: { name: "padding-bottom", title: "Innenabstand Unten", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
-        padding_left: { name: "padding-left", title: "Innenabstand Links", type: "number", suffix: ["px"], options: [], useAsClass: false, showInBausteinAttributesSidebar: false },
+        font_size: new BausteinStyleProperty("font-size", "select", [], [
+            { locale_key: "normal", value: "" },
+            { locale_key: "smaller", value: "smaller" },
+            { locale_key: "small", value: "small" },
+            { locale_key: "medium", value: "medium" },
+            { locale_key: "large", value: "large" },
+            { locale_key: "larger", value: "larger" }
+        ], true, true),
+    
+        font_weight: new BausteinStyleProperty("font-weight", "select", [], [
+            { locale_key: "normal", value: "" },
+            { locale_key: "bold", value: "bold" },
+            { locale_key: "bolder", value: "bolder" },
+            { locale_key: "lighter", value: "lighter" }
+        ], false, true),
+    
+        text_decoration: new BausteinStyleProperty("text-decoration", "select", [], [
+            { locale_key: "normal", value: "" },
+            { locale_key: "underline", value: "underline" },
+            { locale_key: "dotted", value: "dotted" }
+        ], false, true),
+    
+        font_style: new BausteinStyleProperty("font-style", "select", [], [
+            { locale_key: "normal", value: "" },
+            { locale_key: "italic", value: "italic" },
+            { locale_key: "oblique", value: "oblique" }
+        ], false, true),
+    
+        text_align: new BausteinStyleProperty("text-align", "select", [], [
+            { locale_key: "normal", value: "" },
+            { locale_key: "left", value: "left" },
+            { locale_key: "center", value: "center" },
+            { locale_key: "right", value: "right" }
+        ], false, true),
+    
+        color: new BausteinStyleProperty("color", "color", [], [], false, true),
+        background_color: new BausteinStyleProperty("background-color", "color", [], [], false, true),
+        background_image: new BausteinStyleProperty("background-image", "image", [], [], false, true),
+    
+        width: new BausteinStyleProperty("width", "number", ["px", "%"], [{ locale_key: "auto", value: "auto" }], false, false),
+        height: new BausteinStyleProperty("height", "number", ["px", "%"], [{ locale_key: "auto", value: "auto" }], false, false),
+        max_width: new BausteinStyleProperty("max-width", "number", ["px", "%"], [{ locale_key: "auto", value: "auto" }], false, true),
+        max_height: new BausteinStyleProperty("max-height", "number", ["px", "%"], [{ locale_key: "auto", value: "auto" }], false, true),
+    
+        margin_top: new BausteinStyleProperty("margin-top", "number", ["px"], [{ locale_key: "auto", value: "auto" }], false, false),
+        margin_right: new BausteinStyleProperty("margin-right", "number", ["px"], [{ locale_key: "auto", value: "auto" }], false, false),
+        margin_bottom: new BausteinStyleProperty("margin-bottom", "number", ["px"], [{ locale_key: "auto", value: "auto" }], false, false),
+        margin_left: new BausteinStyleProperty("margin-left", "number", ["px"], [{ locale_key: "auto", value: "auto" }], false, false),
+    
+        border_width_top: new BausteinStyleProperty("border-top-width", "number", ["px"], [], false, false),
+        border_width_right: new BausteinStyleProperty("border-right-width", "number", ["px"], [], false, false),
+        border_width_bottom: new BausteinStyleProperty("border-bottom-width", "number", ["px"], [], false, false),
+        border_width_left: new BausteinStyleProperty("border-left-width", "number", ["px"], [], false, false),
+    
+        padding_top: new BausteinStyleProperty("padding-top", "number", ["px"], [], false, false),
+        padding_right: new BausteinStyleProperty("padding-right", "number", ["px"], [], false, false),
+        padding_bottom: new BausteinStyleProperty("padding-bottom", "number", ["px"], [], false, false),
+        padding_left: new BausteinStyleProperty("padding-left", "number", ["px"], [], false, false),
     };
     private stylePropertiesArray = Object.values(this.styleProperties);
+	be: HTMLElement;
+	underlay: HTMLElement;
+	main: HTMLElement;
+	sidebar: HTMLElement;
+	toolbar: HTMLElement;
+	cursormodechanger: HTMLElement;
+	cursormodechanger_default: HTMLElement;
+	cursormodechanger_drag: HTMLElement;
+	toolbar_baustein: HTMLElement;
+	content: HTMLElement;
+	preview: HTMLElement;
+	preview_button_desktop: HTMLButtonElement;
+	preview_button_mobile: HTMLButtonElement;
+	preview_button: HTMLButtonElement;
+	preview_close_button: HTMLButtonElement;
+	preview_content: HTMLElement;
+	sidebar_content__site: HTMLElement;
+	sidebar_content__baustein: HTMLElement;
+	sidebar_content__baustein_styles: HTMLElement;
+	ajax_loader: HTMLElement;
+	bausteine: HTMLElement[] = [];
+	addBausteinSelectorItems: { title: string; icon: string | null; items: BausteinTemplate[]; }[];
     getStylePropertyByName(name: string): BausteinStyleProperty {
-        for (var i = 0; i < this.stylePropertiesArray.length; i++) {
+        for (let i = 0; i < this.stylePropertiesArray.length; i++) {
             if (this.stylePropertiesArray[i].name === name) {
                 return <BausteinStyleProperty> this.stylePropertiesArray[i];
             }            
         }
-        return new BausteinStyleProperty(name, "", "", [], [], false, false);
+        return new BausteinStyleProperty(name, "", [], [], false, false);
     }
 
-	public data: {page: {}, bausteine: Baustein[]} = {
-        page: {},
+	public data: BausteinEditorData = {
         bausteine: []
     };
 
 	public types = {
-        bausteinSelector: new BausteinTemplate("bausteinSelector", "", '', "", bausteinRenderType.bausteinSelector, [], [], [])
-        ,h1: new BausteinTemplate("h1", "Überschrift 1", '<b>H1</b>', "h1", bausteinRenderType.richtext, [], [], [
-                //{ property: this.styleProperties.font_family, value:"" },
+        bausteinSelector: new BausteinTemplate("bausteinSelector", '', "", bausteinRenderType.bausteinSelector, [], [], [])
+        ,page_content: new BausteinTemplate("page_content", '', "", bausteinRenderType.static_undeletable, [], [], [])
+        ,h1: new BausteinTemplate("h1", '<b>H1</b>', "h1", bausteinRenderType.richtext, [], [], [
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"bold" },
@@ -319,8 +390,7 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
                 { property: this.styleProperties.background_color, value:"" }, 
             ])
-        ,h2: new BausteinTemplate("h2", "Überschrift 2", '<b>H2</b>', "h2", bausteinRenderType.richtext, [], [], [
-                //{ property: this.styleProperties.font_family, value:"" },
+        ,h2: new BausteinTemplate("h2", '<b>H2</b>', "h2", bausteinRenderType.richtext, [], [], [
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"bold" },
@@ -329,8 +399,7 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
                 { property: this.styleProperties.background_color, value:"" }, 
             ])
-        ,h3: new BausteinTemplate("h3", "Überschrift 3", '<b>H3</b>', "h3", bausteinRenderType.richtext, [], [], [
-                //{ property: this.styleProperties.font_family, value:"" },
+        ,h3: new BausteinTemplate("h3", '<b>H3</b>', "h3", bausteinRenderType.richtext, [], [], [
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"bold" },
@@ -339,8 +408,7 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
                 { property: this.styleProperties.background_color, value:"" }, 
             ])
-        ,h4: new BausteinTemplate("h4", "Überschrift 4", '<b>H4</b>', "h4", bausteinRenderType.richtext, [], [], [
-                //{ property: this.styleProperties.font_family, value:"" },
+        ,h4: new BausteinTemplate("h4", '<b>H4</b>', "h4", bausteinRenderType.richtext, [], [], [
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"bold" },
@@ -349,8 +417,7 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
                 { property: this.styleProperties.background_color, value:"" }, 
             ])
-        ,h5: new BausteinTemplate("h5", "Überschrift 5", '<b>H5</b>', "h5", bausteinRenderType.richtext, [], [], [
-                //{ property: this.styleProperties.font_family, value:"" },
+        ,h5: new BausteinTemplate("h5", '<b>H5</b>', "h5", bausteinRenderType.richtext, [], [], [
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"bold" },
@@ -359,8 +426,7 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
                 { property: this.styleProperties.background_color, value:"" }, 
             ])
-        ,h6: new BausteinTemplate("h6", "Überschrift 6", '<b>H6</b>', "h6", bausteinRenderType.richtext, [], [], [
-                //{ property: this.styleProperties.font_family, value:"" },
+        ,h6: new BausteinTemplate("h6", '<b>H6</b>', "h6", bausteinRenderType.richtext, [], [], [
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"bold" },
@@ -369,8 +435,7 @@ class BausteinEditor {
                 { property: this.styleProperties.color, value:"" },
                 { property: this.styleProperties.background_color, value:"" }, 
             ])
-        ,text: new BausteinTemplate("text", "Text", '<i class="fas fa-paragraph"></i>', "div", bausteinRenderType.richtext, [], [], [
-                //{ property: this.styleProperties.font_family, value:"" },
+        ,text: new BausteinTemplate("text", '<i class="fa-solid fa-paragraph"></i>', "div", bausteinRenderType.richtext, [], [], [
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"" },
@@ -380,8 +445,7 @@ class BausteinEditor {
                 { property: this.styleProperties.background_color, value:"" }, 
                 { property: this.styleProperties.background_image, value:"" }, 
             ])
-        ,button_primary: new BausteinTemplate("button", "Primary Button", '<i class="fas fa-exclamation"></i>', "a", bausteinRenderType.button, [ new ToggleableClass("btn", true, false), new ToggleableClass("btn-primary", true, false) ], [], [
-                //{ property: this.styleProperties.font_family, value:"" },
+        ,btn_primary: new BausteinTemplate("btn_primary", '<i class="fa-solid fa-exclamation"></i>', "a", bausteinRenderType.button, [ new ToggleableClass("btn", true, false), new ToggleableClass("btn-primary", true, false) ], [], [
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"" },
@@ -391,8 +455,7 @@ class BausteinEditor {
                 { property: this.styleProperties.background_color, value:"" }, 
                 { property: this.styleProperties.background_image, value:"" }, 
             ])
-        ,button_secondary: new BausteinTemplate("button", "Secondary Button", '<i class="fas fa-exclamation"></i>', "a", bausteinRenderType.button, [ new ToggleableClass("btn", true, false), new ToggleableClass("btn-secondary", true, false) ], [], [
-                //{ property: this.styleProperties.font_family, value:"" },
+        ,btn_seccond: new BausteinTemplate("btn_seccond", '<i class="fa-solid fa-exclamation"></i>', "a", bausteinRenderType.button, [ new ToggleableClass("btn", true, false), new ToggleableClass("btn-secondary", true, false) ], [], [
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"" },
@@ -402,8 +465,7 @@ class BausteinEditor {
                 { property: this.styleProperties.background_color, value:"" }, 
                 { property: this.styleProperties.background_image, value:"" }, 
             ])
-        ,button_cta: new BausteinTemplate("button", "Call-To-Action Button", '<i class="fas fa-exclamation"></i>', "a", bausteinRenderType.button, [ new ToggleableClass("btn", true, false), new ToggleableClass("btn-cta", true, false) ], [], [
-                //{ property: this.styleProperties.font_family, value:"" },
+        ,btn_cta: new BausteinTemplate("btn_cta", '<i class="fa-solid fa-exclamation"></i>', "a", bausteinRenderType.button, [ new ToggleableClass("btn", true, false), new ToggleableClass("btn-cta", true, false) ], [], [
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.font_weight, value:"" },
@@ -413,53 +475,52 @@ class BausteinEditor {
                 { property: this.styleProperties.background_color, value:"" }, 
                 { property: this.styleProperties.background_image, value:"" }, 
             ])
-        ,html: new BausteinTemplate("html", "HTML", '<i class="fab fa-html5"></i>', "div", bausteinRenderType.plaintext, [], [], [
-                //{ property: this.styleProperties.font_family, value:"" },
+        ,html: new BausteinTemplate("html", '<i class="fa-solid fa-html5"></i>', "div", bausteinRenderType.plaintext, [], [], [
                 { property: this.styleProperties.font_size, value:"" },
                 { property: this.styleProperties.text_align, value:"" },
                 { property: this.styleProperties.text_decoration, value:"" },
                 { property: this.styleProperties.font_style, value:"" },
                 { property: this.styleProperties.color, value:"" },
             ])
-        ,script: new BausteinTemplate("script", "JavaScript", '<i class="fas fa-code"></i>', "script", bausteinRenderType.plaintext, [], [], [])
-        ,iframe: new BausteinTemplate("iframe", "iframe einbinden", '<i class="fas fa-code"></i>', "iframe", bausteinRenderType.iframe, [ new ToggleableClass("d-block", true, false) ], [
+        ,script: new BausteinTemplate("script", '<i class="fa-solid fa-code"></i>', "script", bausteinRenderType.plaintext, [], [], [])
+        ,iframe: new BausteinTemplate("iframe", '<i class="fa-solid fa-code"></i>', "iframe", bausteinRenderType.iframe, [ new ToggleableClass("d-block", true, false) ], [
             new BausteinAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"),
             new BausteinAttribute("allowfullscreen", "allowfullscreen")
         ], [
             { property: this.styleProperties.width, value:"100%" },
             { property: this.styleProperties.height, value:"300px" },
         ])
-        ,shortcode: new BausteinTemplate("shortcode", "Shortcode", '<b>[..]</b>', "", bausteinRenderType.shortcode, [], [], [])
-        ,image: new BausteinTemplate("image", "Bild", '<i class="fas fa-image"></i>', "img", bausteinRenderType.image, [], [], [
+        ,shortcode: new BausteinTemplate("shortcode", '<b>[..]</b>', "", bausteinRenderType.shortcode, [], [], [])
+        ,image: new BausteinTemplate("image", '<i class="fa-solid fa-image"></i>', "img", bausteinRenderType.image, [], [], [
             { property: this.styleProperties.max_width, value:"100%" },
             { property: this.styleProperties.max_height, value:"" },
         ])
-        ,spoiler: new BausteinTemplate("spoiler", "Auf-Zu-Klappfunktion", '<i class="fas fa-box"></i>', "div", bausteinRenderType.spoiler, [], [], [])
-        ,spoiler_toggler: new BausteinTemplate("spoiler", "Auf-Zu-Klappfunktion sichtbarer Inhalt", '<i class="fas fa-box"></i>', "div", bausteinRenderType.spoiler_toggler, [], [], [])
-        ,spoiler_content: new BausteinTemplate("spoiler", "Auf-Zu-Klappfunktion versteckter Inhalt", '<i class="fas fa-box"></i>', "div", bausteinRenderType.spoiler_content, [ new ToggleableClass("collapse", true, false) ], [], [])
-        ,layout: new BausteinTemplate("layout", "Layout", '<i class="fas fa-layer-group" style="transform: rotate(90deg);"></i>', "div", bausteinRenderType.layout, [ new ToggleableClass("row", true, false) ], [], [ 
+        ,spoiler: new BausteinTemplate("spoiler", '<i class="fa-solid fa-box"></i>', "div", bausteinRenderType.spoiler, [], [], [])
+        ,spoiler_toggler: new BausteinTemplate("spoiler_toggler", '<i class="fa-solid fa-box"></i>', "div", bausteinRenderType.spoiler_toggler, [], [], [])
+        ,spoiler_content: new BausteinTemplate("spoiler_content", '<i class="fa-solid fa-box"></i>', "div", bausteinRenderType.spoiler_content, [ new ToggleableClass("collapse", true, false) ], [], [])
+        ,layout: new BausteinTemplate("layout", '<i class="fa-solid fa-layer-group" style="transform: rotate(90deg);"></i>', "div", bausteinRenderType.layout, [ new ToggleableClass("row", true, false) ], [], [ 
             { property: this.styleProperties.max_width, value:"" }, 
             { property: this.styleProperties.max_height, value:"" }, 
             { property: this.styleProperties.color, value:"" },
             { property: this.styleProperties.background_color, value:"" }, 
             { property: this.styleProperties.background_image, value:"" }, 
         ])
-        ,container: new BausteinTemplate("container", "Kontainer", '<i class="fas fa-layer-group"></i>', "div", bausteinRenderType.container, [], [], [
+        ,container: new BausteinTemplate("container", '<i class="fa-solid fa-layer-group"></i>', "div", bausteinRenderType.container, [], [], [
             { property: this.styleProperties.max_width, value:"" }, 
             { property: this.styleProperties.max_height, value:"" }, 
             { property: this.styleProperties.color, value:"" },
             { property: this.styleProperties.background_color, value:"" }, 
             { property: this.styleProperties.background_image, value:"" }, 
         ])
-        ,table: new BausteinTemplate("table", "Tabelle", '<i class="fas fa-table"></i>', "table", bausteinRenderType.table, [ new ToggleableClass("rsp-table", true, false) ], [], [ 
+        ,table: new BausteinTemplate("table", '<i class="fa-solid fa-table"></i>', "table", bausteinRenderType.table, [ new ToggleableClass("rsp-table", true, false) ], [], [ 
             { property: this.styleProperties.max_width, value:"" }, 
             { property: this.styleProperties.max_height, value:"" }, 
             { property: this.styleProperties.color, value:"" },
             { property: this.styleProperties.background_color, value:"" }, 
             { property: this.styleProperties.background_image, value:"" }, 
         ])
-        ,tableRow: new BausteinTemplate("tableRow", "Tabellenreihe", '<i class="fas fa-table"></i>', "tr", bausteinRenderType.tableRow, [], [], [])
-        ,th: new BausteinTemplate("th", "Tabellentitelzeile", '<i class="fas fa-table"></i>', "th", bausteinRenderType.tableCell, [], [], [
+        ,tableRow: new BausteinTemplate("tableRow", '<i class="fa-solid fa-table"></i>', "tr", bausteinRenderType.tableRow, [], [], [])
+        ,th: new BausteinTemplate("th", '<i class="fa-solid fa-table"></i>', "th", bausteinRenderType.tableCell, [], [], [
             { property: this.styleProperties.font_size, value:"" },
             { property: this.styleProperties.text_align, value:"" },
             { property: this.styleProperties.font_weight, value:"" },
@@ -469,7 +530,7 @@ class BausteinEditor {
             { property: this.styleProperties.background_color, value:"" }, 
             { property: this.styleProperties.background_image, value:"" }, 
         ])
-        ,td: new BausteinTemplate("td", "Tabellenzeile", '<i class="fas fa-table"></i>', "td", bausteinRenderType.tableCell, [], [], [
+        ,td: new BausteinTemplate("td", '<i class="fa-solid fa-table"></i>', "td", bausteinRenderType.tableCell, [], [], [
             { property: this.styleProperties.font_size, value:"" },
             { property: this.styleProperties.text_align, value:"" },
             { property: this.styleProperties.font_weight, value:"" },
@@ -480,28 +541,19 @@ class BausteinEditor {
             { property: this.styleProperties.background_image, value:"" }, 
         ])
     };
-    private typesArray = Object.values(this.types);
+
+    /** types_array gets updated after render() gets called */
+    private types_array: BausteinTemplate[] = [];
     getBausteinType(type: string): BausteinTemplate {
-        for (var i = 0; i < this.typesArray.length; i++) {
-            if (this.typesArray[i].type === type) {
-                return this.typesArray[i];
+        for (let i = 0; i < this.types_array.length; i++) {
+            if (this.types_array[i].type === type) {
+                return this.types_array[i];
             }            
         }
-        return this.typesArray[0];
+        return this.types_array[0];
     }
 
-	public addBausteinSelectorItems = [
-        { type: 1, title: "Überschriften", icon: '<i class="fas fa-heading"></i>', items: [ this.types.h1, this.types.h2, this.types.h3, this.types.h4, this.types.h5, this.types.h6 ] }
-        ,{ type: 0, title: this.types.text.title, icon: this.types.text.icon, items: [this.types.text] }
-        ,{ type: 0, title: this.types.image.title, icon: this.types.image.icon, items: [this.types.image] }
-        ,{ type: 0, title: this.types.container.title, icon: this.types.container.icon, items: [this.types.container] }
-        ,{ type: 0, title: this.types.layout.title, icon: this.types.layout.icon, items: [this.types.layout] }
-        ,{ type: 0, title: this.types.table.title, icon: this.types.table.icon, items: [this.types.table] }
-        ,{ type: 1, title: "Buttons", icon: '<i class="fas fa-exclamation"></i>', items: [this.types.button_primary, this.types.button_secondary, this.types.button_cta] }
-        ,{ type: 1, title: "Sonstiges", icon: '<i class="fas fa-cubes"></i>', items: [ this.types.spoiler, this.types.script, this.types.shortcode, this.types.iframe ] }
-    ];
-
-	public be_bausteinSelector_isOpen: any;
+	public be_bausteinSelector_isOpen: boolean = false;
 	public selected_baustein: HTMLElement | null = null;
 	public selected_baustein_id: number | null = null;
 	public open_baustein_attributes__baustein_id: number | null = null;
@@ -511,229 +563,225 @@ class BausteinEditor {
     };
     public api_endpoints = {
         image_search: "",
-        image_register: "",
     };
-    public shortcodes = [
-        "vorlesen",
-        "bewerten",
-    ]
+    public shortcodes = []
 
-    createElement(_type: string, _id: string, _class: string): HTMLElement {
-        var element = document.createElement(_type);
+    createElement<K extends keyof HTMLElementTagNameMap>(tag: K, _id: string, _class: string): HTMLElementTagNameMap[K] {
+        const element = document.createElement(tag);
         if(_id !== "") element.id = _id;
         if(_class !== "") element.className = _class;
         return element;
     }
 
-    constructor(dom_id: string, options: any) {
-        this.dom_id = dom_id;
+    constructor(parent: HTMLElement, options: BausteinEditorOptions) {
+        this.dom_id = parent.id;
 
         // Options
         if(typeof options !== "undefined") {
+            if(typeof options.locale !== "undefined") LOCALES.select_locale(options.locale);
             if(typeof options.assets !== "undefined") this.assets = options.assets;
             if(typeof options.api_endpoints !== "undefined") this.api_endpoints = options.api_endpoints;
-            if(typeof options.imageUpload !== "undefined") this.imageUpload = options.imageUpload;
+            if(typeof options.image_upload !== "undefined") this.image_upload = options.image_upload;
+            if(typeof options.media_register !== "undefined") this.media_register = options.media_register;
             if(typeof options.preview_iframe_url !== "undefined") this.preview_iframe_url = options.preview_iframe_url;
         }
 
+        this.addBausteinSelectorItems = [
+             { title: LOCALES.get_item("titles"), icon: '<i class="fa-solid fa-heading"></i>', items: [ this.types.h1, this.types.h2, this.types.h3, this.types.h4, this.types.h5, this.types.h6 ] }
+            ,{ title: LOCALES.get_item(this.types.text.type), icon: this.types.text.icon, items: [this.types.text] }
+            ,{ title: LOCALES.get_item(this.types.image.type), icon: this.types.image.icon, items: [this.types.image] }
+            ,{ title: LOCALES.get_item(this.types.container.type), icon: this.types.container.icon, items: [this.types.container] }
+            ,{ title: LOCALES.get_item(this.types.layout.type), icon: this.types.layout.icon, items: [this.types.layout] }
+            ,{ title: LOCALES.get_item(this.types.table.type), icon: this.types.table.icon, items: [this.types.table] }
+            ,{ title: LOCALES.get_item("buttons"), icon: '<i class="fa-solid fa-exclamation"></i>', items: [this.types.btn_primary, this.types.btn_seccond, this.types.btn_cta] }
+            ,{ title: LOCALES.get_item("misc"), icon: '<i class="fa-solid fa-cubes"></i>', items: [ this.types.spoiler, this.types.script, this.types.shortcode, this.types.iframe ] }
+        ];
 
         // DOM
-        this.dom = {};
-        this.dom.be = document.getElementById(this.dom_id);
+        this.be = parent;
+        this.be.classList.add("be");
+        this.dialog = new Dialog(this.be)
 
-        this.dom.underlay = this.dom.be.appendChild(
+        this.underlay = this.be.appendChild(
             this.createElement("div", this.dom_id+'_underlay', "__dialog")
         );
-        this.dom.underlay.style.display = "none";
+        this.underlay.style.display = "none";
 
-        this.dom.main = this.dom.be.appendChild(
+        this.main = this.be.appendChild(
             this.createElement("div", this.dom_id+"_main", "be_main")
         );
-        this.dom.sidebar = this.dom.be.appendChild(
+        this.sidebar = this.be.appendChild(
             this.createElement("div", this.dom_id+"_sidebar", "be_sidebar")
         );
 
-        this.dom.toolbar = this.dom.main.appendChild(
+        this.toolbar = this.main.appendChild(
             this.createElement("div", "", "be_toolbar")
         );
 
-        this.dom.cursormodechanger = this.dom.toolbar.appendChild(
+        this.cursormodechanger = this.toolbar.appendChild(
             this.createElement("div", "", "be_cursormodechanger")
         );
-        this.dom.cursormodechanger_default = this.dom.cursormodechanger.appendChild(
+        this.cursormodechanger_default = this.cursormodechanger.appendChild(
             this.createElement("div", "", "be_cursormodechanger_item active be_cursormodechanger_default")
         );
-        this.dom.cursormodechanger_default.innerHTML = '<i class="fas fa-mouse-pointer"></i>';
-        this.dom.cursormodechanger_drag = this.dom.cursormodechanger.appendChild(
+        this.cursormodechanger_default.innerHTML = '<i class="fa-solid fa-mouse-pointer"></i>';
+        this.cursormodechanger_drag = this.cursormodechanger.appendChild(
             this.createElement("div", "", "be_cursormodechanger_item be_cursormodechanger_drag")
         );
-        this.dom.cursormodechanger_drag.innerHTML = '<i class="fas fa-arrows-alt"></i>';
+        this.cursormodechanger_drag.innerHTML = '<i class="fa-solid fa-arrows-alt"></i>';
 
-        this.dom.toolbar_baustein = this.dom.toolbar.appendChild(
+        this.toolbar_baustein = this.toolbar.appendChild(
             this.createElement("div", "", "be_toolbar_baustein")
         );
 
         
-        this.dom.content = this.dom.main.appendChild(
+        this.content = this.main.appendChild(
             this.createElement("div", this.dom_id+"_content", "be_content")
         );
-        this.dom.preview = this.dom.main.appendChild(
+        this.preview = this.main.appendChild(
             this.createElement("div", this.dom_id+"_preview", "be_preview")
         );
         
-        this.dom.preview_button_desktop = <HTMLButtonElement> this.dom.preview.appendChild(
+        this.preview_button_desktop = <HTMLButtonElement> this.preview.appendChild(
             this.createElement("button", this.dom_id+"_preview_button_desktop", "be_preview_button_desktop")
         );
-        this.dom.preview_button_desktop.innerHTML = '<i class="fas fa-desktop"></i> Desktop';
-        this.dom.preview_button_desktop.style.display = "none";
-        this.dom.preview_button_desktop.type = "button";
+        this.preview_button_desktop.innerHTML = '<i class="fa-solid fa-desktop"></i> Desktop';
+        this.preview_button_desktop.style.display = "none";
+        this.preview_button_desktop.type = "button";
         
-        this.dom.preview_button_mobile = <HTMLButtonElement> this.dom.preview.appendChild(
+        this.preview_button_mobile = <HTMLButtonElement> this.preview.appendChild(
             this.createElement("button", this.dom_id+"_preview_button_mobile", "be_preview_button_mobile")
         );
-        this.dom.preview_button_mobile.innerHTML = '<i class="fas fa-mobile-alt"></i> Mobile';
-        this.dom.preview_button_mobile.style.display = "none";
-        this.dom.preview_button_mobile.type = "button";
+        this.preview_button_mobile.innerHTML = '<i class="fa-solid fa-mobile-alt"></i> Mobile';
+        this.preview_button_mobile.style.display = "none";
+        this.preview_button_mobile.type = "button";
 
-        this.dom.preview_button = <HTMLButtonElement> this.dom.preview.appendChild(
+        this.preview_button = <HTMLButtonElement> this.preview.appendChild(
             this.createElement("button", this.dom_id+"_preview_button", "be_preview_button")
         );
-        this.dom.preview_button.innerHTML = '<i class="fas fa-eye"></i> Vorschau';
-        this.dom.preview_button.type = "button";
+        this.preview_button.innerHTML = '<i class="fa-solid fa-eye"></i> ' + LOCALES.get_item("preview");
+        this.preview_button.type = "button";
 
-        this.dom.preview_close_button = <HTMLButtonElement> this.dom.preview.appendChild(
+        this.preview_close_button = <HTMLButtonElement> this.preview.appendChild(
             this.createElement("button", this.dom_id+"_preview_close_button", "be_preview_close_button")
         );
-        this.dom.preview_close_button.innerHTML = '<i class="fas fa-times"></i> Vorschau schließen';
-        this.dom.preview_close_button.style.display = "none";
-        this.dom.preview_close_button.type = "button";
+        this.preview_close_button.innerHTML = '<i class="fa-solid fa-times"></i> ' + LOCALES.get_item("close_preview");
+        this.preview_close_button.style.display = "none";
+        this.preview_close_button.type = "button";
 
-        this.dom.preview_content = this.dom.preview.appendChild(
+        this.preview_content = this.preview.appendChild(
             this.createElement("div", this.dom_id+"_preview_content", "be_preview_content")
         );
-        this.dom.preview_content.style.display = "none";
+        this.preview_content.style.display = "none";
 
-        //this.dom.sidebar_header = this.dom.sidebar.appendChild(
+        //this.sidebar_header = this.sidebar.appendChild(
         //    this.createElement("div", this.dom_id+"_sidebar_header", "be_sidebar_header")
         //);
-        this.dom.sidebar_content__site = this.dom.sidebar.appendChild(
+        this.sidebar_content__site = this.sidebar.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_content__site", "be_sidebar_content")
         );
-        this.dom.sidebar_content__baustein = this.dom.sidebar.appendChild(
+        this.sidebar_content__baustein = this.sidebar.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_content__baustein", "be_sidebar_content")
         );
-        this.dom.sidebar_content__baustein.style.display = "none";
-        this.dom.sidebar_content__baustein_styles = this.dom.sidebar_content__baustein.appendChild(
+        this.sidebar_content__baustein.style.display = "none";
+        this.sidebar_content__baustein_styles = this.sidebar_content__baustein.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_content__baustein_styles", "")
         );
         
         /*
-        this.dom.sidebar_header_col__site = this.dom.sidebar_header.appendChild(
+        this.sidebar_header_col__site = this.sidebar_header.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_header_col__site", "be_sidebar_header_col active")
         );
-        this.dom.sidebar_header_col__site.innerHTML = "Artikel";
+        this.sidebar_header_col__site.innerHTML = "Artikel";
 
-        this.dom.sidebar_header_col__baustein = this.dom.sidebar_header.appendChild(
+        this.sidebar_header_col__baustein = this.sidebar_header.appendChild(
             this.createElement("div", this.dom_id+"_sidebar_header_col__baustein", "be_sidebar_header_col disabled")
         );
-        this.dom.sidebar_header_col__baustein.innerHTML = "Baustein";
+        this.sidebar_header_col__baustein.innerHTML = "Baustein";
         */
 
-        this.be_bausteinSelector_isOpen = false;
-
-
         // TinyEditor Setup
-        this.tinyeditor_toolbar = new TinyEditorToolbar(this.dom.toolbar, this.tinyeditor_toolbar_options);
+        this.tinyeditor_toolbar = new TinyEditorToolbar(this.toolbar, this.tinyeditor_toolbar_options);
         this.tinyeditor_toolbar.hideAllItems();
         
 
         // Construct ajax loader
-        this.dom.ajax_loader = document.body.appendChild( this.createElement("div", this.dom_id+"-ajax-loader", "be-ajax-loader") );
-        this.dom.ajax_loader.style.display = "none";
+        this.ajax_loader = this.be.appendChild( this.createElement("div", this.dom_id+"-ajax-loader", "be-ajax-loader") );
+        this.ajax_loader.style.display = "none";
         
 
         // Events
-        const self = this;
-
-        this.dom.cursormodechanger_default.addEventListener("click", function() {
-            self.cursor_mode = 0;
-            self.dom.cursormodechanger_default.classList.add("active");
-            self.dom.cursormodechanger_drag.classList.remove("active");
+        this.cursormodechanger_default.addEventListener("click", () => {
+            this.cursor_mode = 0;
+            this.cursormodechanger_default.classList.add("active");
+            this.cursormodechanger_drag.classList.remove("active");
         });
-        this.dom.cursormodechanger_drag.addEventListener("click", function() {
-            self.cursor_mode = 1;
-            self.dom.cursormodechanger_default.classList.remove("active");
-            self.dom.cursormodechanger_drag.classList.add("active");
+        this.cursormodechanger_drag.addEventListener("click", () => {
+            this.cursor_mode = 1;
+            this.cursormodechanger_default.classList.remove("active");
+            this.cursormodechanger_drag.classList.add("active");
         });
 
-        [this.dom.preview_button, this.dom.preview_close_button].forEach(function(element) {
-            element.addEventListener("click", function() {
-                if (self.dom.preview_content.style.display === "none") {
-                    self.dom.preview_content.style.display = "";
-                    self.preview_render();
+        [this.preview_button, this.preview_close_button].forEach((element) => {
+            element.addEventListener("click", () => {
+                if (this.preview_content.style.display === "none") {
+                    this.preview_content.style.display = "";
+                    this.preview_render();
 
-                    self.dom.preview_content.style.height = "400px";
-                    self.dom.content.style.height = "calc(100% - 50px - 46px - "+self.dom.preview_content.style.height+")";
-                    self.dom.preview_button_mobile.style.display = "";
-                    self.dom.preview_content.style.width = "";
-                    self.dom.preview_content.classList.remove("mobile");
+                    this.preview_content.style.height = "400px";
+                    this.content.style.height = "calc(100% - 50px - 46px - "+this.preview_content.style.height+")";
+                    this.preview_button_mobile.style.display = "";
+                    this.preview_content.style.width = "";
+                    this.preview_content.classList.remove("mobile");
 
-                    self.dom.preview_button.style.display = "none";
-                    self.dom.preview_close_button.style.display = "";
+                    this.preview_button.style.display = "none";
+                    this.preview_close_button.style.display = "";
                 } else {
-                    self.dom.preview_content.style.display = "none";
-                    self.dom.content.style.height = "";
-                    self.dom.preview_button_desktop.style.display = "none";
-                    self.dom.preview_button_mobile.style.display = "none";
+                    this.preview_content.style.display = "none";
+                    this.content.style.height = "";
+                    this.preview_button_desktop.style.display = "none";
+                    this.preview_button_mobile.style.display = "none";
                     
-                    self.dom.preview_button.style.display = "";
-                    self.dom.preview_close_button.style.display = "none";
+                    this.preview_button.style.display = "";
+                    this.preview_close_button.style.display = "none";
                 }
             });
         });
 
-        this.dom.preview_button_desktop.addEventListener("click", function() {
-            self.dom.preview_button_desktop.style.display = "none";
-            self.dom.preview_button_mobile.style.display = "";
-            self.dom.preview_content.style.width = "";
-            self.dom.preview_content.classList.remove("mobile");
+        this.preview_button_desktop.addEventListener("click", () => {
+            this.preview_button_desktop.style.display = "none";
+            this.preview_button_mobile.style.display = "";
+            this.preview_content.style.width = "";
+            this.preview_content.classList.remove("mobile");
         });
 
-        this.dom.preview_button_mobile.addEventListener("click", function() {
-            self.dom.preview_button_desktop.style.display = "";
-            self.dom.preview_button_mobile.style.display = "none";
-            self.dom.preview_content.style.width = "320px";
-            self.dom.preview_content.classList.add("mobile");
+        this.preview_button_mobile.addEventListener("click", () => {
+            this.preview_button_desktop.style.display = "";
+            this.preview_button_mobile.style.display = "none";
+            this.preview_content.style.width = "320px";
+            this.preview_content.classList.add("mobile");
         });
         
-        /*
-        this.dom.sidebar_header_col__site.addEventListener("click", function() {
-            self.dom.sidebar_header_col__site.classList.add("active")
-            self.dom.sidebar_header_col__baustein.classList.remove("active")
-            self.dom.sidebar_content__site.style.display = "";
-            self.dom.sidebar_content__baustein.style.display = "none";
-        });
-        this.dom.sidebar_header_col__baustein.addEventListener("click", function() {
-            if (self.dom.sidebar_header_col__baustein.classList.contains("disabled") === false) {
-                self.dom.sidebar_header_col__site.classList.remove("active")
-                self.dom.sidebar_header_col__baustein.classList.add("active")
-                self.dom.sidebar_content__site.style.display = "none";
-                self.dom.sidebar_content__baustein.style.display = "";
-            }
-        });
-        */
-
         this.render();
+    }
+
+    add_static_undeletable(baustein_type: BausteinTemplate, check_exists: boolean) {
+        if (check_exists) {
+            for (let i = 0; i < this.data.bausteine.length; i++) {
+                if (this.data.bausteine[i].type === baustein_type.type) return;
+            }
+        }
+
+        this.addBaustein(baustein_type, new Position(null, this.getPositionSort(false)), false);
     }
     
     renderBausteinSelector(position: Position, hide: boolean, bausteinHasParent: boolean): HTMLElement {
         //console.log("renderBausteinSelector", position, hide, bausteinHasParent);
-        const self = this;
         const selector_dom_id = this.dom_id + "_" + position.parent + "_" + position.sort;
         const position_parent = position.parent;
         const position_sort = position.sort;
 
-        var clz = "be_bausteinSelector_container";
+        let clz = "be_bausteinSelector_container";
         if (hide) {
             clz += " hidden";
         }
@@ -750,92 +798,93 @@ class BausteinEditor {
             this.createElement("div", selector_dom_id+'_bausteinSelector', "be_bausteinSelector")
         );
         be_bausteinSelector.appendChild(
-            this.createElement("i", "", "fas fa-plus-square")
+            this.createElement("i", "", "fa-solid fa-plus-square")
         );
 
-        const be_bausteinSelector_layer = this.dom.be.appendChild(
+        const be_bausteinSelector_layer = this.be.appendChild(
             this.createElement("div", selector_dom_id+'_bausteinSelector_layer', "be_bausteinSelector_layer")
         );
         be_bausteinSelector_layer.style.display = "none";
 
-        var be_bausteinSelector_layer_title_container = be_bausteinSelector_layer.appendChild(
+        const be_bausteinSelector_layer_title_container = be_bausteinSelector_layer.appendChild(
             this.createElement("div", "", "be_bausteinSelector_layer_title_container")
         );
-        var be_bausteinSelector_layer_title = be_bausteinSelector_layer_title_container.appendChild(
+        const be_bausteinSelector_layer_title = be_bausteinSelector_layer_title_container.appendChild(
             this.createElement("div", "", "be_bausteinSelector_layer_title")
         );
-        be_bausteinSelector_layer_title.innerHTML = "Neuen Baustein hinzufügen";
-        var be_bausteinSelector_layer_close: HTMLButtonElement = <HTMLButtonElement> be_bausteinSelector_layer_title_container.appendChild(
+        be_bausteinSelector_layer_title.innerHTML = LOCALES.get_item("add_new_block");
+        const be_bausteinSelector_layer_close: HTMLButtonElement = <HTMLButtonElement> be_bausteinSelector_layer_title_container.appendChild(
             this.createElement("button", selector_dom_id+'bausteinSelector_layer_close', "be_bausteinSelector_layer_close")
         );
         be_bausteinSelector_layer_close.type = "button"
         be_bausteinSelector_layer_close.innerHTML = "&times;";
 
-        var be_bausteinSelector_layer_item_container1 = be_bausteinSelector_layer.appendChild(
+        const be_bausteinSelector_layer_item_container1 = be_bausteinSelector_layer.appendChild(
             this.createElement("div", selector_dom_id+'_bausteinSelector_layer_item_container1', "be_bausteinSelector_layer_item_container")
         );
 
-        var be_bausteinSelector_layer_item_container2 = be_bausteinSelector_layer.appendChild(
+        const be_bausteinSelector_layer_item_container2 = be_bausteinSelector_layer.appendChild(
             this.createElement("div", selector_dom_id+'_bausteinSelector_layer_item_container2', "be_bausteinSelector_layer_item_container")
         );
 
 
-        for (var i = 0; i < this.addBausteinSelectorItems.length; i++) {
+
+        for (let i = 0; i < this.addBausteinSelectorItems.length; i++) {
             const itemset = this.addBausteinSelectorItems[i];
+            const itemset_single = itemset.items.length === 1;
             
-            var be_bausteinSelector_layer_item: HTMLButtonElement = <HTMLButtonElement> be_bausteinSelector_layer_item_container1.appendChild(
+            const be_bausteinSelector_layer_item: HTMLButtonElement = <HTMLButtonElement> be_bausteinSelector_layer_item_container1.appendChild(
                 this.createElement("button", "", "be_bausteinSelector_layer_item")
             );
             be_bausteinSelector_layer_item.type = "button";
             be_bausteinSelector_layer_item.dataset.category = i.toString();
-            if (itemset.type === 0) be_bausteinSelector_layer_item.dataset.type = itemset.items[0].type.toString();
+            if (itemset_single) be_bausteinSelector_layer_item.dataset.type = itemset.items[0].type.toString();
 
-            var title1 = be_bausteinSelector_layer_item.appendChild(
+            const title1 = be_bausteinSelector_layer_item.appendChild(
                 this.createElement("div", "", "be_bausteinSelector_layer_item_title1")
             );
 
-            var title2 = be_bausteinSelector_layer_item.appendChild(
+            const title2 = be_bausteinSelector_layer_item.appendChild(
                 this.createElement("div", "", "be_bausteinSelector_layer_item_title2")
             );
 
-            if (itemset.type === 0) {
+            if (itemset_single) {
                 if(itemset.items[0].icon !== null) title1.innerHTML = itemset.items[0].icon;
-                title2.innerHTML = itemset.items[0].title;
+                title2.innerHTML = LOCALES.get_item(itemset.items[0].type);
             } else {
                 if(itemset.icon !== null) title1.innerHTML = itemset.icon;
                 title2.innerHTML = itemset.title;
             }
 
             
-            const category = i;
-            be_bausteinSelector_layer_item.addEventListener("click", function() {
-                if(self.addBausteinSelectorItems[category].type === 0) {
-                    self.addBaustein(self.addBausteinSelectorItems[category].items[0], new Position(position.parent, position.sort), true);
-                    self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
+            be_bausteinSelector_layer_item.addEventListener("click", () => {
+                if(itemset_single) {
+                    this.addBaustein(itemset.items[0], new Position(position.parent, position.sort), true);
+                    this.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
                 } else {
-                    const types_array = self.addBausteinSelectorItems[category].items;
+                    const types_array = itemset.items;
                     be_bausteinSelector_layer_item_container2.innerHTML = "";
                     
-                    for (var b = 0; b < types_array.length; b++) {
+                    for (let b = 0; b < types_array.length; b++) {
                         const be_bausteinSelector_layer_item: HTMLButtonElement = <HTMLButtonElement> be_bausteinSelector_layer_item_container2.appendChild(
-                            self.createElement("button", "", "be_bausteinSelector_layer_item")
+                            this.createElement("button", "", "be_bausteinSelector_layer_item")
                         );
                         be_bausteinSelector_layer_item.type  = "button";
                         be_bausteinSelector_layer_item.dataset.type  = types_array[b].type;
                         be_bausteinSelector_layer_item.innerHTML = 
                               '<div class="be_bausteinSelector_layer_item_title1">'+types_array[b].icon+'</div>'
-                            + '<div class="be_bausteinSelector_layer_item_title2">'+types_array[b].title+'</div>';
+                            + '<div class="be_bausteinSelector_layer_item_title2">'+LOCALES.get_item(types_array[b].type)+'</div>';
 
                         if(types_array[b].renderType === bausteinRenderType.button) {
-                            types_array[b].class.split(" ").forEach(function(className) {
+                            types_array[b].class.split(" ").forEach((className) => {
                                 be_bausteinSelector_layer_item.classList.add(className);
                             });
                         }
 
                         const types_array_row = b;
-                        be_bausteinSelector_layer_item.addEventListener("click", function() {
-                            self.addBaustein(types_array[types_array_row], new Position(position.parent, position.sort), true);
-                            self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
+                        be_bausteinSelector_layer_item.addEventListener("click", () => {
+                            this.addBaustein(types_array[types_array_row], new Position(position.parent, position.sort), true);
+                            this.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer);
                         });
                     }
 
@@ -846,18 +895,18 @@ class BausteinEditor {
         }
 
 
-        be_bausteinSelector.addEventListener("click", function() { self.bausteinSelector_toggle(be_bausteinSelector, be_bausteinSelector_layer, be_bausteinSelector_layer_item_container1, be_bausteinSelector_layer_item_container2); });
-        be_bausteinSelector_layer_close.addEventListener("click", function() { self.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer); });
+        be_bausteinSelector.addEventListener("click", () => { this.bausteinSelector_toggle(be_bausteinSelector, be_bausteinSelector_layer, be_bausteinSelector_layer_item_container1, be_bausteinSelector_layer_item_container2); });
+        be_bausteinSelector_layer_close.addEventListener("click", () => { this.bausteinSelector_close(be_bausteinSelector, be_bausteinSelector_layer); });
         
         return be_bausteinSelector_container;
     }
     
     // iterate through all bausteine and check if columns/rows are the same as presented in data.bausteine
     rowcol_amount_evaluate() {
-        for (var i = 0; i < this.data.bausteine.length; i++) {
-            var baustein = this.data.bausteine[i];
+        for (let i = 0; i < this.data.bausteine.length; i++) {
+            const baustein = this.data.bausteine[i];
             if (baustein.renderType === bausteinRenderType.table || baustein.renderType === bausteinRenderType.tableRow || baustein.renderType === bausteinRenderType.layout || baustein.renderType === bausteinRenderType.container) {
-                var amount, new_baustein_type;
+                let amount, new_baustein_type;
                 
                 if (baustein.renderType === bausteinRenderType.tableRow || baustein.renderType === bausteinRenderType.layout) {
                     // check columns amount
@@ -877,19 +926,19 @@ class BausteinEditor {
 
                 if (children.length < amount) {
                     // add bausteine of type bausteinSelector
-                    for (var j = children.length; j < amount; j++) {
+                    for (let j = children.length; j < amount; j++) {
                         this.addBaustein(new_baustein_type, new Position(baustein.id, this.getPositionSort(false)), false);
                     }
                 } else if(children.length > amount) {
                     // remove bausteine; to do this first we add all bausteine who are have not the parent of this table, then we add the rest
-                    var new_bausteine_array = [];
-                    for (var j = 0; j < this.data.bausteine.length; j++) {
+                    const new_bausteine_array = [];
+                    for (let j = 0; j < this.data.bausteine.length; j++) {
                         if (this.data.bausteine[j].position.parent !== baustein.id) {
                             new_bausteine_array.push(this.data.bausteine[j]);
                         }
                     }
 
-                    for (var j = 0; j < baustein.columns; j++) {
+                    for (let j = 0; j < baustein.columns; j++) {
                         new_bausteine_array.push(children[j]);
                     }
 
@@ -899,20 +948,19 @@ class BausteinEditor {
         }
     }
 
-    async addBaustein(baustein_template: BausteinTemplate, position: Position, do_render: boolean): Promise<Baustein> {
+    addBaustein(baustein_template: BausteinTemplate, position: Position, do_render: boolean): Promise<Baustein> {
         return new Promise<Baustein>((resolve, reject) => {
-            const self = this;
             const parent_baustein = position.parent === null? null : this.getBaustein(position.parent);
-            var baustein_class = baustein_template.class;
+            let baustein_class = baustein_template.class;
 
             if (parent_baustein !== null) {
                 if (parent_baustein.renderType === bausteinRenderType.layout) {
                     // Layout children should have class="col"
                     if(baustein_class !== "") baustein_class += " ";
                     baustein_class += "col";
-                } else if (parent_baustein.renderType === bausteinRenderType.tableRow && baustein_template.type === self.types.text.type) {
+                } else if (parent_baustein.renderType === bausteinRenderType.tableRow && baustein_template.type === this.types.text.type) {
                     // IF parent is tableRow AND child is type "text" then change it to td
-                    baustein_template = self.types.td;
+                    baustein_template = this.types.td;
                     baustein_class = baustein_template.class
                 }
             }
@@ -921,13 +969,13 @@ class BausteinEditor {
 
             
             const baustein_id = this.baustein_id_counter;
-            var baustein = new Baustein(
-                baustein_id, position, baustein_template.type, baustein_template.title, baustein_template.tag, baustein_template.renderType, baustein_template.toggleableClasses, baustein_template.attributes, baustein_template.style
+            const baustein = new Baustein(
+                baustein_id, position, baustein_template.type, baustein_template.tag, baustein_template.renderType, baustein_template.toggleableClasses, baustein_template.attributes, baustein_template.style
             );
             baustein.class = baustein_class;
 
-            const actual_addBaustein: Function = function() {
-                self.baustein_id_counter += 1;
+            const actual_addBaustein = () => {
+                this.baustein_id_counter += 1;
         
                 // handle default style
                 for (let i = 0; i < baustein.style.length; i++) {
@@ -937,17 +985,16 @@ class BausteinEditor {
                     }
                 }
                 
-                console.log("before error", baustein)
                 if(baustein.getStyle("margin-top") === null) baustein.setStyle("margin-top", "8px");
                 if(baustein.getStyle("margin-bottom") === null) baustein.setStyle("margin-bottom", "8px");
 
                 
                 // test if on the same position is a Baustein typeof BausteinSelector
-                var baustein_type_baustein_selector_index = null;
+                let baustein_type_baustein_selector_index = null;
                 if (baustein.renderType !== bausteinRenderType.bausteinSelector) {
-                    for (var r = 0; r < self.data.bausteine.length; r++) {
-                        if (self.data.bausteine[r].position.parent === position.parent && self.data.bausteine[r].position.sort === position.sort) {
-                            if (self.data.bausteine[r].renderType === bausteinRenderType.bausteinSelector) {
+                    for (let r = 0; r < this.data.bausteine.length; r++) {
+                        if (this.data.bausteine[r].position.parent === position.parent && this.data.bausteine[r].position.sort === position.sort) {
+                            if (this.data.bausteine[r].renderType === bausteinRenderType.bausteinSelector) {
                                 baustein_type_baustein_selector_index = r;
                             }
                             break;
@@ -957,20 +1004,20 @@ class BausteinEditor {
 
                 if (baustein_type_baustein_selector_index === null) {
                     // any baustein with equel or greater then position.sort += 1
-                    for (var r = 0; r < self.data.bausteine.length; r++) {
-                        if (self.data.bausteine[r].position.sort >= position.sort) {
-                            self.data.bausteine[r].position.sort++;
+                    for (let r = 0; r < this.data.bausteine.length; r++) {
+                        if (this.data.bausteine[r].position.sort >= position.sort) {
+                            this.data.bausteine[r].position.sort++;
                         }
                     }
-                    self.data.bausteine.push(baustein);
+                    this.data.bausteine.push(baustein);
                 } else {
-                    self.data.bausteine.splice(baustein_type_baustein_selector_index, 1);
-                    self.data.bausteine.push(baustein);
+                    this.data.bausteine.splice(baustein_type_baustein_selector_index, 1);
+                    this.data.bausteine.push(baustein);
                 }
 
                 if (baustein.renderType === bausteinRenderType.spoiler) {
                     const spoiler_id = new Date().getTime();
-                    self.addBaustein(self.types.spoiler_toggler, new Position(baustein_id, self.getPositionSort(false)), false)
+                    this.addBaustein(this.types.spoiler_toggler, new Position(baustein_id, this.getPositionSort(false)), false)
                         .then((that_baustein) => {
                             that_baustein.attributes = [
                                 new BausteinAttribute("data-bs-toggle", "collapse"),
@@ -979,22 +1026,22 @@ class BausteinEditor {
                                 new BausteinAttribute("aria-controls", "be-bs-collapse-content"+spoiler_id),
                             ];
                     });
-                    self.addBaustein(self.types.spoiler_content, new Position(baustein_id, self.getPositionSort(false)), false)
+                    this.addBaustein(this.types.spoiler_content, new Position(baustein_id, this.getPositionSort(false)), false)
                         .then((that_baustein) => { that_baustein.attributes = [new BausteinAttribute("id", "be-bs-collapse-content"+spoiler_id)] });
                 } else {
                     // IF is ParentType THEN add dummy Bausteine to the Baustein-Array
                     if (baustein.isParentType()) {
                         if (baustein.renderType === bausteinRenderType.table) {
                             for (let row = 0; row < baustein.rows; row++) {
-                                self.addBaustein(self.types.tableRow, new Position(baustein_id, self.getPositionSort(false)), false);
+                                this.addBaustein(this.types.tableRow, new Position(baustein_id, this.getPositionSort(false)), false);
                             }
                         } else if (baustein.renderType === bausteinRenderType.container) {
                             for (let row = 0; row < baustein.rows; row++) {
-                                self.addBaustein(self.types.bausteinSelector, new Position(baustein_id, self.getPositionSort(false)), false);
+                                this.addBaustein(this.types.bausteinSelector, new Position(baustein_id, this.getPositionSort(false)), false);
                             }
                         } else {
                             for (let column = 0; column < baustein.columns; column++) {
-                                self.addBaustein(self.types.bausteinSelector, new Position(baustein_id, self.getPositionSort(false)), false);
+                                this.addBaustein(this.types.bausteinSelector, new Position(baustein_id, this.getPositionSort(false)), false);
                             }
                         }
                     }
@@ -1002,8 +1049,8 @@ class BausteinEditor {
 
         
                 if(do_render) {
-                    self.render();
-                    if(baustein.renderType !== bausteinRenderType.bausteinSelector) self.selectBaustein(baustein_id);
+                    this.render();
+                    if(baustein.renderType !== bausteinRenderType.bausteinSelector) this.selectBaustein(baustein_id);
                 }
                 resolve(baustein);
             }
@@ -1030,7 +1077,7 @@ class BausteinEditor {
     }
 
     selectBaustein(baustein_id: number) {
-        this.dom.bausteine.forEach(function(be_baustein: HTMLElement) { be_baustein.classList.remove("selected"); });
+        this.bausteine.forEach((be_baustein) => { be_baustein.classList.remove("selected"); });
         this.selected_baustein = document.getElementById(this.dom_id+'_be_baustein_item'+baustein_id);
         this.selected_baustein?.classList.add("selected");
         this.selected_baustein_id = baustein_id;
@@ -1057,7 +1104,7 @@ class BausteinEditor {
     }
 
     getBaustein(baustein_id: number): Baustein {
-        for (var i = 0; i < this.data.bausteine.length; i++) {
+        for (let i = 0; i < this.data.bausteine.length; i++) {
             if (this.data.bausteine[i].id === baustein_id) {
                 return this.data.bausteine[i];
             }
@@ -1066,7 +1113,7 @@ class BausteinEditor {
     }
 
     getBausteinFromPosition(position: Position): Baustein|null {
-        for (var i = 0; i < this.data.bausteine.length; i++) {
+        for (let i = 0; i < this.data.bausteine.length; i++) {
             if (this.data.bausteine[i].position.parent === position.parent && this.data.bausteine[i].position.sort === position.sort) {
                 return this.data.bausteine[i];
             }
@@ -1075,9 +1122,9 @@ class BausteinEditor {
     }
 
     getPositionSort(getFirst: boolean): number {
-        var positionSort = 1;
+        let positionSort = 1;
         if (getFirst) {
-            for (var i = 0; i < this.data.bausteine.length; i++) {
+            for (let i = 0; i < this.data.bausteine.length; i++) {
                 if (this.data.bausteine[i].position.sort < positionSort) {
                     positionSort =  this.data.bausteine[i].position.sort;
                 }
@@ -1085,7 +1132,7 @@ class BausteinEditor {
     
             return positionSort -1;
         } else {
-            for (var i = 0; i < this.data.bausteine.length; i++) {
+            for (let i = 0; i < this.data.bausteine.length; i++) {
                 if (this.data.bausteine[i].position.sort > positionSort) {
                     positionSort =  this.data.bausteine[i].position.sort;
                 }
@@ -1096,13 +1143,13 @@ class BausteinEditor {
     }
 
     getBausteineChildren(parent: number | null): Baustein[] {
-        var bausteine = [];
-        for (var i = 0; i < this.data.bausteine.length; i++) {
+        const bausteine = [];
+        for (let i = 0; i < this.data.bausteine.length; i++) {
             if (this.data.bausteine[i].position.parent === parent) {
                 bausteine[bausteine.length] = this.data.bausteine[i];
             }
         }
-        return bausteine.sort(function(a: any, b: any) {
+        return bausteine.sort((a: Baustein, b: Baustein) => {
             return a.position.sort > b.position.sort? 1 : -1;
         });
     }
@@ -1119,7 +1166,7 @@ class BausteinEditor {
         if (document.activeElement === null) {
             console.error("document.activeElement is null");
         } else {
-            const activeElement: any = document.activeElement;
+            const activeElement = <HTMLElement> document.activeElement;
             activeElement.blur();
         }
     }
@@ -1127,12 +1174,12 @@ class BausteinEditor {
     private deleteBaustein_helper(baustein_id: number) {
         // delete children
         const children = this.getBausteineChildren(baustein_id);
-        for (var i = 0; i < children.length; i++) {
+        for (let i = 0; i < children.length; i++) {
             this.deleteBaustein_helper(children[i].id);
         }
 
         // delete baustein
-        for (var row = 0; row < this.data.bausteine.length; row++) {
+        for (let row = 0; row < this.data.bausteine.length; row++) {
             if (this.data.bausteine[row].id === baustein_id) {
                 this.data.bausteine.splice(row, 1);
                 break;
@@ -1165,8 +1212,8 @@ class BausteinEditor {
             }
         }
 
-        var test_position_new_parent = position_new.parent;
-        var parentIsInChild = false;
+        let test_position_new_parent = position_new.parent;
+        let parentIsInChild = false;
         while (test_position_new_parent !== null) {
             if (baustein_id === test_position_new_parent) {
                 parentIsInChild = true;
@@ -1222,7 +1269,7 @@ class BausteinEditor {
     
     
             // any baustein with equel or greater then position.sort++
-            for (var r = 0; r < this.data.bausteine.length; r++) {
+            for (let r = 0; r < this.data.bausteine.length; r++) {
                 if (this.data.bausteine[r].id !== baustein_id && this.data.bausteine[r].position.sort >= baustein.position.sort) {
                     this.data.bausteine[r].position.sort++;
                 }
@@ -1237,7 +1284,7 @@ class BausteinEditor {
 
     printBausteinePosition() {
         console.log("printBausteinePosition()");
-        for (var i = 0; i < this.data.bausteine.length; i++) {
+        for (let i = 0; i < this.data.bausteine.length; i++) {
             console.log(this.data.bausteine[i].id, this.data.bausteine[i].position);
         }
     }
@@ -1247,21 +1294,21 @@ class BausteinEditor {
         const new_baustein = this.getBausteinType(type);
         baustein.renderType = new_baustein.renderType;
         baustein.tag = new_baustein.tag;
-        baustein.title = new_baustein.title;
         baustein.type = new_baustein.type;
+        baustein.title = LOCALES.get_item(new_baustein.type);
 
         this.render();
     }
 
     getChangeBausteinOptions(current_renderType: number, current_type: string): HTMLOptionElement[] {
-        var options: HTMLOptionElement[] = [];
-        for (var i = 0; i < this.typesArray.length; i++) {
-            const element = this.typesArray[i];
+        const options: HTMLOptionElement[] = [];
+        for (let i = 0; i < this.types_array.length; i++) {
+            const element = this.types_array[i];
             if (element.renderType === current_renderType && element.type !== current_type) {
-                var b = options.length;
-                options[b] = <HTMLOptionElement> this.createElement("option", "", "");
+                const b = options.length;
+                options[b] = document.createElement("option");
                 options[b].value = element.type; 
-                options[b].innerHTML = element.icon + " " + element.title;
+                options[b].innerHTML = element.icon + " " + LOCALES.get_item(element.type);
             }
         }
 
@@ -1270,19 +1317,19 @@ class BausteinEditor {
     
 
     renderBaustein(baustein: Baustein, position: Position): HTMLElement {
-        const self = this;
         const baustein_id = baustein.id;
         const position_parent = position.parent;
         const position_sort = position.sort;
         const baustein_dom_id = this.dom_id+'_be_baustein_item'+baustein_id;
         const baustein_editor_id = baustein_dom_id+'_editor';
         const baustein_type_object = this.getBausteinType(baustein.type);
-        var elements_drag_not_allowed: Element[] = [];
-
+        const elements_drag_not_allowed: Element[] = [];
+        
+        let baustein_dom: HTMLElement;
         if (baustein.renderType === bausteinRenderType.bausteinSelector) {
-            var baustein_dom = this.renderBausteinSelector(new Position(position_parent, position_sort), false, false);
+            baustein_dom = this.renderBausteinSelector(new Position(position_parent, position_sort), false, false);
         } else {
-            var baustein_dom = this.createElement("div", baustein_dom_id, "be_baustein");
+            baustein_dom = this.createElement("div", baustein_dom_id, "be_baustein");
             baustein_dom.dataset.type = baustein.type;
             baustein_dom.dataset.position_parent = position_parent+"";
             baustein_dom.dataset.position_sort = position_sort+"";
@@ -1294,96 +1341,107 @@ class BausteinEditor {
     
             
             // Baustein indicator
-            var baustein_indicator: HTMLLabelElement = <HTMLLabelElement> baustein_dom.appendChild(
-                this.createElement("label", baustein_dom_id+"_indicator", "baustein_indicator")
-            );
-            baustein_indicator.addEventListener("click", function() {
-                self.selectBaustein(baustein_id);
-            }, false);
-    
-            if (position_parent === null) {
-                var baustein_indicator_position: HTMLElement = <HTMLElement> baustein_indicator.appendChild(
-                    this.createElement("span", "", "baustein_indicator_position")
+            if (baustein.renderType !== bausteinRenderType.static_undeletable) {
+                const baustein_indicator: HTMLLabelElement = <HTMLLabelElement> baustein_dom.appendChild(
+                    this.createElement("label", baustein_dom_id+"_indicator", "baustein_indicator")
                 );
-                baustein_indicator_position.innerHTML = self.baustein_counter.toString();
-                self.baustein_counter++;
-            }
-    
-            var changeBausteinOptions = this.getChangeBausteinOptions(baustein.renderType, baustein.type);
-            if (changeBausteinOptions.length === 0) {
-                var baustein_indicator_title: HTMLLabelElement = <HTMLLabelElement> baustein_indicator.appendChild(
-                    this.createElement("span", "", "baustein_indicator_title")
-                );
-                baustein_indicator_title.innerHTML = baustein_type_object.icon + " " + baustein.title;
-            } else {
-                // Icon
-                if(baustein_type_object.icon !== null) baustein_indicator.innerHTML = baustein_type_object.icon;
-
-                // Baustein Indicator Changer
-                const baustein_indicator_changer: HTMLSelectElement = <HTMLSelectElement> baustein_indicator.appendChild(
-                    this.createElement("select", "", "baustein_indicator_changer")
-                );
-                baustein_indicator_changer.tabIndex = -1;
-                baustein_indicator_changer.addEventListener("change", function() {
-                    self.changeBaustein(baustein_id, this.value);
-                });
+                baustein_indicator.addEventListener("click", () => {
+                    this.selectBaustein(baustein_id);
+                }, false);
         
-                const baustein_indicator_option: HTMLOptionElement = <HTMLOptionElement> baustein_indicator_changer.appendChild(
-                    this.createElement("option", "", "")
-                );
-                baustein_indicator_option.value = baustein.type; 
-                baustein_indicator_option.innerHTML = baustein.title;
-                baustein_indicator_option.selected = true;
-                baustein_indicator_option.style.display = "none";
+                if (position_parent === null) {
+                    const baustein_indicator_position: HTMLElement = <HTMLElement> baustein_indicator.appendChild(
+                        this.createElement("span", "", "baustein_indicator_position")
+                    );
+                    baustein_indicator_position.innerHTML = this.baustein_counter.toString();
+                    this.baustein_counter++;
+                }
+        
+                const changeBausteinOptions = this.getChangeBausteinOptions(baustein.renderType, baustein.type);
+                if (changeBausteinOptions.length === 0) {
+                    const baustein_indicator_title: HTMLLabelElement = <HTMLLabelElement> baustein_indicator.appendChild(
+                        this.createElement("span", "", "baustein_indicator_title")
+                    );
+                    baustein_indicator_title.innerHTML = baustein_type_object.icon + " " + baustein.title;
+                } else {
+                    // Icon
+                    if(baustein_type_object.icon !== null) baustein_indicator.innerHTML = baustein_type_object.icon;
     
-                for (var i = 0; i < changeBausteinOptions.length; i++) {
-                    baustein_indicator_changer.appendChild(changeBausteinOptions[i]);
+                    // Baustein Indicator Changer
+                    const baustein_indicator_changer: HTMLSelectElement = <HTMLSelectElement> baustein_indicator.appendChild(
+                        this.createElement("select", "", "baustein_indicator_changer")
+                    );
+                    baustein_indicator_changer.tabIndex = -1;
+                    baustein_indicator_changer.addEventListener("change", () => {
+                        this.changeBaustein(baustein_id, baustein_indicator_changer.value);
+                    });
+            
+                    const baustein_indicator_option: HTMLOptionElement = <HTMLOptionElement> baustein_indicator_changer.appendChild(
+                        this.createElement("option", "", "")
+                    );
+                    baustein_indicator_option.value = baustein.type; 
+                    baustein_indicator_option.innerHTML = baustein.title;
+                    baustein_indicator_option.selected = true;
+                    baustein_indicator_option.style.display = "none";
+        
+                    for (let i = 0; i < changeBausteinOptions.length; i++) {
+                        baustein_indicator_changer.appendChild(changeBausteinOptions[i]);
+                    }
                 }
             }
     
-            var baustein_item: HTMLElement|null = null;
+            let baustein_item: HTMLElement|null = null;
             switch (baustein.renderType) {
+                case bausteinRenderType.static_undeletable: {
+                    baustein.content = "["+baustein.type+"]";
+                    baustein_dom.addEventListener("click", () => { this.selectBaustein(baustein_id); });
+                    const text = baustein_dom.appendChild(this.createElement("div", baustein_editor_id, "be_baustein_item"));
+                    text.style.overflow = "hidden";
+                    text.style.userSelect = "none";
+                    text.style.padding = "4px";
+                    text.innerHTML = LOCALES.get_item(baustein.type);
+                } break;
                 case bausteinRenderType.container:
                 case bausteinRenderType.layout:
                 case bausteinRenderType.table: 
                 case bausteinRenderType.tableRow: 
-                case bausteinRenderType.spoiler: 
-                    var bausteine_inner = this.getBausteineChildren(baustein.id);
-                    for (var row = 0; row < bausteine_inner.length; row++) {
+                case bausteinRenderType.spoiler: {
+                const bausteine_inner = this.getBausteineChildren(baustein.id);
+                    for (let row = 0; row < bausteine_inner.length; row++) {
                         const baustein_inner = bausteine_inner[row];
                         baustein_dom.appendChild(this.renderBaustein(baustein_inner, new Position(baustein_id, baustein_inner.position.sort)));
                     }
-                    break;
+                } break;
                     
                 case bausteinRenderType.spoiler_toggler: 
-                case bausteinRenderType.spoiler_content: 
-                    var bausteine_inner = this.getBausteineChildren(baustein.id);
+                case bausteinRenderType.spoiler_content: {
+                const bausteine_inner = this.getBausteineChildren(baustein.id);
                     if (bausteine_inner.length === 0) {
                         const show_layout_items = baustein.renderType === bausteinRenderType.spoiler_content;
                         baustein_dom.appendChild(this.renderBausteinSelector(new Position(baustein_id, this.getPositionSort(false)), false, show_layout_items));
                     } else {
-                        for (var row = 0; row < bausteine_inner.length; row++) {
+                        for (let row = 0; row < bausteine_inner.length; row++) {
                             const baustein_inner = bausteine_inner[row];
                             baustein_dom.appendChild(this.renderBaustein(baustein_inner, new Position(baustein_id, baustein_inner.position.sort)));
                         }
                     }
-                    break;
-                    
-                case bausteinRenderType.shortcode:
-                    const shortcode_trimmed = baustein.content.replace("[", "").replace("]", "").trim();
-                    var disable_editor_input = shortcode_trimmed === "";
+                } break;
 
-                    const editor_select = <HTMLSelectElement> baustein_dom.appendChild( this.createElement("select", "", "form-control") );
+                case bausteinRenderType.shortcode: {
+                    const shortcode_trimmed = baustein.content.replace("[", "").replace("]", "").trim();
+                    let disable_editor_input = shortcode_trimmed === "";
+
+                    const editor_select = <HTMLSelectElement>baustein_dom.appendChild(this.createElement("select", "", "form-control"));
                     editor_select.autocomplete = "off";
                     editor_select.style.border = "0";
-                    const option_placeholder_dom = <HTMLOptionElement> editor_select.appendChild( document.createElement("option") );
+                    const option_placeholder_dom = <HTMLOptionElement>editor_select.appendChild(document.createElement("option"));
                     option_placeholder_dom.value = "";
-                    option_placeholder_dom.innerHTML = "Shortcode auswählen";
+                    option_placeholder_dom.innerHTML = LOCALES.get_item("shortcode_select");
                     option_placeholder_dom.style.display = "none";
 
                     for (let i = 0; i < this.shortcodes.length; i++) {
                         const shortcode = this.shortcodes[i];
-                        const shortcode_dom = <HTMLOptionElement> editor_select.appendChild( document.createElement("option") );
+                        const shortcode_dom = <HTMLOptionElement>editor_select.appendChild(document.createElement("option"));
                         shortcode_dom.value = shortcode;
                         shortcode_dom.innerHTML = shortcode;
                         if (shortcode === shortcode_trimmed) {
@@ -1392,12 +1450,12 @@ class BausteinEditor {
                         }
                     }
 
-                    const option_other_dom = <HTMLOptionElement> editor_select.appendChild( document.createElement("option") );
+                    const option_other_dom = <HTMLOptionElement>editor_select.appendChild(document.createElement("option"));
                     option_other_dom.value = "-1";
-                    option_other_dom.innerHTML = "Benutzerdefiniert / Sonstige";
+                    option_other_dom.innerHTML = LOCALES.get_item("custom_other")
 
 
-                    const editor_input = <HTMLInputElement> baustein_dom.appendChild( this.createElement("input", "", "form-control") );
+                    const editor_input = <HTMLInputElement>baustein_dom.appendChild(this.createElement("input", "", "form-control"));
                     editor_input.type = "text";
                     editor_input.value = baustein.content;
                     editor_input.style.border = "0";
@@ -1408,36 +1466,36 @@ class BausteinEditor {
                         editor_select.style.display = "none";
                     }
 
-                    [editor_select, editor_input].forEach(function(editor) {
-                        ["click", "focusin"].forEach(function(event_type) {
-                            editor.addEventListener(event_type, function() { self.selectBaustein(baustein_id); });
+                    [editor_select, editor_input].forEach((editor) => {
+                        ["click", "focusin"].forEach((event_type)  => {
+                            editor.addEventListener(event_type, () => { this.selectBaustein(baustein_id); });
                         });
                     });
 
-                    editor_select.addEventListener("change", function() {
-                        if (this.value !== "") {
-                            if (this.value === "-1") {
+                    editor_select.addEventListener("change", () => {
+                        if (editor_select.value !== "") {
+                            if (editor_select.value === "-1") {
                                 editor_input.style.display = "block";
                                 editor_select.style.display = "none";
                             } else {
-                                editor_input.value = "[" + this.value + "]";
+                                editor_input.value = "[" + editor_select.value + "]";
                                 baustein.content = editor_input.value;
-                                self.preview_render();
+                                this.preview_render();
                             }
                         }
                     });
-                    
-                    editor_input.addEventListener("change", function() {
+
+                    editor_input.addEventListener("change", () => {
                         editor_input.value = editor_input.value.trim();
-                        if(editor_input.value.substring(0, 1) !== "[") editor_input.value = "[" + editor_input.value;
-                        if(editor_input.value.substring(editor_input.value.length - 1) !== "]") editor_input.value = editor_input.value + "]";
+                        if (editor_input.value.substring(0, 1) !== "[") editor_input.value = "[" + editor_input.value;
+                        if (editor_input.value.substring(editor_input.value.length - 1) !== "]") editor_input.value = editor_input.value + "]";
                         baustein.content = editor_input.value;
-                        self.preview_render();
+                        this.preview_render();
                     });
-                    break;
+                } break;
                     
-                case bausteinRenderType.image:
-                    var image: HTMLImageElement = <HTMLImageElement> baustein_dom.appendChild(
+                case bausteinRenderType.image: {
+                    const image: HTMLImageElement = <HTMLImageElement> baustein_dom.appendChild(
                         this.createElement("img", baustein_editor_id, "be_baustein_item")
                     );
                     // WENN dataset.src empty ist, dann ist nur der Placeholder vorhanden
@@ -1450,27 +1508,27 @@ class BausteinEditor {
     
                     image.style.maxWidth = "100%";
     
-                    image.addEventListener("click", function() {
-                        self.selectBaustein(baustein_id);
+                    image.addEventListener("click", () => {
+                        this.selectBaustein(baustein_id);
                     });
     
                     // remove ghost image
-                    image.addEventListener("dragstart", function(e) {
+                    image.addEventListener("dragstart", (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         return false;
                     });
-                    break;
+                } break;
     
-                case bausteinRenderType.iframe:
+                case bausteinRenderType.iframe: {
                     const be_baustein_item_overlay = baustein_dom.appendChild(
                         this.createElement("div", "", "be_baustein_item_overlay")
                     );
-                    be_baustein_item_overlay.addEventListener("click", function() {
-                        self.selectBaustein(baustein_id);
+                    be_baustein_item_overlay.addEventListener("click", () => {
+                        this.selectBaustein(baustein_id);
                     });
 
-                    var iframe: HTMLIFrameElement = <HTMLIFrameElement> baustein_dom.appendChild(
+                    const iframe: HTMLIFrameElement = <HTMLIFrameElement> baustein_dom.appendChild(
                         this.createElement("iframe", baustein_editor_id, "be_baustein_item")
                     );
                     iframe.src = baustein.getAttribute("src")||"about:blank";
@@ -1478,17 +1536,17 @@ class BausteinEditor {
                     iframe.style.height = "100%";
                     iframe.style.border = "0";
     
-                    iframe.addEventListener("click", function() {
-                        self.selectBaustein(baustein_id);
+                    iframe.addEventListener("click", () => {
+                        this.selectBaustein(baustein_id);
                     });
-                    break;
+                } break;
     
-                default:
-                    var editor: HTMLElement;
+                default:{
+                    let editor: HTMLElement;
                     switch (baustein.renderType) {
                         case bausteinRenderType.button:
                         case bausteinRenderType.tableCell:
-                        case bausteinRenderType.richtext:
+                        case bausteinRenderType.richtext: {
                             if (baustein.renderType === bausteinRenderType.button) {
                                 const placeholder_text = "Buttontext eingeben";
     
@@ -1501,18 +1559,18 @@ class BausteinEditor {
                                 else editor.innerHTML = baustein.content;
                                 editor.setAttribute("contenteditable", "true");
     
-                                editor.addEventListener("input", function() {
+                                editor.addEventListener("input", () => {
                                     baustein.content = editor.innerHTML;
-                                    self.preview_render();
+                                    this.preview_render();
                                 });
     
-                                editor.addEventListener("focusin", function() {
+                                editor.addEventListener("focusin", () => {
                                     if(baustein.content === "") {
                                         editor.innerHTML = "";
                                     }
                                 });
     
-                                editor.addEventListener("focusout", function() {
+                                editor.addEventListener("focusout", () => {
                                     if(baustein.content === "") {
                                         editor.innerHTML = placeholder_text;
                                     }
@@ -1526,19 +1584,19 @@ class BausteinEditor {
                             }
             
                             const tiny_editor = new TinyEditor(editor, {
-                                toolbar: null,
+                                toolbar: this.tinyeditor_toolbar,
         
-                                onchange: function() {
+                                onchange: () => {
                                     baustein.content = tiny_editor.export();
-                                    self.preview_render();
+                                    this.preview_render();
                                     if (baustein.renderType !== bausteinRenderType.button) {
                                         editor.style.height = '1px';
                                         editor.style.height = editor.scrollHeight + 'px';
                                     }
                                 },
-                                exec_command_create_image: function(): Promise<string> {
+                                exec_command_create_image: () => {
                                     return new Promise((resolve, reject) => {
-                                        self.dialog_media(bausteinRenderType.image).then((image_url) => {
+                                        this.dialog_media(bausteinRenderType.image).then((image_url) => {
                                             resolve(image_url);
                                         }).catch((error) => {
                                             reject(error);
@@ -1546,79 +1604,77 @@ class BausteinEditor {
                                     });
                                 },
 
-                                tinyeditor_toolbar_options: self.tinyeditor_toolbar_options
+                                tinyeditor_toolbar_options: this.tinyeditor_toolbar_options
                             });
                             if(is_selected_baustein) this.tinyeditor_toolbar.selected_editor = tiny_editor;
                             tiny_editor.import(baustein.content);
                             
-                            editor.addEventListener("focusin", function() {
-                                self.tinyeditor_toolbar.selected_editor = tiny_editor;
+                            editor.addEventListener("focusin", () => {
+                                this.tinyeditor_toolbar.selected_editor = tiny_editor;
                             });
-                            break;
+                        } break;
                         
-                        default:
+                        default: {
                             editor = baustein_dom.appendChild(
                                 this.createElement("textarea", baustein_editor_id, "be_baustein_item")
-                                );
-                                editor.innerHTML = baustein.content;
-                                editor.focus();
+                            );
+                            editor.innerHTML = baustein.content;
+                            editor.focus();
                                 
                             const editor_textarea = <HTMLTextAreaElement> editor;
-                            editor_textarea.addEventListener("input", function() {
+                            editor_textarea.addEventListener("input", () => {
                                 editor_textarea.style.height = '1px';
                                 editor_textarea.style.height = editor_textarea.scrollHeight + 'px';
                                 baustein.content = editor_textarea.value;
                             });
-                            break;
+                        } break;
                     }
                     
                     baustein_item = editor;
                     editor.draggable = false;
-                    editor.addEventListener("focusin", function() {
-                        self.selectBaustein(baustein_id);
+                    editor.addEventListener("focusin", () => {
+                        this.selectBaustein(baustein_id);
                     });
     
                     elements_drag_not_allowed.push(editor);
-                    break;
+                } break;
             }
 
             if (baustein_item === null) {
-                for (var a = 0; a < baustein.style.length; a++) {
+                for (let a = 0; a < baustein.style.length; a++) {
                     const element = baustein.style[a];
                     if (element.value !== "") {
-                        var property_name: any = element.property.name;
-                        baustein_dom.style[property_name] = element.value;
+                        baustein_dom.style.setProperty(element.property.name, element.value);
                     }
                 }
             } else {
-                for (var a = 0; a < baustein.style.length; a++) {
+                for (let a = 0; a < baustein.style.length; a++) {
                     const element = baustein.style[a];
                     if (element.value !== "") {
-                        const property_name: string = element.property.name;
-                        const property_name_any: any = property_name;
-
-                        if (property_name.indexOf("width") !== -1 || property_name.indexOf("height") !== -1 || property_name.indexOf("margin") !== -1 || property_name.indexOf("border") !== -1 || property_name.indexOf("padding") !== -1) {
-                            baustein_dom.style[property_name_any] = element.value;
+                        if (element.property.name.indexOf("width") !== -1 || element.property.name.indexOf("height") !== -1 || element.property.name.indexOf("margin") !== -1 || element.property.name.indexOf("border") !== -1 || element.property.name.indexOf("padding") !== -1) {
+                            baustein_dom.style.setProperty(element.property.name, element.value);
                         } else {
-                            baustein_item.style[property_name_any] = element.value;
+                            baustein_item.style.setProperty(element.property.name, element.value);
                         }
                     }
                 }
             }
     
-            baustein_dom.addEventListener("click", function(e: any) {
-                if (e.target.id === baustein_dom_id) {
-                    self.selectBaustein(baustein_id);
-                } else {
-                    return false;
+            baustein_dom.addEventListener("click", (e: MouseEvent) => {
+                if (e.target) {
+                    const target = <HTMLElement> e.target;
+                    if (target.id === baustein_dom_id) {
+                        this.selectBaustein(baustein_id);
+                    }
                 }
+                return false;
             }, false);
     
     
             // handle draggable condition
             if(baustein.renderType !== bausteinRenderType.tableRow) {
                 const baustein_dom_const = baustein_dom;
-                new LuxDragDrop(baustein_dom_const, {
+                new LuxDragDrop(this.main, baustein_dom_const, {
                     mousedown: (event: MouseEvent) => {
                         const document_activeElement = document.activeElement;
                         if (document_activeElement === null) {
@@ -1626,7 +1682,7 @@ class BausteinEditor {
                         } else {
                             console.log("dragdrop baustein_dom_const", baustein_dom_const)
                             console.log("dragdrop event", event)
-                            var allow_dragdrop;
+                            let allow_dragdrop;
                             if (this.cursor_mode === 0) {
                                 // prevent draggable from starting if the click is on the editor
                                 allow_dragdrop = elements_drag_not_allowed.includes(document_activeElement) === false;
@@ -1652,11 +1708,11 @@ class BausteinEditor {
                                     }
                                 }
                             }
-                            return false;
                         }
+                        return false;
                     },
                     mousemove: null,
-                    mouseup: (e: any, reciever_element: HTMLElement) => {
+                    mouseup: (e: MouseEvent, reciever_element: HTMLElement) => {
                         // Go up the DOM Tree until we find a parent with the dataset "position_parent"
                         for (let tries = 0; tries < 4; tries++) {
                             if(typeof reciever_element.dataset.position_parent === "string") {
@@ -1676,8 +1732,8 @@ class BausteinEditor {
                         } else if (typeof reciever_element.dataset.position_sort !== "string") {
                             console.error("[BausteinEditor]", "reciever_element.dataset.position_sort is not a string");
                         } else {
-                            var old_baustein_id = baustein_id;
-                            var new_position = { 
+                            const old_baustein_id = baustein_id;
+                            const new_position = { 
                                 parent: reciever_element.dataset.position_parent === "0" ? 0 : (parseInt(reciever_element.dataset.position_parent) || null), 
                                 sort: reciever_element.dataset.position_sort === "0" ? 0 : (parseInt(reciever_element.dataset.position_sort) || null) 
                             };
@@ -1687,44 +1743,45 @@ class BausteinEditor {
                             if (new_position.sort === null) {
                                 console.error("[BausteinEditor] LuxClickHoldDrag.callback_mouseup: new_position.sort is null");
                             } else {
-                                self.moveBaustein(old_baustein_id, new Position(new_position.parent, new_position.sort));
+                                this.moveBaustein(old_baustein_id, new Position(new_position.parent, new_position.sort));
                             }
                         }
                     }, maxsizes: true
                 });
-                baustein_dom.addEventListener("dragend", function() {
+                baustein_dom.addEventListener("dragend", () => {
                     baustein_dom.draggable = false;
                 });
             }
         }
 
-        this.dom.bausteine.push(baustein_dom);
+        this.bausteine.push(baustein_dom);
         return baustein_dom;
     }
-    
+
     
     render() {
-        this.dom.content.innerHTML = "";
+        this.content.innerHTML = "";
         this.baustein_counter = 0;
-        this.dom.bausteine = [];
+        this.bausteine = [];
+        this.types_array = Object.values(this.types);
 
         /*  Bausteine Recursive Graph Array
             this.data.bausteine[row] :: .parent :: .position
         */
-        var bausteine = this.getBausteineChildren(null);
-        for (var row = 0; row < bausteine.length; row++) {
+        const bausteine = this.getBausteineChildren(null);
+        for (let row = 0; row < bausteine.length; row++) {
             const baustein = bausteine[row];
 
-            this.dom.content.appendChild( 
+            this.content.appendChild( 
                 this.renderBausteinSelector(new Position(null, baustein.position.sort), true, true)
             );
 
-            this.dom.content.appendChild( 
+            this.content.appendChild( 
                 this.renderBaustein(baustein, new Position(null, baustein.position.sort))
             );
         }
 
-        this.dom.content.appendChild(
+        this.content.appendChild(
             this.renderBausteinSelector(new Position(null, this.getPositionSort(false)), false, true)
         );
 
@@ -1737,7 +1794,7 @@ class BausteinEditor {
         const window_width = window.innerWidth;
         const window_height = window.innerHeight;
 
-        this.dom.underlay.style.display = "";
+        this.underlay.style.display = "";
         be_bausteinSelector_layer.style.display = "";
         be_bausteinSelector_layer_item_container1.style.display = ""; 
         be_bausteinSelector_layer_item_container2.style.display = "none";
@@ -1749,7 +1806,7 @@ class BausteinEditor {
         this.be_bausteinSelector_isOpen = true; 
     }
     bausteinSelector_close(be_bausteinSelector: HTMLElement, be_bausteinSelector_layer: HTMLElement) { 
-        this.dom.underlay.style.display = "none";
+        this.underlay.style.display = "none";
         be_bausteinSelector_layer.style.display = "none";
         this.be_bausteinSelector_isOpen = false;
     }
@@ -1766,15 +1823,15 @@ class BausteinEditor {
         // Apply Baustein Styles
         if (this.selected_baustein !== null && this.selected_baustein_id !== null) {
             const baustein = this.getBaustein(this.selected_baustein_id);
-            var selected_baustein_editor: HTMLElement = <HTMLElement> this.selected_baustein.lastChild;
+            const selected_baustein_editor: HTMLElement = <HTMLElement> this.selected_baustein.lastChild;
             
-            for (var i = 0; i < this.open_baustein_attributes__formcontrols.length; i++) {
+            for (let i = 0; i < this.open_baustein_attributes__formcontrols.length; i++) {
                 const formcontrol = this.open_baustein_attributes__formcontrols[i];
                 const property_name: string = formcontrol.name;
                 const value = typeof formcontrol.dataset.value === "undefined"? formcontrol.value : formcontrol.dataset.value;
 
-                var baustein_style_index: number = baustein.style.length;
-                for (var b = 0; b < baustein.style.length; b++) {
+                let baustein_style_index: number = baustein.style.length;
+                for (let b = 0; b < baustein.style.length; b++) {
                     if (baustein.style[b].property.name === property_name) {
                         baustein_style_index = b;
                         break;
@@ -1783,14 +1840,14 @@ class BausteinEditor {
 
                 if(baustein_style_index === baustein.style.length) {
                     if(value === "" || value === "0" || value === "auto") continue;
-                    var new_style = new BausteinStyle(this.getStylePropertyByName(property_name), "");
+                    const new_style = new BausteinStyle(this.getStylePropertyByName(property_name), "");
                     if(new_style.property.options.length > 0 && new_style.property.options[0].value === value) continue;
                     baustein.style[baustein_style_index] = new_style;
                 }
 
                 baustein.style[baustein_style_index].value = value;
                 
-                var target;
+                let target;
                 if (baustein.isParentType() || property_name.indexOf("margin") === 0 || property_name.indexOf("border") === 0 || property_name.indexOf("padding") === 0) {
                     target = this.selected_baustein;
                 } else {
@@ -1814,15 +1871,15 @@ class BausteinEditor {
 
     /// create a forminput. first options item is default value. Returns {content: HTMLElement, input: HTMLInputElement|HTMLSelectElement}
     formcontrol(domArk: string, type: string, name: string, title: string | null, value: string
-        , options: { suffix?: string[], html_options?: HTMLOptionElement[], number_default?: number, number_min?: number, number_max?: number, onchange?: Function }
+        , options: { suffix?: string[], html_options?: HTMLOptionElement[], number_default?: number, number_min?: number, number_max?: number, onchange?: (form_control: FormControl)=>void }
     ): {content: HTMLElement, input: FormControl} {
-        var fc_dom_id = (this.dom_id+'_'+domArk+'_fc_'+name);
-        var useDataValue = false;
+        const fc_dom_id = (this.dom_id+'_'+domArk+'_fc_'+name);
+        let useDataValue = false;
         const suffix_const: string[] = options.suffix || [];
-        const suffix_default: string = suffix_const.length? suffix_const[0] : "";
+        let suffix_default: string = suffix_const.length? suffix_const[0] : "";
 
-        var be_formrow = this.createElement("div", "", "be_formrow");
-        var form_control: FormControl;
+        const be_formrow = this.createElement("div", "", "be_formrow");
+        let form_control: FormControl;
 
         if (type === "image") {
             const image_source_text = be_formrow.appendChild( document.createElement("div") );
@@ -1834,7 +1891,7 @@ class BausteinEditor {
                 this.createElement("button", fc_dom_id, "be-form-control")
             );
             form_control.type = "button";
-            form_control.innerHTML= title+" setzen";
+            form_control.innerHTML = title!.toString();
             form_control.name = name;
             form_control.value = value;
 
@@ -1858,7 +1915,7 @@ class BausteinEditor {
                 form_control.style.marginRight = "4px";
 
                 if (title !== null) {
-                    var label: HTMLLabelElement = <HTMLLabelElement> be_formrow.appendChild(
+                    const label: HTMLLabelElement = <HTMLLabelElement> be_formrow.appendChild(
                         this.createElement("label", "", "")
                     );
                     label.htmlFor = fc_dom_id;
@@ -1867,14 +1924,14 @@ class BausteinEditor {
                 
             } else {
                 if (title !== null) {
-                    var label: HTMLLabelElement = <HTMLLabelElement> be_formrow.appendChild(
+                    const label: HTMLLabelElement = <HTMLLabelElement> be_formrow.appendChild(
                         this.createElement("label", "", "")
                     );
                     label.htmlFor = fc_dom_id;
                     label.innerHTML = title;
                 }
                 
-                var form_control_container = be_formrow.appendChild(
+                const form_control_container = be_formrow.appendChild(
                     this.createElement("div", "", "be-form-control-container")
                 );
                 if (type === "number") {
@@ -1888,8 +1945,8 @@ class BausteinEditor {
                     form_control.name = name;
                     
                     if (options.html_options) {
-                        for (var i = 0; i < options.html_options.length; i++) {
-                            var option_element: HTMLOptionElement = <HTMLOptionElement> form_control.appendChild(
+                        for (let i = 0; i < options.html_options.length; i++) {
+                            const option_element: HTMLOptionElement = <HTMLOptionElement> form_control.appendChild(
                                 this.createElement("option", "", "")
                             );
                             option_element.value = options.html_options[i].value;
@@ -1914,12 +1971,12 @@ class BausteinEditor {
                         form_control.type = "text";
                         form_control.dataset.suffix = suffix_default;
         
-                        var form_control_container_up: HTMLInputElement = <HTMLInputElement> form_control_container.appendChild(
+                        const form_control_container_up: HTMLInputElement = <HTMLInputElement> form_control_container.appendChild(
                             this.createElement("div", "", "be-form-control-container_up")
                         );
                         form_control_container_up.innerHTML = '⮝';
         
-                        var form_control_container_down: HTMLInputElement = <HTMLInputElement> form_control_container.appendChild(
+                        const form_control_container_down: HTMLInputElement = <HTMLInputElement> form_control_container.appendChild(
                             this.createElement("div", "", "be-form-control-container_down")
                         );
                         form_control_container_down.innerHTML = '⮟';
@@ -1928,7 +1985,7 @@ class BausteinEditor {
                         const number_min = options.number_min? options.number_min : null;
                         const number_max = options.number_max? options.number_max : null;
                         
-                        const formcontrol_number = function (add: number) {
+                        const formcontrol_number = (add: number) => {
                             const value = form_control.value.replace(" ", "");
 
                             // constants check onChange; if one matches, use it
@@ -1944,26 +2001,24 @@ class BausteinEditor {
                             }
                             
                             // number check
-                            var num = parseFloat(value);
-                            var thus_suffix = suffix_default;
-                            
+                            let num = parseFloat(value);
                             if (isNaN(num)) {
                                 num = number_default;
                             } else {
-                                let cmp_suffix = form_control.value.replace(num.toString(), "");
-                                for(var i = 0; i < suffix_const.length; i++) {
+                                const cmp_suffix = form_control.value.replace(num.toString(), "");
+                                for(let i = 0; i < suffix_const.length; i++) {
                                     if (cmp_suffix === suffix_const[i]) {
-                                        thus_suffix = suffix_const[i];
+                                        suffix_default = suffix_const[i];
                                         break;
                                     }
                                 }
                             }
                             
-                            var countDecimals = num % 1? num.toString().split(".")[1].length : 0;
+                            const countDecimals = num % 1? num.toString().split(".")[1].length : 0;
                             if (countDecimals === 0) {
                                 num = num + add;
                             } else {
-                                var mltp = Math.pow(10, countDecimals);
+                                const mltp = Math.pow(10, countDecimals);
                                 num = Math.floor((num*mltp) + (add*mltp))/mltp;
                             }
                             
@@ -1973,15 +2028,15 @@ class BausteinEditor {
                                 num = number_max;
                             }
         
-                            form_control.value = num.toString() + thus_suffix;
+                            form_control.value = num.toString() + suffix_default;
                         }
             
-                        form_control.addEventListener("change", function() { 
+                        form_control.addEventListener("change", () => { 
                             formcontrol_number(0);
                             if(options.onchange) options.onchange(form_control); 
                         });
-                        form_control.addEventListener("keydown", function(e: any) { 
-                            var steps = e.shiftKey? 10 : (e.ctrlKey? 0.1 : 1)
+                        form_control.addEventListener("keydown", (e: KeyboardEvent) => { 
+                            const steps = e.shiftKey? 10 : (e.ctrlKey? 0.1 : 1)
             
                             const keyCode = e.which | e.keyCode;
                             if (keyCode === 38) {
@@ -1994,8 +2049,8 @@ class BausteinEditor {
                                 return false;
                             }
                         });
-                        form_control_container_up.addEventListener("click", function() { formcontrol_number(+1); if(options.onchange) options.onchange(form_control);  });
-                        form_control_container_down.addEventListener("click", function() { formcontrol_number(-1); if(options.onchange) options.onchange(form_control);  });
+                        form_control_container_up.addEventListener("click", () => { formcontrol_number(+1); if(options.onchange) options.onchange(form_control);  });
+                        form_control_container_down.addEventListener("click", () => { formcontrol_number(-1); if(options.onchange) options.onchange(form_control);  });
                     } else {
                         form_control.type = "text";
                     }
@@ -2009,7 +2064,7 @@ class BausteinEditor {
                     form_control.dataset.value = value;
                 }
     
-                form_control.addEventListener("change", function() { 
+                form_control.addEventListener("change", () => { 
                     if (_useDataValue) {
                         form_control.dataset.value = form_control.value;
                     }
@@ -2029,7 +2084,7 @@ class BausteinEditor {
         const bausteinStyleValue = baustein.getStyleValue(styleName, default_value);
         
         const formcontrol = this.formcontrol("baustein", "number", bausteinStyleProperty.name, null, bausteinStyleValue, {
-            suffix: bausteinStyleProperty.suffix, html_options: bausteinStyleProperty.options, onchange: () => this.apply_styles()
+            suffix: bausteinStyleProperty.suffix, html_options: bausteinStyleProperty.get_html_options(), onchange: () => this.apply_styles()
         });
         const be_layout_fc: HTMLInputElement = <HTMLInputElement> formcontrol.content;
         be_layout_fc.style.width = "34px";
@@ -2049,21 +2104,20 @@ class BausteinEditor {
             const current_baustein = this.getBaustein(baustein_id);
             this.open_baustein_attributes__baustein_id = baustein_id;
             this.open_baustein_attributes__formcontrols = [];
-            const self = this;
+            this.sidebar_content__baustein_styles.innerHTML = "";
 
-            this.dom.sidebar_content__baustein_styles.innerHTML = "";
-
+            if(current_baustein.renderType === bausteinRenderType.static_undeletable) return;
 
             // Layout view like Firefox DevTools
-            var be_layout_view = this.dom.sidebar_content__baustein_styles.appendChild(
+            const be_layout_view = this.sidebar_content__baustein_styles.appendChild(
                 this.createElement("div", "", "be_layout_view")
             );
 
             // margin
-            var be_layout_view_margin = be_layout_view.appendChild(
+            const be_layout_view_margin = be_layout_view.appendChild(
                 this.createElement("div", "", "be_layout_view_margin")
             );
-            var be_layout_view_margin_indicator = be_layout_view_margin.appendChild(
+            const be_layout_view_margin_indicator = be_layout_view_margin.appendChild(
                 this.createElement("div", "", "be_layout_view_indicator")
             );
             be_layout_view_margin_indicator.innerHTML = "margin";
@@ -2075,16 +2129,17 @@ class BausteinEditor {
             be_layout_view_margin.appendChild(this.layout_fc(current_baustein, "margin-right", "0", "", "-6px", null, null));
 
             // border
-            var be_layout_view_border = be_layout_view_margin.appendChild(
+            const be_layout_view_border = be_layout_view_margin.appendChild(
                 this.createElement("div", "", "be_layout_view_border")
             );
-            var be_layout_view_border_indicator = be_layout_view_border.appendChild(
+            const be_layout_view_border_indicator = be_layout_view_border.appendChild(
                 this.createElement("div", "", "be_layout_view_indicator")
             );
-            be_layout_view_border_indicator.innerHTML = 'border <i class="fas fa-edit"></i>';
+            be_layout_view_border_indicator.setAttribute("style", "top: -8px; left: 8px;");
+            be_layout_view_border_indicator.innerHTML = 'border <i class="fa-solid fa-edit"></i>';
 
-            be_layout_view_border_indicator.addEventListener("click", function() {
-                self.dialog_border(current_baustein);
+            be_layout_view_border_indicator.addEventListener("click", () => {
+                this.dialog_border(current_baustein);
             });
 
             be_layout_view_border.appendChild(this.layout_fc(current_baustein, "border-top-width", "0", "-13px", null, null, ""));
@@ -2093,10 +2148,10 @@ class BausteinEditor {
             be_layout_view_border.appendChild(this.layout_fc(current_baustein, "border-right-width", "0", "", "-14px", null, null));
 
             // padding
-            var be_layout_view_padding = be_layout_view_border.appendChild(
+            const be_layout_view_padding = be_layout_view_border.appendChild(
                 this.createElement("div", "", "be_layout_view_padding")
             );
-            var be_layout_view_padding_indicator = be_layout_view_padding.appendChild(
+            const be_layout_view_padding_indicator = be_layout_view_padding.appendChild(
                 this.createElement("div", "", "be_layout_view_indicator")
             );
             be_layout_view_padding_indicator.innerHTML = "padding";
@@ -2107,7 +2162,7 @@ class BausteinEditor {
             be_layout_view_padding.appendChild(this.layout_fc(current_baustein, "padding-right", "0", "", "8px", null, null));
 
             // inner
-            var be_layout_view_inner = be_layout_view_padding.appendChild(
+            const be_layout_view_inner = be_layout_view_padding.appendChild(
                 this.createElement("div", "", "be_layout_view_inner")
             );
             be_layout_view_inner.appendChild(this.layout_fc(current_baustein, "width", "auto", null, null, null, null));
@@ -2117,55 +2172,55 @@ class BausteinEditor {
 
 
             if (current_baustein.renderType === bausteinRenderType.image) {
-                const image_fcr = self.formcontrol("image_selector", "image", "", "Bild", current_baustein.content, {
-                    onchange: function(form_control: HTMLInputElement) {
+                const image_fcr = this.formcontrol("image_selector", "image", "", "Bild", current_baustein.content, {
+                    onchange: (form_control) => {
                         current_baustein.content = form_control.value;
-                        if (self.selected_baustein !== null) {
-                            var img = self.selected_baustein.querySelector("img");
+                        if (this.selected_baustein !== null) {
+                            const img = this.selected_baustein.querySelector("img");
                             if (img !== null) {
                                 img.src = form_control.value;
                             }
                         }
                     }
                 });
-                self.dom.sidebar_content__baustein_styles.appendChild(image_fcr.content);
+                this.sidebar_content__baustein_styles.appendChild(image_fcr.content);
 
                 const alt_formcontroll = this.formcontrol("baustein_alt", "text", "alt", 'Alternativtext (alt)', current_baustein.getAttribute("alt")||"", {
-                    onchange: function() {
+                    onchange: () => {
                         current_baustein.setAttribute("alt", alt_formcontroll.input.value);
                     }
                 });
-                this.dom.sidebar_content__baustein_styles.appendChild(alt_formcontroll.content);
+                this.sidebar_content__baustein_styles.appendChild(alt_formcontroll.content);
 
                 const title_formcontroll = this.formcontrol("baustein_title", "text", "title", 'Titel', current_baustein.getAttribute("title")||"", {
-                    onchange: function() {
+                    onchange: () => {
                         current_baustein.setAttribute("title", title_formcontroll.input.value);
                     }
                 });
-                this.dom.sidebar_content__baustein_styles.appendChild(title_formcontroll.content);
+                this.sidebar_content__baustein_styles.appendChild(title_formcontroll.content);
 
             } else if (current_baustein.renderType === bausteinRenderType.iframe) {
-                const iframe_fcr = self.formcontrol("src_input", "text", "", "Webseiten URL", current_baustein.getAttribute("src")||"", {
-                    onchange: function(form_control: HTMLInputElement) {
+                const iframe_fcr = this.formcontrol("src_input", "text", "", "Webseiten URL", current_baustein.getAttribute("src")||"", {
+                    onchange: (form_control) => {
                         current_baustein.setAttribute("src", form_control.value);
-                        if (self.selected_baustein !== null) {
-                            var iframe = self.selected_baustein.querySelector("iframe");
+                        if (this.selected_baustein !== null) {
+                            const iframe = this.selected_baustein.querySelector("iframe");
                             if (iframe !== null) {
                                 iframe.src = form_control.value;
                             }
                         }
                     }
                 });
-                self.dom.sidebar_content__baustein_styles.appendChild(iframe_fcr.content);
+                this.sidebar_content__baustein_styles.appendChild(iframe_fcr.content);
 
             } else if (current_baustein.renderType === bausteinRenderType.container || current_baustein.renderType === bausteinRenderType.layout || current_baustein.renderType === bausteinRenderType.table) {
-                const rowcol_container = this.dom.sidebar_content__baustein_styles.appendChild(this.createElement("div", "", "be_rowcol_container"));
+                const rowcol_container = this.sidebar_content__baustein_styles.appendChild(this.createElement("div", "", "be_rowcol_container"));
                 const table_children = current_baustein.renderType === bausteinRenderType.table? this.getBausteineChildren(current_baustein.id) : [];
 
                 if (current_baustein.renderType === bausteinRenderType.table || current_baustein.renderType === bausteinRenderType.layout) {
-                    const columns_fcr = self.formcontrol("dialog", "number", "columns", "Spalten", current_baustein.columns.toString(), {
+                    const columns_fcr = this.formcontrol("dialog", "number", "columns", LOCALES.get_item("columns"), current_baustein.columns.toString(), {
                         number_default: 1, number_min: 1, number_max: 40,
-                        onchange: function() {
+                        onchange: () => {
                             const parsed_value = parseInt(columns_fcr.input.value);
                             console.log("parsed_value", parsed_value)
                             if(isNaN(parsed_value) === false) {
@@ -2173,8 +2228,8 @@ class BausteinEditor {
                                 current_baustein.columns = parsed_value;
                                 console.log("current_baustein.columns 2", current_baustein.columns)
                                 table_children.forEach(child => child.columns = parsed_value);
-                                self.rowcol_amount_evaluate();
-                                self.render();
+                                this.rowcol_amount_evaluate();
+                                this.render();
                             }
                         }
                     });
@@ -2185,14 +2240,14 @@ class BausteinEditor {
                 }
                 
                 if(current_baustein.renderType === bausteinRenderType.table ||current_baustein.renderType === bausteinRenderType.container) {
-                    var rows_fcr = self.formcontrol("dialog", "number", "rows", "Reihen", current_baustein.rows.toString(), {
+                    const rows_fcr = this.formcontrol("dialog", "number", "rows", LOCALES.get_item("rows"), current_baustein.rows.toString(), {
                         number_default: 1, number_min: 1, number_max: 40,
-                        onchange: function() {
+                        onchange: () => {
                             const parsed_value = parseInt(rows_fcr.input.value);
                             if(isNaN(parsed_value) === false) {
                                 current_baustein.rows = parsed_value;
-                                self.rowcol_amount_evaluate();
-                                self.render();
+                                this.rowcol_amount_evaluate();
+                                this.render();
                             }
                         }
                     });
@@ -2204,41 +2259,41 @@ class BausteinEditor {
 
             } else if (current_baustein.tag === "a") {
                 const href_formcontroll = this.formcontrol("baustein_href", "text", "href", 'Link (href)', current_baustein.getAttribute("href")||"", {
-                    onchange: function() {
+                    onchange: () => {
                         current_baustein.setAttribute("href", href_formcontroll.input.value);
                     }
                 });
-                this.dom.sidebar_content__baustein_styles.appendChild(href_formcontroll.content);
+                this.sidebar_content__baustein_styles.appendChild(href_formcontroll.content);
 
                 // new tab
                 const target_formcontroll = this.formcontrol("baustein_target", "checkbox", "target", 'in neuen Tab öffnen', current_baustein.getAttribute("target")||"", {
-                    onchange: function() {
+                    onchange: () => {
                         const target_formcontroll_input = <HTMLInputElement> target_formcontroll.input;
                         current_baustein.setAttribute("target", target_formcontroll_input.checked? "_blank" : "");
                     }
                 });
-                this.dom.sidebar_content__baustein_styles.appendChild(target_formcontroll.content);
+                this.sidebar_content__baustein_styles.appendChild(target_formcontroll.content);
 
                 const title_formcontroll = this.formcontrol("baustein_title", "text", "title", 'Title', current_baustein.getAttribute("title")||"", {
-                    onchange: function() {
+                    onchange: () => {
                         current_baustein.setAttribute("title", title_formcontroll.input.value);
                     }
                 });
-                this.dom.sidebar_content__baustein_styles.appendChild(title_formcontroll.content);
+                this.sidebar_content__baustein_styles.appendChild(title_formcontroll.content);
             }
     
-            for (var i = 0; i < current_baustein.style.length; i++) {
+            for (let i = 0; i < current_baustein.style.length; i++) {
                 const element = current_baustein.style[i];
                 if (element.property.showInBausteinAttributesSidebar) {
                     // styleProperty is necessery to fix the bug where a refernce points to an undefined object
-                    var styleProperty = this.getStylePropertyByName(element.property.name);
+                    const styleProperty = this.getStylePropertyByName(element.property.name);
     
-                    const formcontrol = this.formcontrol("baustein", styleProperty.type, styleProperty.name, styleProperty.title, element.value, {
-                        suffix: styleProperty.suffix, html_options: styleProperty.options, onchange: function() {
-                            self.apply_styles();
+                    const formcontrol = this.formcontrol("baustein", styleProperty.type, styleProperty.name, LOCALES.get_item(styleProperty.name), element.value, {
+                        suffix: styleProperty.suffix, html_options: styleProperty.get_html_options(), onchange: () => {
+                            this.apply_styles();
                         }
                     });
-                    this.dom.sidebar_content__baustein_styles.appendChild(formcontrol.content)
+                    this.sidebar_content__baustein_styles.appendChild(formcontrol.content)
                     this.open_baustein_attributes__formcontrols.push(formcontrol.input)
                 }
             }
@@ -2246,19 +2301,20 @@ class BausteinEditor {
 
             // toggleableClasses
             if (current_baustein.toggleableClasses.length > 0) {
-                const toggleableClasses_container = this.dom.sidebar_content__baustein_styles.appendChild(this.createElement("div", "", "be_toggleable_classes_container"));
+                const toggleableClasses_container = this.sidebar_content__baustein_styles.appendChild(this.createElement("div", "", "be_toggleable_classes_container"));
                 const toggleableClasses_title = toggleableClasses_container.appendChild(this.createElement("div", "", "be_toggleable_classes_title"));
-                toggleableClasses_title.innerHTML = "Togglebale Klassen";
+                toggleableClasses_title.innerHTML = LOCALES.get_item("toggleable_classes");
                 const toggleableClasses_content = toggleableClasses_container.appendChild(this.createElement("div", "", "be_toggleable_classes_content"));
-                for (var i = 0; i < current_baustein.toggleableClasses.length; i++) {
+                for (let i = 0; i < current_baustein.toggleableClasses.length; i++) {
                     const toggleableClass = current_baustein.toggleableClasses[i];
                     if (toggleableClass.toggleable) {
                         const toggleableClass_container = toggleableClasses_content.appendChild(this.createElement("div", "", "be_toggleable_class_container"));
     
-                        const toggleableClass_class_input = toggleableClass_container.appendChild(this.createElement("input", "", "be_toggleable_class_class_input"));
+                        const toggleableClass_class_input = this.createElement("input", "", "be_toggleable_class_class_input");
+                        toggleableClass_container.append(toggleableClass_class_input);
                         toggleableClass_class_input.type = "checkbox";
                         toggleableClass_class_input.checked = toggleableClass.active;
-                        toggleableClass_class_input.addEventListener("change", function() {
+                        toggleableClass_class_input.addEventListener("change", () => {
                             toggleableClass.active = toggleableClass_class_input.checked;
 
                             // IF is active, add class to class, otherwise remove class
@@ -2277,111 +2333,103 @@ class BausteinEditor {
             
             
             const class_formcontroll = this.formcontrol("baustein_class", "text", "class"
-                , 'CSS Klassen <div style="font-size: 11px; margin-bottom: 2px;">(für Fortgeschrittene Nutzer)</div>'
+                , LOCALES.get_item("css_classes") + ' <div style="font-size: 11px; margin-bottom: 2px;">' + LOCALES.get_item("css_classes_advanced") + '</div>'
                 , current_baustein.class, {
-                    onchange: function() {
+                    onchange: () => {
                         current_baustein.class = class_formcontroll.input.value;
                     }
             });
-            this.dom.sidebar_content__baustein_styles.appendChild(class_formcontroll.content);
+            this.sidebar_content__baustein_styles.appendChild(class_formcontroll.content);
 
 
-            if (current_baustein.renderType !== bausteinRenderType.spoiler_toggler && current_baustein.renderType !== bausteinRenderType.spoiler_content) {
-                var baustein_delete_button: HTMLButtonElement = <HTMLButtonElement> this.dom.sidebar_content__baustein_styles.appendChild(
+            if (current_baustein.renderType !== bausteinRenderType.spoiler_toggler 
+                && current_baustein.renderType !== bausteinRenderType.spoiler_content 
+                && current_baustein.renderType != bausteinRenderType.static_undeletable) {
+                const baustein_delete_button: HTMLButtonElement = <HTMLButtonElement> this.sidebar_content__baustein_styles.appendChild(
                     this.createElement("button", this.dom_id+'_deleteBaustein', "be-form-control bautstein-delete")
                 )
-                baustein_delete_button.innerHTML = "Baustein löschen";
+                baustein_delete_button.innerHTML = LOCALES.get_item("delete_block");
                 baustein_delete_button.type = "button";
         
-                baustein_delete_button.addEventListener("click", function() {
-                    dialog.start("Baustein löschen", "Sind Sie sich sicher, dass Sie diesen Baustein löschen wollen?", null, "Löschen", "Abbrechen", null, function() {
-                        self.close_baustein_attributes();
-                        self.deleteBaustein(baustein_id);
-                        dialog.close();
+                baustein_delete_button.addEventListener("click", () => {
+                    this.dialog.start(LOCALES.get_item("delete_block"), LOCALES.get_item("confirm_delete"), null, LOCALES.get_item("delete"), LOCALES.get_item("cancel"), null, () => {
+                        this.close_baustein_attributes();
+                        this.deleteBaustein(baustein_id);
+                        this.dialog.close();
                     });
                 });
             }
     
-            this.dom.sidebar_content__site.style.display = "none";
-            this.dom.sidebar_content__baustein.style.display = "";
-            //this.dom.sidebar_header_col__site.classList.remove("active");
-            //this.dom.sidebar_header_col__baustein.classList.add("active");
-            //this.dom.sidebar_header_col__baustein.classList.remove("disabled");
+            this.sidebar_content__site.style.display = "none";
+            this.sidebar_content__baustein.style.display = "";
+            //this.sidebar_header_col__site.classList.remove("active");
+            //this.sidebar_header_col__baustein.classList.add("active");
+            //this.sidebar_header_col__baustein.classList.remove("disabled");
         }
     }
     
 
-    // returns the value of the pointed array item OR attribute def on fail
-    getItemFromArray(array: any, index: any, def: any) {
-        if (typeof array[index] === "undefined") {
-            return def;
-        } else {
-            return array[index];
-        }
-    }
-
     close_baustein_attributes() {
-        this.dom.sidebar_content__site.style.display = "";
-        this.dom.sidebar_content__baustein.style.display = "none";
-        //this.dom.sidebar_header_col__site.classList.add("active");
-        //this.dom.sidebar_header_col__baustein.classList.remove("active");
-        //this.dom.sidebar_header_col__baustein.classList.add("disabled");
+        this.sidebar_content__site.style.display = "";
+        this.sidebar_content__baustein.style.display = "none";
+        //this.sidebar_header_col__site.classList.add("active");
+        //this.sidebar_header_col__baustein.classList.remove("active");
+        //this.sidebar_header_col__baustein.classList.add("disabled");
     }
 
     preview_render() {
-        if (this.dom.preview_content.style.display === "") {
+        if (this.preview_content.style.display === "") {
             if (this.preview_iframe_url === null) {
-                this.dom.preview_content.innerHTML = this.export().html;
+                this.preview_content.innerHTML = this.export().html;
                 // Make all a tags open in new tab
-                const a_tags = this.dom.preview_content.getElementsByTagName("a");
-                for (var i = 0; i < a_tags.length; i++) {
+                const a_tags = this.preview_content.getElementsByTagName("a");
+                for (let i = 0; i < a_tags.length; i++) {
                     a_tags[i].target = "_blank";
                 }
     
                 // Make all img tags undraggable
-                const img_tags = this.dom.preview_content.getElementsByTagName("img");
-                for (var i = 0; i < img_tags.length; i++) {
+                const img_tags = this.preview_content.getElementsByTagName("img");
+                for (let i = 0; i < img_tags.length; i++) {
                     img_tags[i].setAttribute("draggable", "false");
                 }
             } else {
                 // Create iframe
-                var preview_iframe = this.dom.preview_content.querySelector("iframe");
+                let preview_iframe = this.preview_content.querySelector("iframe");
                 if(preview_iframe === null) {
-                    this.dom.preview_content.innerHTML = "";
-                    preview_iframe = this.dom.preview_content.appendChild(this.createElement("iframe", "", "be_preview_iframe"));
+                    this.preview_content.innerHTML = "";
+                    preview_iframe = this.preview_content.appendChild(this.createElement("iframe", "", "be_preview_iframe"));
                     preview_iframe.src = this.preview_iframe_url;
                     preview_iframe.onload = () => {
-                        preview_iframe.contentWindow.postMessage(this.export().html, '*');
+                        preview_iframe!.contentWindow!.postMessage(this.export().html, '*');
                     }
                 } else {
-                    preview_iframe.contentWindow.postMessage(this.export().html, '*');
+                    preview_iframe!.contentWindow!.postMessage(this.export().html, '*');
                 }
 
             }
         }
     }
 
-    request(type: string, endpoint: string, params: string): Promise<any> {
-        const self = this;
-        return new Promise(function(resolve: Function, reject: Function) {
-            self.dom.ajax_loader.style.display = "";
-            self.dom.ajax_loader.style.width = "";
-            self.dom.ajax_loader.style.minWidth = "";
+    request(type: string, endpoint: string, params: string): Promise<XMLHttpRequest> {
+        return new Promise((resolve: (value: XMLHttpRequest)=>void, reject: (value: XMLHttpRequest)=>void) => {
+            this.ajax_loader.style.display = "";
+            this.ajax_loader.style.width = "";
+            this.ajax_loader.style.minWidth = "";
 
-            var xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function() {
-                self.dom.ajax_loader.style.width = (4 / this.readyState) * 80 + "%";
+            const xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = () => {
+                this.ajax_loader.style.width = (4 / xhttp.readyState) * 80 + "%";
 
-                if (this.readyState == 4) {
-                    if (this.status == 200) {
-                        resolve(this);
+                if (xhttp.readyState == 4) {
+                    if (xhttp.status == 200) {
+                        resolve(xhttp);
                     } else {
-                        reject(this);
+                        reject(xhttp);
                     }
 
-                    self.dom.ajax_loader.style.width = "100%";
+                    this.ajax_loader.style.width = "100%";
                     setTimeout(() => {
-                        self.dom.ajax_loader.style.display = "none";
+                        this.ajax_loader.style.display = "none";
                     }, 1000);
                 }
             };
@@ -2402,12 +2450,12 @@ class BausteinEditor {
         const tabcontainer = border_modall.appendChild( document.createElement("div") );
         const contentcontainer = border_modall.appendChild( document.createElement("div") );
 
-        var tabs_name = ["style", "radius"];
-        var tabs_dom: HTMLDivElement[] = [];
-        var tabs_container_dom: HTMLDivElement[] = [];
-        var inputs: (FormControl)[] = [];
+        const tabs_name = ["style", "radius"];
+        const tabs_dom: HTMLDivElement[] = [];
+        const tabs_container_dom: HTMLDivElement[] = [];
+        const inputs: (FormControl)[] = [];
 
-        for (var i = 0; i < tabs_name.length; i++) {
+        for (let i = 0; i < tabs_name.length; i++) {
             const index_const = i;
 
             tabs_dom[i] = tabcontainer.appendChild( document.createElement("div") );
@@ -2418,8 +2466,8 @@ class BausteinEditor {
             tabs_container_dom[i].className = "border_modall_tabcontent";
             tabs_container_dom[i].style.display = "none";
 
-            tabs_dom[i].addEventListener("click", function() {
-                for (var i = 0; i < tabs_dom.length; i++) {
+            tabs_dom[i].addEventListener("click", () => {
+                for (let i = 0; i < tabs_dom.length; i++) {
                     tabs_dom[i].classList.remove("active");
                     tabs_container_dom[i].style.display = "none";
                 }
@@ -2449,28 +2497,28 @@ class BausteinEditor {
             side_dom.className = "border_modall_undersides";
 
             // border width
-            var name = "border-"+side+"-width";
-            var value = baustein.getStyleValue(name, "");
-            var fc = this.formcontrol(name, "number", name, null, value, { suffix: ["px"] });
-            fc.content.className = "border_modall_undersides be_formrow";
-            tabs_container_style_dom.appendChild(fc.content);
-            inputs.push(fc.input);
+            const bw_name = "border-"+side+"-width";
+            const bw_value = baustein.getStyleValue(bw_name, "");
+            const bw_fc = this.formcontrol(bw_name, "number", bw_name, null, bw_value, { suffix: ["px"] });
+            bw_fc.content.className = "border_modall_undersides be_formrow";
+            tabs_container_style_dom.appendChild(bw_fc.content);
+            inputs.push(bw_fc.input);
 
             // border style type
-            var name = "border-"+side+"-style";
-            var value = baustein.getStyleValue(name, "");
-            var fc = this.formcontrol(name, "select", name, null, value, { html_options: style_options });
-            fc.content.className = "border_modall_undersides be_formrow";
-            tabs_container_style_dom.appendChild(fc.content);
-            inputs.push(fc.input);
+            const bs_name = "border-"+side+"-style";
+            const bs_value = baustein.getStyleValue(bw_name, "");
+            const bs_fc = this.formcontrol(bw_name, "select", bw_name, null, bw_value, { html_options: style_options });
+            bw_fc.content.className = "border_modall_undersides be_formrow";
+            tabs_container_style_dom.appendChild(bw_fc.content);
+            inputs.push(bw_fc.input);
             
             // color
-            var name = "border-"+side+"-color";
-            var value = baustein.getStyleValue(name, "");
-            var fc = this.formcontrol(name, "color", name, null, value, {});
-            fc.content.className = "border_modall_undersides be_formrow";
-            tabs_container_style_dom.appendChild(fc.content);
-            inputs.push(fc.input);
+            const name = "border-"+side+"-color";
+            const value = baustein.getStyleValue(bw_name, "");
+            const fc = this.formcontrol(bw_name, "color", bw_name, null, bw_value, {});
+            bw_fc.content.className = "border_modall_undersides be_formrow";
+            tabs_container_style_dom.appendChild(bw_fc.content);
+            inputs.push(bw_fc.input);
         }
 
         // radius
@@ -2486,7 +2534,7 @@ class BausteinEditor {
             inputs.push(fc.input);
         });
 
-        dialog.start("Border Einstellungen", border_modall, "Speichern", null, "Abbrechen", () => {
+        this.dialog.start(LOCALES.get_item("border_settings"), border_modall, LOCALES.get_item("save"), null, LOCALES.get_item("cancel"), () => {
             for (let i = 0; i < inputs.length; i++) {
                 const input = inputs[i];
                 baustein.setStyle(input.name, input.value);
@@ -2494,19 +2542,17 @@ class BausteinEditor {
             this.open_baustein_attributes__baustein_id = -1;
             this.open_baustein_attributes(baustein.id);
             this.render();
-            dialog.close();
+            this.dialog.close();
         }, null, null);
     }
 
-    async dialog_rowcol(baustein: Baustein): Promise<null> {
-        const self = this;
-        return new Promise(function(resolve: Function, reject: Function) {
-            var content = self.createElement("div", "", "");
-            const show_fc_columns = baustein.renderType === bausteinRenderType.table || baustein.renderType === bausteinRenderType.layout
-            const show_fc_rows = baustein.renderType === bausteinRenderType.table || baustein.renderType === bausteinRenderType.container
+    dialog_rowcol(baustein: Baustein): Promise<void> {
+        return new Promise((resolve: ()=>void, reject: ()=>void) => {
+            const content = this.createElement("div", "", "");
 
-            if (show_fc_columns) {
-                var columns_fcr = self.formcontrol("dialog", "number", "columns", "Spalten", "", {
+            let columns_fcr = null;
+            if (baustein.renderType === bausteinRenderType.table || baustein.renderType === bausteinRenderType.layout) {
+                columns_fcr = this.formcontrol("dialog", "number", "columns", LOCALES.get_item("columns"), "", {
                     number_default: 1, number_min: 1, number_max: 40,
                 });
                 columns_fcr.content.style.display = "inline-block";
@@ -2516,8 +2562,9 @@ class BausteinEditor {
                 content.appendChild(columns_fcr.content);
             }
             
-            if(show_fc_rows) {
-                var rows_fcr = self.formcontrol("dialog", "number", "rows", "Reihen", "", {
+            let rows_fcr = null;
+            if(baustein.renderType === bausteinRenderType.table || baustein.renderType === bausteinRenderType.container) {
+                rows_fcr = this.formcontrol("dialog", "number", "rows", LOCALES.get_item("rows"), "", {
                     number_default: 1, number_min: 1, number_max: 40,
                 });
                 rows_fcr.content.style.display = "inline-block";
@@ -2527,13 +2574,13 @@ class BausteinEditor {
                 content.appendChild(rows_fcr.content);
             }
 
-            var error_message = self.createElement("div", "", "error-message");
+            const error_message = this.createElement("div", "", "error-message");
             error_message.style.color = "red";
 
             
-            dialog.start(baustein.title+" erstellen", content, 'Fertigstellen', null, 'Abbrechen', function() {
-                if (show_fc_columns) {
-                    var columns_number = parseInt(columns_fcr.input.value);
+            this.dialog.start(baustein.title+" " + LOCALES.get_item("create"), content, LOCALES.get_item("finish"), null, LOCALES.get_item("cancel"), () => {
+                if (columns_fcr !== null) {
+                    const columns_number = parseInt(columns_fcr.input.value);
                     if (columns_number < 1) {
                         error_message.innerHTML = '"Spalten Anzahl" muss größer als 0 sein';
                         return false;
@@ -2542,8 +2589,8 @@ class BausteinEditor {
                     }
                 }
                 
-                if (show_fc_rows) {
-                    var rows_number = parseInt(rows_fcr.input.value);
+                if (rows_fcr !== null) {
+                    const rows_number = parseInt(rows_fcr.input.value);
                     if (rows_number < 1) {
                         error_message.innerHTML = '"Reihen Anzahl" muss größer als 0 sein';
                         return false;
@@ -2552,38 +2599,35 @@ class BausteinEditor {
                     }
                 }
                 
-                resolve(null);
-                dialog.close();
-            }, null, function() {
-                dialog.close();
+                resolve();
+                this.dialog.close();
+            }, null, () => {
+                this.dialog.close();
                 reject();
             });
         });
 
     }
 
-    async dialog_media(renderType: number): Promise<string> {
-        const self = this;
-        return new Promise(function(resolve: Function, reject: Function) {
-            var search_endpoint: string, register_endpoint: string;
+    dialog_media(renderType: number): Promise<string> {
+        return new Promise((resolve: (image_url: string)=>void, reject: ()=>void) => {
+            let search_endpoint: string, register_endpoint: string;
             if (renderType === bausteinRenderType.image) {
-                search_endpoint = self.api_endpoints.image_search;
-                register_endpoint = self.api_endpoints.image_register;
+                search_endpoint = this.api_endpoints.image_search;
             } else {
                 search_endpoint = "";
-                register_endpoint = "";
             }
 
-            var content = self.createElement("div", "", "");
-            var content_search = content.appendChild(self.createElement("div", "", "be-dialog-media-search"));
+            const content = this.createElement("div", "", "");
+            const content_search = content.appendChild(this.createElement("div", "", "be-dialog-media-search"));
             content_search.style.paddingBottom = "20px";
-            var content_search_input = <HTMLInputElement> content_search.appendChild(self.createElement("input", "", "be-dialog-media-search-input be-form-control"));
+            const content_search_input = <HTMLInputElement> content_search.appendChild(this.createElement("input", "", "be-dialog-media-search-input be-form-control"));
             content_search_input.type = "text";
-            content_search_input.placeholder = "Suchbegriffe..";
+            content_search_input.placeholder = LOCALES.get_item("search_placeholder");
             content_search_input.style.display = "inline-block"; content_search_input.style.verticalAlign = "middle";
-            var content_search_submit = <HTMLButtonElement> content_search.appendChild(self.createElement("button", "", "be-dialog-media-search-submit __dialog-btn"));
+            const content_search_submit = <HTMLButtonElement> content_search.appendChild(this.createElement("button", "", "be-dialog-media-search-submit __dialog-btn"));
             content_search_submit.type = "button";
-            content_search_submit.innerHTML = "Suchen";
+            content_search_submit.innerHTML = LOCALES.get_item("search");
             content_search_submit.style.display = "inline-block"; content_search_submit.style.verticalAlign = "middle";
             content_search_submit.style.width = "66px";
             content_search_submit.style.padding = "6px";
@@ -2593,31 +2637,31 @@ class BausteinEditor {
             
             content_search_input.style.width = "calc(100% - "+content_search_submit.style.width+" - "+content_search_submit.style.marginLeft+")";
 
-            var content_results = content.appendChild(self.createElement("div", "", "be-dialog-media-results"));
+            const content_results = content.appendChild(this.createElement("div", "", "be-dialog-media-results"));
             content_results.style.overflowY = "auto";
             content_results.style.maxHeight = "90vh";
 
             
 
             // Pagination
-            var current_page = 1;
-            const pagination = content.appendChild(self.createElement("div", "", "be-dialog-media-pagination"));
+            let current_page = 1;
+            const pagination = content.appendChild(this.createElement("div", "", "be-dialog-media-pagination"));
 
-            const pagination_prev = <HTMLButtonElement> pagination.appendChild(self.createElement("button", "", "__dialog-btn"));
+            const pagination_prev = <HTMLButtonElement> pagination.appendChild(this.createElement("button", "", "__dialog-btn"));
             pagination_prev.type = "button";
-            pagination_prev.innerText = "Zurück";
+            pagination_prev.innerText = LOCALES.get_item("back");
             pagination_prev.disabled = true;
 
-            const pagination_current = pagination.appendChild(self.createElement("div", "", ""));
+            const pagination_current = pagination.appendChild(this.createElement("div", "", ""));
             pagination_current.innerText = "1";
 
-            const pagination_next = <HTMLButtonElement> pagination.appendChild(self.createElement("button", "", "__dialog-btn"));
+            const pagination_next = <HTMLButtonElement> pagination.appendChild(this.createElement("button", "", "__dialog-btn"));
             pagination_next.type = "button";
-            pagination_next.innerText = "Vorwärts";
+            pagination_next.innerText = LOCALES.get_item("forward");
 
 
             // Events
-            function start_search(page: number) {
+            const start_search = (page: number) => {
                 if(page < 1) return;
 
                 pagination_prev.disabled = true;
@@ -2625,70 +2669,16 @@ class BausteinEditor {
                 current_page = page;
                 pagination_current.innerText = page.toString();
 
-                self.request("GET", search_endpoint, "&q="+content_search_input.value + "&p="+current_page)
-                .then(function(response) {
-                    var json = JSON.parse(response.responseText);
-                    var media_array = json.media;
+                this.request("GET", search_endpoint, "&q="+content_search_input.value + "&page="+current_page)
+                .then((response) => {
+                    const media_array = JSON.parse(response.responseText);
                     content_results.innerHTML = '';
 
                     for (let i = 0; i < media_array.length; i++) {
-                        const element = media_array[i];
-                        var row =  content_results.appendChild(self.createElement("div", "", "row"));
-                        row.style.display = "inline-block";
-                        row.style.verticalAlign = "top";
-                        row.style.width = (content_results.clientWidth/2 -18)+"px";
-                        row.style.maxWidth = "100%";
-                        row.style.border = "1px solid #ccc";
-                        row.style.borderRadius = "6px";
-                        row.style.margin = "4px";
-                        row.style.textAlign = "center";
-                        row.style.overflow = "hidden";
-
-                        var image_container = <HTMLImageElement> row.appendChild(self.createElement("div", "", "col"));
-                        image_container.style.position = "relative";
-                        image_container.style.width = "100%";
-                        image_container.style.height = "200px";
-                        image_container.style.cursor = "pointer";
-                        image_container.addEventListener("click", function() {
-                            self.fullscreen_image_modal_show(element.url);
-                        });
-
-                        var image = <HTMLImageElement> image_container.appendChild(self.createElement("img", "", ""));
-                        image.src = element.url;
-                        image.style.maxWidth = "100%";
-                        image.style.maxHeight = "100%";
-
-                        var image_plus = <HTMLImageElement> image_container.appendChild(self.createElement("div", "", ""));
-                        image_plus.style.position = "absolute";
-                        image_plus.style.top = "10px";
-                        image_plus.style.right = "10px";
-                        image_plus.style.fontSize = "1.2rem";
-                        image_plus.style.color = "#fff";
-                        image_plus.style.width = "30px";
-                        image_plus.style.height = "30px";
-                        image_plus.style.lineHeight = "1.5";
-                        image_plus.style.borderRadius = "180%";
-                        image_plus.style.background = "rgba(0,0,0,0.5)";
-                        image_plus.innerHTML = '<i class="fas fa-search-plus"></i>';
-
-                        var title = row.appendChild(self.createElement("div", "", "col"));
-                        title.innerText = element.name;
-                        title.style.marginBottom = "8px";
-                        
-                        var button = <HTMLButtonElement> row.appendChild(self.createElement("button", "", "__dialog-btn __dialog-btn-green"));
-                        button.type = "button";
-                        button.innerText = "Auswählen";
-                        button.style.marginBottom = "8px";
-
-                        const bild_id = element.id;
-                        button.addEventListener("click", function() {
-                            self.request("POST", register_endpoint, "&id="+bild_id)
-                            .then(function(response) {
-                                var json = JSON.parse(response.responseText);
-                                resolve(json.url);
-                                dialog.close();
-                            })
-                        });
+                        const image_data = media_array[i];
+                        content_results.append(
+                            this.create_dialog_media_item(image_data, resolve)
+                        );
                     }
 
                     if(current_page > 1) pagination_prev.disabled = false;
@@ -2700,21 +2690,31 @@ class BausteinEditor {
             pagination_prev.addEventListener("click", () => start_search(current_page -1));
             pagination_next.addEventListener("click", () => start_search(current_page +1));
             
-            dialog.start("Bild laden", content, '<i class="fas fa-sync"></i> Ansicht aktualisieren', null, 'Abbrechen', function() {
+            this.dialog.start(LOCALES.get_item("load_image"), content, '<i class="fa-solid fa-sync"></i> ' + LOCALES.get_item("refresh_view"), null, LOCALES.get_item("cancel"), () => {
                 start_search(current_page);
-            }, null, function() {
-                dialog.close();
+            }, null, () => {
+                this.dialog.close();
                 reject();
             });
 
             //content_results.style.height = "calc(500px - "+content_search.clientHeight+"px - "+content_search.style.paddingBottom+" - "+pagination.clientHeight+"px)";
             content_results.style.height = (500 - content_search.clientHeight - pagination.clientHeight)+"px";
 
-            if (self.imageUpload !== null) {
-                var __dialog_footer = document.getElementById("__dialog_footer");
-                var upload_button = <HTMLButtonElement> self.createElement("button", "", "__dialog-btn __dialog-btn-cyan");
-                upload_button.innerHTML = '<i class="fas fa-upload"></i> Bild hochladen';
-                upload_button.addEventListener("click", () => { if(self.imageUpload !== null) self.imageUpload() });
+            if (this.image_upload !== null) {
+                const __dialog_footer = document.getElementById("__dialog_footer");
+                const upload_button = <HTMLButtonElement> this.createElement("button", "", "__dialog-btn __dialog-btn-cyan");
+                upload_button.innerHTML = '<i class="fa-solid fa-upload"></i> ' + LOCALES.get_item("upload_image");
+                upload_button.addEventListener("click", () => { 
+                    if(this.image_upload !== null) {
+                        this.image_upload().then((image_data) => {
+                            console.log("image_data: in BausteinEditor", image_data);
+                            
+                            content_results.prepend(
+                                this.create_dialog_media_item(image_data, resolve)
+                            );
+                        })
+                    }
+                });
                 __dialog_footer?.prepend(upload_button);
             }
 
@@ -2722,14 +2722,73 @@ class BausteinEditor {
         });
     }
 
+	private create_dialog_media_item(image_data: MediaImageData, image_select_event: (image_url: string) => void) {
+		const row = this.createElement("div", "", "row");
+		row.style.display = "inline-block";
+		row.style.verticalAlign = "top";
+		row.style.width = "calc(50% - 18px)";
+		row.style.maxWidth = "100%";
+		row.style.border = "1px solid #ccc";
+		row.style.borderRadius = "6px";
+		row.style.margin = "4px";
+		row.style.textAlign = "center";
+		row.style.overflow = "hidden";
+
+		const image_container = <HTMLImageElement>row.appendChild(this.createElement("div", "", "col"));
+		image_container.style.position = "relative";
+		image_container.style.width = "100%";
+		image_container.style.height = "200px";
+		image_container.style.cursor = "pointer";
+		image_container.addEventListener("click", () => {
+			this.fullscreen_image_modal_show(image_data.url);
+		});
+
+		const image = <HTMLImageElement>image_container.appendChild(this.createElement("img", "", ""));
+		image.src = image_data.url;
+		image.style.maxWidth = "100%";
+		image.style.maxHeight = "100%";
+
+		const image_plus = <HTMLImageElement>image_container.appendChild(this.createElement("div", "", ""));
+		image_plus.style.position = "absolute";
+		image_plus.style.top = "10px";
+		image_plus.style.right = "10px";
+		image_plus.style.fontSize = "1.2rem";
+		image_plus.style.color = "#fff";
+		image_plus.style.width = "30px";
+		image_plus.style.height = "30px";
+		image_plus.style.lineHeight = "1.5";
+		image_plus.style.borderRadius = "180%";
+		image_plus.style.background = "rgba(0,0,0,0.5)";
+		image_plus.innerHTML = '<i class="fa-solid fa-search-plus"></i>';
+
+		const title = row.appendChild(this.createElement("div", "", "col"));
+		title.innerText = image_data.name;
+		title.style.marginBottom = "8px";
+
+		const button = <HTMLButtonElement>row.appendChild(this.createElement("button", "", "__dialog-btn __dialog-btn-green"));
+		button.type = "button";
+		button.innerText = LOCALES.get_item("select");;
+		button.style.marginBottom = "8px";
+
+		const image_id = image_data.file_id;
+		button.addEventListener("click", () => {
+            if(this.media_register) this.media_register(image_data);
+
+            image_select_event(image_data.url);
+            this.dialog.close();
+		});
+
+        return row;
+	}
+
     fullscreen_image_modal_show(url: string) {
-        var fullscreen_image_modal = document.getElementById("fullscreen_image_modal");
+        let fullscreen_image_modal = document.getElementById("fullscreen_image_modal");
         if(fullscreen_image_modal === null) {
-            fullscreen_image_modal = document.body.appendChild(this.createElement("div", "fullscreen_image_modal", "be-fullscreen-image-modal"))
+            fullscreen_image_modal = this.be.appendChild(this.createElement("div", "fullscreen_image_modal", "be-fullscreen-image-modal"))
             fullscreen_image_modal.addEventListener("click", () => { if(fullscreen_image_modal !== null) fullscreen_image_modal.style.display = "none"; });
 
             const fullscreen_close = fullscreen_image_modal.appendChild(this.createElement("div", "", "be-fullscreen-image-modal-close"));
-            fullscreen_close.innerHTML = '<i class="fas fa-times"></i>';
+            fullscreen_close.innerHTML = '<i class="fa-solid fa-times"></i>';
         } else {
             fullscreen_image_modal.style.display = "";
         }
@@ -2739,11 +2798,11 @@ class BausteinEditor {
         fullscreen_image.src = url;
     }
 
-
-    import(data: any) {
+    /** Method to import data. You need to call render() after import() */
+    import(data: BausteinEditorData) {
         this.data.bausteine = [];
 
-        for (var i = 0; i < data.bausteine.length; i++) {
+        for (let i = 0; i < data.bausteine.length; i++) {
             const data_baustein = data.bausteine[i];
 
             // set baustein_id_counter from data
@@ -2755,7 +2814,7 @@ class BausteinEditor {
             const template_baustein = this.getBausteinType(data_baustein.type);
 
             const baustein = new Baustein(
-                data_baustein.id, data_baustein.position, data_baustein.type, template_baustein.title, template_baustein.tag, template_baustein.renderType, data_baustein.toggleableClasses, data_baustein.attributes, data_baustein.style
+                data_baustein.id, data_baustein.position, data_baustein.type, template_baustein.tag, template_baustein.renderType, data_baustein.toggleableClasses, data_baustein.attributes, data_baustein.style
             );
             baustein.content = data_baustein.content;
             baustein.columns = data_baustein.columns;
@@ -2770,10 +2829,9 @@ class BausteinEditor {
             this.data.bausteine.push(baustein);
         }
 
-        this.render();
     }
 
-    /*
+    /**
         @param baustein : Baustein          // Baustein to render to HTML
         @param tag_override : tag_override  // Tag Overide; used to override the tag of the baustein. Currently only used for the "text" baustein type
     */
@@ -2781,10 +2839,10 @@ class BausteinEditor {
         console.log("export_createBausteinElement", baustein, tag_override);
         if (baustein.tag === "") {
             // IS text node
-            var text_node = document.createTextNode(baustein.content);
+            const text_node = document.createTextNode(baustein.content);
 
             if (tag_override !== null) {
-                var bausteinElement = document.createElement(tag_override);
+                const bausteinElement = document.createElement(tag_override);
                 bausteinElement.appendChild(text_node);
                 return bausteinElement;
             }
@@ -2793,7 +2851,7 @@ class BausteinEditor {
             // IS html node
             const is_image = baustein.renderType === bausteinRenderType.image;
 
-            var id, tag;
+            let id, tag;
             if (tag_override === null) {
                 id = baustein.type;
                 if (is_image) {
@@ -2819,17 +2877,18 @@ class BausteinEditor {
             if(baustein.class !== "") bausteinElement.className += " "+baustein.class;
 
             // Styles
-            for (var s = 0; s < baustein.style.length; s++) {
+            for (let s = 0; s < baustein.style.length; s++) {
                 const style = baustein.style[s];
                 if (style.value !== "" && style.value !== "0" && style.value !== "auto" && style.value !== "initial" && style.value !== "normal" 
                     && (style.property.options.length === 0 || style.value !== style.property.options[0].value)
                 ) {
                     // get this.types[].style[] and check if it is not default value
-                    let ok = true, test_type = this.getBausteinType(id), test_type_index = -1;
+                    let ok = true, test_type_index = -1;
+                    const test_type = this.getBausteinType(id);
 
                     // Test only for default value on renderType "richtext"
                     if (baustein.renderType === bausteinRenderType.richtext) {
-                        for (var b = 0; b < test_type.style.length; b++) {
+                        for (let b = 0; b < test_type.style.length; b++) {
                             const test_style = test_type.style[b];
                             test_type_index = b;
     
@@ -2869,10 +2928,10 @@ class BausteinEditor {
             }
 
             // Children
-            var child_bausteine = this.getBausteineChildren(baustein.id);
+            const child_bausteine = this.getBausteineChildren(baustein.id);
             for (let r = 0; r < child_bausteine.length; r++) {
                 const child = child_bausteine[r];
-                var child_tag_override = null;
+                let child_tag_override = null;
                 if(baustein.renderType === bausteinRenderType.tableRow) child_tag_override = "td";
 
                 // just append it OR create a column child and append it
@@ -2882,7 +2941,7 @@ class BausteinEditor {
                     if (child.type === this.types.td.type || child.type === this.types.th.type) {
                         bausteinElement.appendChild( this.export_createBausteinElement(child) );
                     } else {
-                        var bausteinElement_col = bausteinElement.appendChild( document.createElement(child_tag_override) );
+                        const bausteinElement_col = bausteinElement.appendChild( document.createElement(child_tag_override) );
                         bausteinElement_col.appendChild( this.export_createBausteinElement(child) );
                     }
                 }
@@ -2894,10 +2953,10 @@ class BausteinEditor {
     }
 
     export() {
-        var export_html_dom = this.createElement("div", "", "be-article");
+        const export_html_dom = this.createElement("div", "", "be-article");
 
-        var bausteine = this.getBausteineChildren(null);
-        for (var row = 0; row < bausteine.length; row++) {
+        const bausteine = this.getBausteineChildren(null);
+        for (let row = 0; row < bausteine.length; row++) {
             const baustein = bausteine[row];
             if (baustein.renderType !== bausteinRenderType.bausteinSelector) {
                 export_html_dom.appendChild( 
@@ -2910,155 +2969,5 @@ class BausteinEditor {
             data: this.data,
             html: export_html_dom.outerHTML
         };
-    }
-}
-
-
-class LuxDragDrop {
-    target: HTMLElement;
-    isHeld: boolean = false;
-    timeoutId: number = 0;
-
-    drag_element: HTMLElement|null = null;
-    offset_x: number = 0;
-    offset_y: number = 0;
-
-    callback_mousedown: Function|null;
-    callback_mousemove: Function|null;
-    callback_mouseup: Function|null;
-
-    maxsizes: boolean;
-
-
-    constructor(target: HTMLElement, options: {
-        mousedown: Function|null,
-        mousemove: Function|null,
-        mouseup: Function|null,
-        maxsizes: boolean,
-    }) {
-        this.target = target;
-        this.callback_mousedown = options.mousedown || null;
-        this.callback_mousemove = options.mousemove || null;
-        this.callback_mouseup = options.mouseup || null;
-        this.maxsizes = options.maxsizes || true;
-
-        ["mousedown", "mousestart"].forEach(type => {
-             this.target.addEventListener(type, this.on_mousedown);
-        });
-    }
-
-
-    on_mousedown = (e: any) => {
-        if (!this.isHeld) {
-            this.timeoutId = setTimeout(() => {
-                if(this.callback_mousedown !== null) {
-                    const res = this.callback_mousedown(e);
-                    console.log("this.callback_mousedown", this.callback_mousedown)
-                    console.log("callback_mousedown res", res)
-                    if(res === false) {return false;}
-                    console.log("callback_mousedown 2222")
-                }
-
-                this.isHeld = true;
-                this.target.classList.add("disabled");
-                this.clearSelection();
-                
-                // create ghost element
-                var width = this.target.offsetWidth, height = this.target.offsetHeight;
-                if(this.maxsizes) {
-                    if (width > 100) width = 100;
-                    if (height > 100) height = 100;
-                }
-
-                this.drag_element = document.createElement(this.target.tagName);
-                this.drag_element.className = this.target.className;
-                this.drag_element.innerHTML = this.target.innerHTML;
-                this.drag_element.style.width = width+"px";
-                this.drag_element.style.height = height+"px";
-                document.body.appendChild(this.drag_element)
-                console.log("this.target", this.target)
-                
-
-                document.body.classList.add("grabbing");
-                if(this.drag_element === null) {
-                    console.error("[LuxClickHoldDrag] drag_element is null. Well bad.");
-                } else {
-                    this.drag_element.classList.add("ondrag");
-                    this.drag_element.style.position = "fixed";
-                    this.drag_element.style.display = "none";
-                    setTimeout(() => {
-                        if(this.drag_element !== null) {
-                            this.drag_element.style.display = "block";
-                        }
-                    }, 100);
-                }
-    
-                // start mouse movement tracking
-                ["mousemove", "touchmove"].forEach(type => {
-                    document.body.addEventListener(type, this.on_mousemove);
-                });
-                this.offset_x = width / 2;
-                this.offset_y = height / 2;
-            }, 200);
-        }
-        
-        // always start mouseup so we can stop tracking / kill the events
-        ["mouseup", "touchend", "touchcancel"].forEach(type => {
-            document.body.addEventListener(type, this.on_mouseup);
-        });
-    };
-
-
-    on_mousemove = (e: any) => {
-        if (this.drag_element !== null) {
-            this.drag_element.style.left = (e.clientX - this.offset_x)+"px";
-            this.drag_element.style.top = (e.clientY - this.offset_y)+"px";
-            
-            if(this.callback_mousemove !== null) this.callback_mousemove(e);
-        }
-    };
-    
-    on_mouseup = (e: any) => {
-        clearTimeout(this.timeoutId);
-        
-        if (this.isHeld) {
-            this.isHeld = false;
-            this.target.classList.remove("disabled");
-            if(this.drag_element !== null) {
-                this.drag_element.remove();
-                this.drag_element = null;
-            }
-            document.querySelectorAll(".ondrag").forEach((elem) => { elem.remove() });
-            document.body.classList.remove("grabbing");
-
-            // mouseup events on boards and items (drag reciever)
-            var elementTarget: HTMLElement | null = this.elementFromPoint(e.clientX, e.clientY);
-            if (elementTarget === null) {
-                console.error("[LuxClickHoldDrag] Oh well bad, elementTarget is null. Uff.");
-            } else {
-                if(this.callback_mouseup !== null) this.callback_mouseup(e, elementTarget);
-            }
-        }
-
-        // kill mouse movement tracking
-        ["mousemove", "touchmove"].forEach(type => {
-            document.body.removeEventListener(type, this.on_mousemove);
-        });
-        ["mouseup", "touchend", "touchcancel"].forEach(type => {
-            document.body.removeEventListener(type, this.on_mouseup);
-        });
-    };
-
-
-    elementFromPoint(x: number, y: number): HTMLElement | null {
-        const elem: any = document.elementFromPoint(x, y);
-        return elem;
-    }
-
-    clearSelection() {
-        if (window !== null && window.getSelection) { 
-            const selection = window.getSelection(); 
-            if(selection !== null) selection.removeAllRanges();
-        }
     }
 }

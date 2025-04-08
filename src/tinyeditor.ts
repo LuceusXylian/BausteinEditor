@@ -1,19 +1,20 @@
-/// <reference path="dialog.ts"/>
-/// <reference path="fontawsome_data.ts"/>
-var dialog = new Dialog();
+// deno-lint-ignore-file no-window
+import { Dialog } from './dialog.ts';
+import { FONTAWSOME_DATA } from './fontawsome_data.ts';
 
-interface ExecCommandCreateImage {
+
+export interface ExecCommandCreateImage {
     (): Promise<string>;
 }
 
-interface TinyEditorOptions {
+export interface TinyEditorOptions {
     toolbar: TinyEditorToolbar|null;
-    onchange: Function|null;
+    onchange: (()=>void)|null;
     exec_command_create_image: ExecCommandCreateImage;
     tinyeditor_toolbar_options: TinyEditorToolbarOptions;
 }
 
-interface TinyEditorToolbarOptions {
+export interface TinyEditorToolbarOptions {
     formatblock: boolean;
     fontname: boolean;
     bold: boolean;
@@ -34,7 +35,7 @@ interface TinyEditorToolbarOptions {
 }
 
 // enables usage of same Toolbar for multiple editors
-class TinyEditorToolbar {
+export class TinyEditorToolbar {
     TOOLBAR_ITEM: string = '__toolbar-item';
     toolbar_dom: HTMLElement;
     toolbar_dom_items: HTMLElement[] = [];
@@ -44,7 +45,7 @@ class TinyEditorToolbar {
     icon_selector_modal_dom_close: HTMLElement;
     icon_selector_modal_dom_search: HTMLInputElement;
     icon_selector_modal_dom_content: HTMLElement;
-    icon_selector_modal_dom_resolve: Function|null = null;
+    icon_selector_modal_dom_resolve: ((icon_class_name: string)=>void)|null = null;
 
     icon_selector_modal_close() {
         this.icon_selector_modal_is_shown = false;
@@ -75,14 +76,16 @@ class TinyEditorToolbar {
     }
 
     icon_selector_modal(): Promise<string> {
-        return new Promise((resolve: Function, reject: Function) => {
+        return new Promise((resolve: ((icon_class_name: string)=>void)|null) => {
             if (this.icon_selector_modal_is_shown) {
                 this.icon_selector_modal_close();
             } else {
                 this.icon_selector_modal_is_shown = true;
                 this.icon_selector_modal_dom.style.display = "";
                 this.icon_selector_modal_dom_resolve = resolve;
+                this.icon_selector_modal_dom.style.display = "";
                 this.icon_selector_modal_render();
+                this.icon_selector_modal_dom.style.display = "";
             }
         });
     }
@@ -91,20 +94,21 @@ class TinyEditorToolbar {
         this.toolbar_dom = targetElement;
         this.toolbar_dom.classList.add('__toolbar');
 
-        this.icon_selector_modal_dom = document.body.appendChild( document.createElement("div") );
+        this.icon_selector_modal_dom = this.toolbar_dom.appendChild( document.createElement("div") );
+        this.icon_selector_modal_dom.id = targetElement.id+"__icon-selector";
         this.icon_selector_modal_dom.className = "__icon-selector";
         this.icon_selector_modal_dom.style.display = "none";
 
         this.icon_selector_modal_dom_search = this.icon_selector_modal_dom.appendChild( document.createElement("input") );
-        this.icon_selector_modal_dom_search.placeholder = "Suche nach Icon..";
-        this.icon_selector_modal_dom_search.className = "__icon-selector-search form-control";
+        this.icon_selector_modal_dom_search.placeholder = "Icon..";
+        this.icon_selector_modal_dom_search.className = "__icon-selector-search be-form-control";
         this.icon_selector_modal_dom_search.addEventListener("input", () => {
             this.icon_selector_modal_render();
         });
 
         this.icon_selector_modal_dom_close = this.icon_selector_modal_dom.appendChild( document.createElement("div") );
         this.icon_selector_modal_dom_close.className = "__icon-selector-close";
-        this.icon_selector_modal_dom_close.innerHTML = '<i class="fas fa-times" title="fas fa-times"></i>';
+        this.icon_selector_modal_dom_close.innerHTML = '<i class="fa-solid fa-times" title="fa-solid fa-times"></i>';
         this.icon_selector_modal_dom_close.addEventListener("click", () => this.icon_selector_modal_close() );
 
         this.icon_selector_modal_dom_content = this.icon_selector_modal_dom.appendChild( document.createElement("div") );
@@ -148,21 +152,21 @@ class TinyEditorToolbar {
         // Bold
         if (options.bold === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('bold', 'Bold', this.createIcon('fas fa-bold'))
+                this.createButton('bold', 'Bold', this.createIcon('fa-solid fa-bold'))
             );
         }
     
         // Italic
         if (options.italic === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('italic', 'Italic', this.createIcon('fas fa-italic'))
+                this.createButton('italic', 'Italic', this.createIcon('fa-solid fa-italic'))
             );
         }
     
         // Underline
         if (options.underline === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('underline', 'Underline', this.createIcon('fas fa-underline'))
+                this.createButton('underline', 'Underline', this.createIcon('fa-solid fa-underline'))
             );
         }
     
@@ -178,21 +182,21 @@ class TinyEditorToolbar {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
 
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('justifyleft', 'Left align', this.createIcon('fas fa-align-left'))
+                this.createButton('justifyleft', 'Left align', this.createIcon('fa-solid fa-align-left'))
             );
         }
     
         // Center align
         if (options.textcenter === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('justifycenter', 'Center align',  this.createIcon('fas fa-align-center'))
+                this.createButton('justifycenter', 'Center align',  this.createIcon('fa-solid fa-align-center'))
             );
         }
     
         // Right align
         if (options.textright === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('justifyright', 'Right align', this.createIcon('fas fa-align-right'))
+                this.createButton('justifyright', 'Right align', this.createIcon('fa-solid fa-align-right'))
             );
         }
     
@@ -201,28 +205,28 @@ class TinyEditorToolbar {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
 
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('insertorderedlist', 'Numbered list', this.createIcon('fas fa-list-ol'))
+                this.createButton('insertorderedlist', 'Numbered list', this.createIcon('fa-solid fa-list-ol'))
             );
         }
     
         // Bulleted list
         if (options.insertunorderedlist === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('insertunorderedlist', 'Bulleted list', this.createIcon('fas fa-list-ul'))
+                this.createButton('insertunorderedlist', 'Bulleted list', this.createIcon('fa-solid fa-list-ul'))
             );
         }
     
         // Decrease indent
         if (options.outdent === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('outdent', 'Decrease indent', this.createIcon('fas fa-indent fa-flip-horizontal'))
+                this.createButton('outdent', 'Decrease indent', this.createIcon('fa-solid fa-indent fa-flip-horizontal'))
             );
         }
     
         // Increase indent
         if (options.indent === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('indent', 'Increase indent', this.createIcon('fas fa-indent'))
+                this.createButton('indent', 'Increase indent', this.createIcon('fa-solid fa-indent'))
             );
 
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
@@ -231,7 +235,7 @@ class TinyEditorToolbar {
         // Clear formatting
         if (options.removeFormat === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('removeFormat', 'Clear formatting', this.createIcon('fas fa-eraser'))
+                this.createButton('removeFormat', 'Clear formatting', this.createIcon('fa-solid fa-eraser'))
             );
         }
     
@@ -241,7 +245,7 @@ class TinyEditorToolbar {
                 this.createButton(
                     'createImage',
                     'Create Image',
-                    this.createIcon('fas fa-image'))
+                    this.createIcon('fa-solid fa-image'))
             );
         }
     
@@ -251,18 +255,18 @@ class TinyEditorToolbar {
                 this.createButton(
                     'createIcon',
                     'Create Icon',
-                    this.createIcon('fab fa-font-awesome-flag'))
+                    this.createIcon('fa-solid fa-flag'))
             );
         }
     
         // Create Hyperlink
         if (options.hyperlink === true) {
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('createLink', 'Create Hyperlink', this.createIcon('fas fa-link'))
+                this.createButton('createLink', 'Create Hyperlink', this.createIcon('fa-solid fa-link'))
             );
 
             this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
-                this.createButton('removeLink', 'remove Hyperlink', this.createIcon('fas fa-unlink'))
+                this.createButton('removeLink', 'remove Hyperlink', this.createIcon('fa-solid fa-unlink'))
             );
         }
 
@@ -272,12 +276,12 @@ class TinyEditorToolbar {
 
     updateActiveState() {
         const toolbarSelects = this.toolbar_dom.querySelectorAll('select[data-command-id]');
-        for (var i=0; i<toolbarSelects.length; i++) {
-            const select: any = toolbarSelects[i];
-            const value = document.queryCommandValue(select.dataset.commandId);
-            const option: any = Array.from(select.options).find(
+        for (let i=0; i<toolbarSelects.length; i++) {
+            const select = <HTMLSelectElement> toolbarSelects[i];
+            const value = document.queryCommandValue(select.dataset.commandId!);
+            const option = Array.from(select.options).find(
                 _option => {
-                    const option: any = _option;
+                    const option = _option;
                     return option.value === value;
                 }
             );
@@ -285,16 +289,16 @@ class TinyEditorToolbar {
         }
 
         const toolbarButtons = this.toolbar_dom.querySelectorAll('button[data-command-id]');
-        for (var i=0; i<toolbarButtons.length; i++) {
-            const button: any = toolbarButtons[i];
-            const active = document.queryCommandState(button.dataset.commandId);
+        for (let i=0; i<toolbarButtons.length; i++) {
+            const button = <HTMLButtonElement>  toolbarButtons[i];
+            const active = document.queryCommandState(button.dataset.commandId!);
             button.classList.toggle('active', active);
         }
 
         const inputButtons = this.toolbar_dom.querySelectorAll('input[data-command-id]');
-        for (var i=0; i<inputButtons.length; i++) {
-            const input: any = inputButtons[i];
-            const value = document.queryCommandValue(input.dataset.commandId);
+        for (let i=0; i<inputButtons.length; i++) {
+            const input = <HTMLInputElement> inputButtons[i];
+            const value = document.queryCommandValue(input.dataset.commandId!);
             const converted_value = this.rgbToHex(value);
             if(converted_value) input.value = converted_value;
         }
@@ -308,8 +312,8 @@ class TinyEditorToolbar {
             const blue = parseInt(digits[4]);
             const rgb = blue | (green << 8) | (red << 16);
         
-            var color_hex = rgb.toString(16);
-            var to = 6 - color_hex.length;
+            let color_hex = rgb.toString(16);
+            const to = 6 - color_hex.length;
             for (let i = 0; i < to; i++) {
                 color_hex = "0" + color_hex;
             }
@@ -317,67 +321,66 @@ class TinyEditorToolbar {
         }
     }
 
-    createButton(commandId: any, title: any, child: any){
+    createButton(commandId: string, title: string, child: HTMLElement){
         const button = document.createElement('button');
         button.dataset.commandId = commandId;
         button.className = this.TOOLBAR_ITEM;
         button.title = title;
         button.type = 'button';
         button.appendChild(child);
-        button.addEventListener('click', () => { if(this.selected_editor !== null) this.selected_editor.execCommand(commandId, null); });
+        button.addEventListener('click', () => { if(this.selected_editor !== null) this.selected_editor.execCommand(commandId, ""); });
       
         return button;
     }
 
-    createOption(value: any, text: any, selected: any) {
+    createOption(value: string, text: string, selected: boolean) {
         const option = document.createElement('option');
         option.innerText = text;
       
         if (value) option.setAttribute('value', value);
-        if (selected) option.setAttribute('selected', selected);
+        if (selected) option.selected = true;
       
         return option;
     }
 
-    createSelect(commandId: any, title: any, options: any) {
-        const select = document.createElement('select');
+    createSelect(commandId: string, title: string, options: {text: string, value: string, selected?: boolean}[]) {
+        const select = document.createElement("select");
         select.dataset.commandId = commandId;
         select.className = this.TOOLBAR_ITEM;
         select.title = title;
-        select.addEventListener('change', e => {
-            const target: any = e.target;
+        select.addEventListener("change", e => {
             if (e.target === null) {
                 return;
             } else {
+                const target: HTMLSelectElement = <HTMLSelectElement> e.target;
                 if(this.selected_editor !== null) return this.selected_editor.execCommand(commandId, target.options[target.selectedIndex].value);
             }
         });
       
         for (const option of options) {
           select.appendChild(
-            this.createOption(option.value, option.text, option.selected)
+            this.createOption(option.value, option.text, option.selected === true)
           );
         }
       
         return select;
     }
     
-    createIcon(className: any) {
+    createIcon(className: string) {
         const icon = document.createElement('i');
         icon.className = className;
     
         return icon;
     }
     
-    createInput(commandId: any, title: any, type: any) {
+    createInput(commandId: string, title: string, type: string) {
         const input = document.createElement('input');
         input.dataset.commandId = commandId;
         input.className = this.TOOLBAR_ITEM;
         input.title = title;
         input.type = type;
-        input.addEventListener('change', e => {
-            const target: any = e.target;
-            if(this.selected_editor !== null) return this.selected_editor.execCommand(commandId, target.value);
+        input.addEventListener('change', () => {
+            if(this.selected_editor !== null) return this.selected_editor.execCommand(commandId, input.value);
         });
     
         return input;
@@ -417,14 +420,15 @@ class TinyEditorToolbar {
     }
 }
 
-class TinyEditor {
+export class TinyEditor {
     private editor: HTMLElement;
     private toolbar: TinyEditorToolbar;
-    callback_onchange: Function|null = null;
+    callback_onchange: (()=>void)|null = null;
     callback_exec_command_create_image: ExecCommandCreateImageEvent;
+    dialog = new Dialog(document.body);
 
     createElement(_type: string, _id: string, _class: string): HTMLElement {
-        var element = document.createElement(_type);
+        const element = document.createElement(_type);
         if(_id !== "") element.id = _id;
         if(_class !== "") element.className = _class;
         return element;
@@ -456,8 +460,8 @@ class TinyEditor {
 
 
         document.addEventListener('selectionchange', () => {
-            const selection: any = window.getSelection();
-            if(selection.anchorNode !== null && !editor.contains(selection.anchorNode.parentNode)) return false;
+            const selection = window.getSelection();
+            if(selection !== null && selection.anchorNode !== null && !editor.contains(selection.anchorNode.parentNode)) return false;
         });
 
         // add paste event
@@ -466,7 +470,7 @@ class TinyEditor {
             console.log("[TinyEditor] Paste event", e.clipboardData);
             
             if (e.clipboardData !== null) {
-                var text = e.clipboardData.getData('text/plain');
+                let text = e.clipboardData.getData('text/plain');
                 // delete html, head, body, img tags from text
                 text = text.replace(/<html[^>]*>/gi, "");
                 text = text.replace(/<\/html>/gi, "");
@@ -486,8 +490,11 @@ class TinyEditor {
         editor.addEventListener('keypress', (e: KeyboardEvent) => {
             if ((e.keyCode || e.which) === 13) {
                 // don't add a p tag on list item
-                const selection: any = window.getSelection();
-                if(selection !== null && selection.anchorNode.parentNode.tagName === 'LI') return;
+                const selection = window.getSelection();
+                if (selection !== null) {
+                    const selection_element = <HTMLElement> selection.anchorNode!.parentNode!;
+                    if(selection_element.tagName === 'LI') return;
+                }
                 
                 document.execCommand('formatBlock', false, 'p');
             }
@@ -503,7 +510,7 @@ class TinyEditor {
         
     }
 
-    execCommand(commandId: any, value: any) {
+    execCommand(commandId: string, value: string) {
         switch (commandId) {
             case "createImage":
                 this.execCommand_createImage();
@@ -527,7 +534,7 @@ class TinyEditor {
     }
 
     execCommand_createImage() {  
-        var selection_ranges = this.saveSelection();
+        let selection_ranges = this.saveSelection();
         if (selection_ranges.length === 0) {
             console.log("[TinyEditor] User tried to create a image without selecting text");
         } else {
@@ -544,7 +551,7 @@ class TinyEditor {
                 if(selected_element === null) {
                     if (selection_ranges !== null) this.restoreSelection(selection_ranges);
                 
-                    var newSelection = window.getSelection();
+                    const newSelection = window.getSelection();
                     if(newSelection !== null) {
                         const new_element = this.render_image_div(image_url, "200px", "200px");
                         newSelection.getRangeAt(0).insertNode(new_element);
@@ -561,7 +568,7 @@ class TinyEditor {
     }
 
     execCommand_createIcon() {  
-        var selection_ranges = this.saveSelection();
+        let selection_ranges = this.saveSelection();
         if (selection_ranges.length === 0) {
             console.info("[TinyEditor] User tried to create a icon without selecting text");
         } else {
@@ -574,8 +581,8 @@ class TinyEditor {
 
             this.toolbar.icon_selector_modal().then((className: string) => {
                 if (selection_ranges !== null) this.restoreSelection(selection_ranges);
-            
-                var newSelection = window.getSelection();
+                
+                const newSelection = window.getSelection();
                 if(newSelection !== null) {
                     const new_element = document.createElement("i");
                     new_element.className = className;
@@ -634,73 +641,73 @@ class TinyEditor {
         const context_menu_items = [];
 
         // float none
-        var item = document.createElement("div");
-        item.innerHTML = "Kein Textumlauf";
-        item.addEventListener('click', () => {
+        const item1 = document.createElement("div");
+        item1.innerHTML = "Kein Textumlauf";
+        item1.addEventListener('click', () => {
             new_element.style.float = "";
             lux_context_menu.close();
             if(this.callback_onchange !== null) this.callback_onchange();
         });
-        context_menu_items.push(item);
+        context_menu_items.push(item1);
 
         // float left
-        var item = document.createElement("div");
-        item.innerHTML = "Textumlauf, Bild links";
-        item.addEventListener('click', () => {
+        const item2 = document.createElement("div");
+        item2.innerHTML = "Textumlauf, Bild links";
+        item2.addEventListener('click', () => {
             new_element.style.float = "left";
             lux_context_menu.close();
             if(this.callback_onchange !== null) this.callback_onchange();
         });
-        context_menu_items.push(item);
+        context_menu_items.push(item2);
 
         // float right
-        var item = document.createElement("div");
-        item.innerHTML = "Textumlauf, Bild rechts";
-        item.addEventListener('click', () => {
+        const item3 = document.createElement("div");
+        item3.innerHTML = "Textumlauf, Bild rechts";
+        item3.addEventListener('click', () => {
             new_element.style.float = "right";
             lux_context_menu.close();
             if(this.callback_onchange !== null) this.callback_onchange();
         });
-        context_menu_items.push(item);
+        context_menu_items.push(item3);
 
         lux_context_menu.set_items(context_menu_items);
         return new_element;
     }
 
     execCommand_createLink() {  
-        var selection_ranges = this.saveSelection();
+        const selection_ranges = this.saveSelection();
         if (selection_ranges.length === 0) {
             console.log("[TinyEditor] User tried to create a link without selecting text");
         } else {
-            var dialog_content = document.createElement("div");
-            var row1 = dialog_content.appendChild(document.createElement("div"));
+            const dialog_content = document.createElement("div");
+            const row1 = dialog_content.appendChild(document.createElement("div"));
             row1.style.marginBottom = "10px";
-            var link_input = row1.appendChild(document.createElement("input"));
+            const link_input = row1.appendChild(document.createElement("input"));
             link_input.id = "link_input";
             link_input.type = "text";
             link_input.className = "be-form-control";
             link_input.placeholder = "Link eingeben.. z.B.: http://example.com";
     
-            var row2 = dialog_content.appendChild(document.createElement("div"));
+            const row2 = dialog_content.appendChild(document.createElement("div"));
             row2.style.marginBottom = "10px";
-            var link_new_tab_input = row2.appendChild(document.createElement("input"));
+            const link_new_tab_input = row2.appendChild(document.createElement("input"));
             link_new_tab_input.id = "link_new_tab_input";
             link_new_tab_input.type = "checkbox";
             link_new_tab_input.style.marginRight = "4px";
-            var link_new_tab_input_label = row2.appendChild(document.createElement("label"));
+            const link_new_tab_input_label = row2.appendChild(document.createElement("label"));
             link_new_tab_input_label.setAttribute("for", "link_new_tab_input");
             link_new_tab_input_label.innerHTML = "neuer Tab";
             link_new_tab_input_label.style.userSelect = "none";
             link_new_tab_input_label.style.cursor = "pointer";
     
             // link-marker class toggler 
-            var row3 = dialog_content.appendChild(document.createElement("div"));
+            const row3 = dialog_content.appendChild(document.createElement("div"));
             row3.style.marginBottom = "10px";
-            var link_marker_input = row3.appendChild(document.createElement("input"));
+            const link_marker_input = row3.appendChild(document.createElement("input"));
             link_marker_input.id = "link_marker_input";
             link_marker_input.type = "checkbox";
             link_marker_input.style.marginRight = "4px";
-            var link_marker_input_label = row3.appendChild(document.createElement("label"));
+            const link_marker_input_label = row3.appendChild(document.createElement("label"));
             link_marker_input_label.setAttribute("for", "link_marker_input");
             link_marker_input_label.innerHTML = "Link-Marker";
             link_marker_input_label.className = "link-marker";
@@ -708,15 +715,15 @@ class TinyEditor {
             link_marker_input_label.style.cursor = "pointer";
 
             // class
-            var row4 = dialog_content.appendChild(document.createElement("div"));
-            var class_input = row4.appendChild(document.createElement("input"));
+            const row4 = dialog_content.appendChild(document.createElement("div"));
+            const class_input = row4.appendChild(document.createElement("input"));
             class_input.id = "class_input";
             class_input.type = "text";
             class_input.className = "be-form-control";
             class_input.placeholder = "Class eingeben.. z.B.: link-marker";
     
             // if exists: get selected AnchorElement
-            var selected_element = <HTMLAnchorElement|null> this.getElementFromSelection(selection_ranges[0]);
+            const selected_element = <HTMLAnchorElement|null> this.getElementFromSelection(selection_ranges[0]);
             if (selected_element !== null) {
                 link_input.value = selected_element.href;
                 link_new_tab_input.checked = selected_element.target === "_blank";
@@ -741,22 +748,22 @@ class TinyEditor {
             });
 
 
-            dialog.start('Link eingeben', dialog_content, 'Link setzen', null, null, () => {
-                var linkValue = link_input.value;
-                var newTab = link_new_tab_input.checked;
+            this.dialog.start('Link eingeben', dialog_content, 'Link setzen', null, null, () => {
+                const linkValue = link_input.value;
+                const newTab = link_new_tab_input.checked;
               
                 if (selection_ranges !== null) this.restoreSelection(selection_ranges);
                 
-                var newSelection = window.getSelection();
+                const newSelection = window.getSelection();
                 if(newSelection !== null && newSelection.toString()) {
-                    var new_a_element = document.createElement('a');
+                    const new_a_element = document.createElement('a');
                     new_a_element.href = linkValue;
                     new_a_element.className = class_input.value;
                     if(newTab) new_a_element.target = '_blank';
                     newSelection.getRangeAt(0).surroundContents(new_a_element);
                 }
           
-                dialog.close();
+                this.dialog.close();
                 if(this.callback_onchange !== null) this.callback_onchange();
             });
 
@@ -768,11 +775,11 @@ class TinyEditor {
     }
 
     execCommand_removeLink() {
-        var selection_ranges = this.saveSelection();
+        const selection_ranges = this.saveSelection();
         if (selection_ranges.length === 0) {
             console.log("[TinyEditor] User tried to create a link without selecting text");
         } else {
-            var selected_element = <HTMLAnchorElement|null> this.getElementFromSelection(selection_ranges[0]);
+            const selected_element = <HTMLAnchorElement|null> this.getElementFromSelection(selection_ranges[0]);
             if(selected_element === null) {
                 console.log("[TinyEditor] User tried to remove a link without selecting text");
             } else if(selected_element.tagName !== 'A') {
@@ -786,10 +793,10 @@ class TinyEditor {
     
     saveSelection(): Range[] {
         if(window.getSelection) {
-            var selection = window.getSelection();
+            const selection = window.getSelection();
             if(selection !== null && selection.getRangeAt && selection.rangeCount) {
-                let ranges = [];
-                for(var i = 0, len = selection.rangeCount; i < len; ++i) {
+                const ranges = [];
+                for(let i = 0, len = selection.rangeCount; i < len; ++i) {
                     ranges.push(selection.getRangeAt(i));
                 }
                 return ranges;
@@ -802,10 +809,10 @@ class TinyEditor {
     restoreSelection(ranges: Range[]) {
         if(ranges) {
             if(window.getSelection) {
-                var current_selection = window.getSelection();
+                const current_selection = window.getSelection();
                 if(current_selection !== null) {
                     current_selection.removeAllRanges();
-                    for(var i = 0, len = ranges.length; i < len; ++i) {
+                    for(let i = 0, len = ranges.length; i < len; ++i) {
                         current_selection.addRange(ranges[i]);
                     }
                     return true;
@@ -816,7 +823,7 @@ class TinyEditor {
     }
 
     getElementFromSelection(selection_range: Range): HTMLElement|null {
-        var selected_element: HTMLElement = <HTMLElement> selection_range.startContainer;
+        const selected_element: HTMLElement = <HTMLElement> selection_range.startContainer;
         console.log("selection_range", selection_range);
         console.log("selected_element", selected_element);
         if (selected_element.parentElement !== null && selected_element.parentElement.tagName === "A") {
@@ -824,7 +831,7 @@ class TinyEditor {
         } else if(selected_element.nodeName !== "#text") {
             // if is editor it self, check if only one link exists
             if (selected_element.classList.contains("__editor")) {
-                var link_elements: any = selected_element.querySelectorAll("a");
+                const link_elements = selected_element.querySelectorAll("a");
                 if (link_elements.length === 1) {
                     return link_elements[0];
                 }
@@ -846,7 +853,7 @@ class TinyEditor {
     }
 
     export() {
-        var content = "";
+        let content = "";
         this.editor.childNodes.forEach(node => {
             if (node.nodeName === "#text") {
                 content += node.textContent;
@@ -854,7 +861,7 @@ class TinyEditor {
                 const html_element = <HTMLElement> node;
                 if (html_element.className === "image") {
                     const image_url = html_element.style.backgroundImage.replace("url(", "").replace(")", "").replace('"', "").replace('"', "");
-                    var style = 'max-width: 100%; height: auto; width: '+html_element.clientWidth+'px;';
+                    let style = 'max-width: 100%; height: auto; width: '+html_element.clientWidth+'px;';
                     if (html_element.style.float) style += ' float: '+html_element.style.float+';';
                     
                     content += '<img src="'+image_url+'" class="image" style="'+style+'">';
@@ -872,12 +879,12 @@ class TinyEditor {
 
 }
 
-interface ExecCommandCreateImageEvent {
+export interface ExecCommandCreateImageEvent {
     (): Promise<string>;
 }
 
 
-class LuxContextMenu {
+export class LuxContextMenu {
     private target: HTMLElement;
     private context_menu: HTMLElement;
     private context_menu_items: HTMLElement[] = [];
@@ -885,7 +892,7 @@ class LuxContextMenu {
     constructor(target: HTMLElement) {
         this.target = target;
 
-        var context_menu = document.getElementById("lux-context-menu");
+        let context_menu = document.getElementById("lux-context-menu");
         if (context_menu === null) {
             context_menu = document.body.appendChild( document.createElement("div") );
             context_menu.id = "lux-context-menu";
