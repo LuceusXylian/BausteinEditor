@@ -321,7 +321,8 @@ select.be-form-control:not([multiple]) {
     .be_baustein[data-type="layout"] > .be_bausteinSelector_container > .be_bausteinSelector_outer > .be_bausteinSelector { padding: 1rem; }
 
 
-.be_baustein_item { min-width: 100px; min-height: 10px; width: inherit; height: inherit; }
+// display: block; so that items like btn inherits width and height
+.be_baustein_item { display: block; min-width: 100px; min-height: 10px; width: inherit; height: inherit; }
 .be_baustein_item_overlay {
     position: absolute;
     top: 0; left: 0;
@@ -453,6 +454,7 @@ select.be-form-control:not([multiple]) {
 /*******************/
 
 .be_bausteinSelector_layer {
+    color: black;
     background: white;
     border: 3px solid #007cba;
     border-radius: 6px;

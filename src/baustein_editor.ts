@@ -938,7 +938,7 @@ export class BausteinEditor {
                         }
                     }
 
-                    for (let j = 0; j < baustein.columns; j++) {
+                    for (let j = 0; j < amount; j++) {
                         new_bausteine_array.push(children[j]);
                     }
 
@@ -1911,7 +1911,7 @@ export class BausteinEditor {
                 );
                 form_control.type = "checkbox";
                 form_control.name = name;
-                form_control.value = value;
+                form_control.checked = value !== "";
                 form_control.style.marginRight = "4px";
 
                 if (title !== null) {
@@ -2246,7 +2246,12 @@ export class BausteinEditor {
                             const parsed_value = parseInt(rows_fcr.input.value);
                             if(isNaN(parsed_value) === false) {
                                 current_baustein.rows = parsed_value;
+                                console.log("current_baustein.rows BEFORE", current_baustein.rows);
+                                console.log("this.data.bausteine BEFORE", this.data.bausteine);
+                                
                                 this.rowcol_amount_evaluate();
+                                console.log("current_baustein.rows AFTER", current_baustein.rows);
+                                console.log("this.data.bausteine AFTER", this.data.bausteine);
                                 this.render();
                             }
                         }
@@ -2266,9 +2271,11 @@ export class BausteinEditor {
                 this.sidebar_content__baustein_styles.appendChild(href_formcontroll.content);
 
                 // new tab
-                const target_formcontroll = this.formcontrol("baustein_target", "checkbox", "target", 'in neuen Tab öffnen', current_baustein.getAttribute("target")||"", {
+                const target_formcontroll = this.formcontrol("baustein_target", "checkbox", "target", LOCALES.get_item("new_tab"), current_baustein.getAttribute("target")||"", {
                     onchange: () => {
                         const target_formcontroll_input = <HTMLInputElement> target_formcontroll.input;
+                        console.log("target_formcontroll_input.checked", target_formcontroll_input.checked);
+                        
                         current_baustein.setAttribute("target", target_formcontroll_input.checked? "_blank" : "");
                     }
                 });

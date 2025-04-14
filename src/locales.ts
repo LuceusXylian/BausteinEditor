@@ -110,6 +110,7 @@ export const LOCALES: Locales = {
             "misc": "Miscellaneous",
             "shortcode_select": "Select Shortcode",
             "page_content": "Your page content will appear here. Move this block to where you want the page content appear.",
+            "new_tab": "open in new tab",
         },
         "de": {
             "add_new_block": "Neuen Baustein hinzufügen",
@@ -208,6 +209,7 @@ export const LOCALES: Locales = {
             "misc": "Sonstiges",
             "shortcode_select": "Shortcode auswählen",
             "page_content": "Hier wird Ihr Seiteninhalt angezeigt. Verschieben Sie diesen Block an die gewünschte Stelle.",
+            "new_tab": "in neuen Tab öffnen",
         }
     },
     selected_locale: "en",
