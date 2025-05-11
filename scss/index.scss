@@ -1,0 +1,15 @@
+// Main entry point for BausteinEditor SCSS modules
+// This file forwards all modular components while maintaining a clean import structure
+
+// Forward the core components
+@forward 'baustein_editor';
+@forward 'tinyeditor';
+@forward 'website_styles';
+
+// Global styles that should be included when importing the whole library
+:root {
+  --be-primary-color: #{$primary-color};
+  --be-secondary-color: #{$secondary-color};
+  --be-font-family: #{$font-family};
+  --be-spacing: #{$spacing-unit};
+}

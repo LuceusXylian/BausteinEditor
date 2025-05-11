@@ -354,7 +354,7 @@ var BausteinEditorBundle = (() => {
           if (this.callback_mousedown !== null) {
             const res = this.callback_mousedown(e);
             if (res === false) {
-              return false;
+              return;
             }
           }
           this.isHeld = true;
@@ -2647,6 +2647,7 @@ var BausteinEditorBundle = (() => {
         }
         return digits[1] + "#" + color_hex;
       }
+      return null;
     }
     createButton(commandId, title, child) {
       const button = document.createElement("button");
@@ -3372,6 +3373,37 @@ var BausteinEditorBundle = (() => {
       hyperlink: true
     };
     tinyeditor_toolbar;
+    /**
+     * A collection of style properties used in the Baustein Editor.
+     * Each property is represented as an instance of `BausteinStyleProperty`,
+     * which defines the CSS property name, input type, available units, 
+     * selectable options, and additional configuration flags.
+     *
+     * Properties:
+     * - `font_size`: Controls the font size with predefined options like "small", "medium", "large", etc.
+     * - `font_weight`: Controls the font weight with options like "normal", "bold", "bolder", etc.
+     * - `text_decoration`: Controls the text decoration with options like "underline" and "dotted".
+     * - `font_style`: Controls the font style with options like "italic" and "oblique".
+     * - `text_align`: Controls the text alignment with options like "left", "center", and "right".
+     * - `color`: Sets the text color using a color picker.
+     * - `background_color`: Sets the background color using a color picker.
+     * - `background_image`: Sets the background image using an image selector.
+     * - `width`: Sets the width with units like "px" or "%", and an option for "auto".
+     * - `height`: Sets the height with units like "px" or "%", and an option for "auto".
+     * - `max_width`: Sets the maximum width with units like "px" or "%", and an option for "auto".
+     * - `max_height`: Sets the maximum height with units like "px" or "%", and an option for "auto".
+     * - `margin_top`, `margin_right`, `margin_bottom`, `margin_left`: Controls the margin for each side with "px" units and an option for "auto".
+     * - `border_width_top`, `border_width_right`, `border_width_bottom`, `border_width_left`: Controls the border width for each side with "px" units.
+     * - `padding_top`, `padding_right`, `padding_bottom`, `padding_left`: Controls the padding for each side with "px" units.
+     *
+     * Each property includes:
+     * - `name`: The CSS property name.
+     * - `type`: The input type (e.g., "select", "color", "number").
+     * - `units`: An array of valid units (e.g., "px", "%").
+     * - `options`: An array of selectable options with `locale_key` and `value`.
+     * - `is_inherited`: A boolean indicating if the property can inherit values.
+     * - `is_editable`: A boolean indicating if the property is editable.
+     */
     styleProperties = {
       font_size: new BausteinStyleProperty("font-size", "select", [], [
         { locale_key: "normal", value: "" },

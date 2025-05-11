@@ -1,0 +1,56 @@
+{
+  "name": "@xylian/bausteineditor",
+  "version": "1.0.0",
+  "description": "Editor in Blocks: Import, Edit, Move, Delete, Add, Export",
+  "scripts": {
+    "build": "./build.sh"
+  },
+  "keywords": [
+    "editor",
+    "scss",
+    "baustein",
+    "deno"
+  ],
+  "license": "Apache-2.0",
+  "exports": "./src/mod.ts",
+  "publish": {
+    "include": [
+      "src/",
+      "scss/",
+      "LICENSE",
+      "README.md"
+    ],
+    "exclude": [
+      "**/.*",
+      "**/dist",
+      "**/*.test.*"
+    ]
+  },
+  "devDependencies": {
+    "sass": "^1.88.0",
+    "deno": "2.3.1"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "6.7.2"
+  },
+  "style": "scss/index.scss",
+  "sass": "scss/index.scss",
+  "files": [
+    "dist",
+    "scss"
+  ],
+  "peerDependencies": {
+    "sass": "^1.69.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LuceusXylian/bausteineditor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LuceusXylian/bausteineditor/issues"
+  },
+  "homepage": "https://github.com/LuceusXylian/bausteineditor#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,65 @@
+# Development files
+.git
+.gitignore
+.npmignore
+.editorconfig
+.prettierrc
+.eslintrc
+.stylelintrc
+*.log
+*.lock
+
+# Build tools and configuration
+webpack.config.js
+gulpfile.js
+rollup.config.js
+babel.config.js
+tsconfig.json
+*.config.js
+
+# Source maps
+*.map
+
+# Development directories
+node_modules/
+test/
+tests/
+coverage/
+docs/
+examples/
+demo/
+.vscode/
+.idea/
+.github/
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Development assets
+src/assets/
+assets/development/
+*.test.js
+*.spec.js
+__tests__/
+__mocks__/
+
+# Documentation source
+*.md
+!README.md
+!LICENSE.md
+
+# Build artifacts
+dist/*.js
+!dist/*.min.js
+dist/*.css
+!dist/*.min.css
+
+# Environment files
+.env*
+.env.local
+.env.development
+.env.test
+.env.production

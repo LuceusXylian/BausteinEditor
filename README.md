@@ -1,64 +1,119 @@
-# Baustein Editor
+# Baustein Editor SCSS Library
 
-Baustein Editor is a powerful block-based editor designed for creating, editing, and managing content in a modular way. It provides a user-friendly interface for importing, editing, moving, deleting, adding, and exporting blocks of content. This library is ideal for building customizable and dynamic content editors for web applications.
+A modular SCSS library for building modern, customizable editors with consistent styling and theming support.
 
-## Features
+## Installation
 
-- **Block Management**: Effortlessly add, delete, move, and edit blocks.
-- **Localization Support**: Built-in support for multiple languages, including English and German.
-- **Drag-and-Drop Functionality**: Intuitive drag-and-drop for rearranging blocks.
-- **Customizable Toolbar**: Includes a rich toolbar for text formatting and other actions.
-- **Responsive Design**: Optimized for seamless performance across various screen sizes.
-
-## Getting Started
-
-### Importing the Library
-
-Import the required modules from the [JavaScript Registry (JSR)](https://jsr.io) by adding this line:
-
-```typescript
-import { BausteinEditor } from '@xylian/bausteineditor';
+```bash
+npm install baustein-editor
 ```
 
-### Basic Usage
+## Usage
 
-Here is a simple example of how to initialize and use the Baustein Editor:
+### Basic Import
+```scss
+// Import everything
+@use 'baustein-editor/scss' as baustein;
 
-```typescript
-const editor = new BausteinEditor({
-    container: document.getElementById('editor-container'),
-    locale: 'en',
-});
+// Or import specific modules
+@use 'baustein-editor/scss/variables' as *;
+@use 'baustein-editor/scss/mixins' as *;
 ```
 
-## Localization
+### Customizing Variables
+Create a new file with your custom variables:
 
-Baustein Editor supports multiple languages. You can specify the desired locale before initializing the editor. Currently, "en" (English) and "de" (German) are supported. To add custom locales, extend the `LOCALES` object and submit a merge request for general usage.
+```scss
+// _custom-variables.scss
+@use 'baustein-editor/scss/variables' with (
+  $primary-color: #ff0000,
+  $font-family: 'Arial, sans-serif',
+  $spacing-unit: 1.2rem
+);
+```
+
+## Available Modules
+
+### Variables (`_variables.scss`)
+- Colors
+- Typography
+- Spacing
+- Editor-specific variables
+- Z-index layers
+
+### Mixins (`_mixins.scss`)
+- Button styles
+- Input styles
+- Editor container
+- Responsive containers
+- Focus states
+- Utility mixins
+
+### Components
+- Editor core (`baustein_editor.scss`)
+- Rich text editor (`tinyeditor.scss`)
+- Website styles (`website_styles.scss`)
+
+## Theme Support
+
+### Light Theme (Default)
+```scss
+.baustein-editor {
+  // Default light theme styles
+}
+```
+
+### Dark Theme
+```scss
+.baustein-editor--dark {
+  // Dark theme styles applied
+}
+```
+
+## Responsive Design
+
+The library includes responsive breakpoints and mobile-first design:
+
+- Desktop: 1024px and above
+- Tablet: 768px to 1023px
+- Mobile: Below 768px
+
+## Browser Support
+
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
+- IE11 (basic support)
 
 ## Development
 
-### Prerequisites
-
-Ensure you have the following installed:
-
-- [Deno](https://deno.land/) (latest version)
-
-### Building the Project
-
-Run the build script to compile the project:
-
 ```bash
-./build.sh
+# Install dependencies
+npm install
+
+# Build CSS
+npm run build
+
+# Build minified CSS
+npm run build:min
+
+# Watch for changes
+npm run watch
 ```
-
-### Running the Demo
-
-To see the editor in action, open the `index.html` file in your browser. Alternatively, visit the [GitHub Pages Demo](https://luceusxylian.github.io/BausteinEditor/).
-
-## Contributing
-
-Contributions are welcome! Please fork the repository and submit a pull request with your changes.
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
+MIT License - see LICENSE file for details
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/awesome-feature`)
+3. Commit your changes (`git commit -m 'Add awesome feature'`)
+4. Push to the branch (`git push origin feature/awesome-feature`)
+5. Open a Pull Request
+
+## Support
+
+For support, issues, or feature requests, please use the issue tracker in GitHub.
