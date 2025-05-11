@@ -1,6 +1,5 @@
-@import './tinyeditor.scss';
-@import './website_styles.scss';
-
+@use './tinyeditor.scss' as *;
+@use './website_styles.scss' as *;
 
 /* Allgemein */
 *, ::before, ::after { box-sizing: border-box; }
