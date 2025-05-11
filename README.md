@@ -25,6 +25,8 @@ Do not forget to import the scss styles from `scss/index.scss`
 Here is a simple example of how to initialize and use the Baustein Editor:
 
 ```typescript
+import BausteinEditor from "jsr:@xylian/bausteineditor";
+
 const editor = new BausteinEditor({
     container: document.getElementById('editor-container'),
     locale: 'en',
