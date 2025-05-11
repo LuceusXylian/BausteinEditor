@@ -15,7 +15,7 @@ Baustein Editor is a powerful block-based editor designed for creating, editing,
 ### Library Installation
 
 ```bash
-npm install baustein-editor
+npm i bausteineditor-scss
 ```
 
 Do not forget to import the scss styles from `scss/index.scss`
