@@ -1,6 +1,6 @@
 {
   "name": "@xylian/bausteineditor",
-  "version": "1.0.3",
+  "version": "1.0.1",
   "description": "Editor in Blocks: Import, Edit, Move, Delete, Add, Export",
   "exports": "./src/mod.ts",
   "scripts": {
