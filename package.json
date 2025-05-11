@@ -1,6 +1,6 @@
 {
   "name": "baustein-editor",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Editor in Blocks: Import, Edit, Move, Delete, Add, Export",
   "scripts": {
     "build": "./build.sh"
@@ -8,14 +8,11 @@
   "keywords": [
     "editor",
     "scss",
-    "baustein",
-    "deno"
+    "baustein"
   ],
   "license": "Apache-2.0",
-  "exports": "./src/mod.ts",
   "publish": {
     "include": [
-      "src/",
       "scss/",
       "LICENSE",
       "README.md"

@@ -1,4 +1,46 @@
 {
+  "name": "@xylian/baustein-editor",
+  "version": "1.0.3",
+  "description": "Editor in Blocks: Import, Edit, Move, Delete, Add, Export",
+  "exports": "./src/mod.ts",
+  "scripts": {
+    "build": "./build.sh"
+  },
+  "keywords": [
+    "editor",
+    "baustein",
+    "deno"
+  ],
+  "license": "Apache-2.0",
+  "publish": {
+    "include": [
+      "src/",
+      "LICENSE",
+      "README.md"
+    ],
+    "exclude": [
+      "**/.*",
+      "**/dist",
+      "**/*.test.*"
+    ]
+  },
+  "devDependencies": {
+    "deno": "2.3.1"
+  },
+  "dependencies": {
+  },
+  "files": [
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LuceusXylian/bausteineditor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LuceusXylian/bausteineditor/issues"
+  },
+  "homepage": "https://github.com/LuceusXylian/bausteineditor#readme",
+
   "compilerOptions": {
     "lib": ["ES2015", "dom", "deno.ns"],
     "strict": true
