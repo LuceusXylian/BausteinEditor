@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "lib": ["ES2015", "dom", "deno.ns"],
-    "strict": true,
+    "strict": true
   },
   "lint": {
     "include": ["src/"],
@@ -9,8 +9,8 @@
     "rules": {
       "tags": ["recommended"],
       "include": [],
-      "exclude": ["no-unused-vars"],
-    },
+      "exclude": ["no-unused-vars"]
+    }
   },
   "fmt": {
     "include": ["src/"],
@@ -19,14 +19,14 @@
     "lineWidth": 80,
     "indentWidth": 4,
     "singleQuote": true,
-    "proseWrap": "preserve",
+    "proseWrap": "preserve"
   },
 
   "deno.enable": true,
   "deno.import_intellisense_origins": {
     "https://deno.land": true,
-    "https://deno.land/x": true,
+    "https://deno.land/x": true
   },
   "deno.lint": true,
-  "deno.unstable": false,
+  "deno.unstable": false
 }
