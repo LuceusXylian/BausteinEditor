@@ -1,5 +1,5 @@
 {
-  "name": "@xylian/bausteineditor",
+  "name": "bausteineditor",
   "version": "1.0.0",
   "description": "Editor in Blocks: Import, Edit, Move, Delete, Add, Export",
   "scripts": {
