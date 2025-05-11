@@ -38,12 +38,12 @@ export class LuxDragDrop {
     }
 
 
-    on_mousedown = (e: MouseEvent) => {
+    on_mousedown = (e: MouseEvent):void => {
         if (!this.isHeld) {
             this.timeoutId = setTimeout(() => {
                 if(this.callback_mousedown !== null) {
                     const res = this.callback_mousedown(e);
-                    if(res === false) {return false;}
+                    if(res === false) {return;}
                 }
 
                 this.isHeld = true;
@@ -100,7 +100,7 @@ export class LuxDragDrop {
 
 
     // deno-lint-ignore no-explicit-any
-    on_mousemove = (e: any) => {
+    on_mousemove = (e: any):void => {
         if (this.drag_element !== null) {
             this.drag_element.style.left = (e.clientX - this.offset_x)+"px";
             this.drag_element.style.top = (e.clientY - this.offset_y)+"px";
@@ -110,7 +110,7 @@ export class LuxDragDrop {
     };
     
     // deno-lint-ignore no-explicit-any
-    on_mouseup = (e: any) => {
+    on_mouseup = (e: any):void => {
         clearTimeout(this.timeoutId);
         console.log("on_mouseup");
         
@@ -148,7 +148,7 @@ export class LuxDragDrop {
         return <HTMLElement | null> document.elementFromPoint(x, y);
     }
 
-    clearSelection() {
+    clearSelection():void {
         if (window !== null && window.getSelection) { 
             const selection = window.getSelection(); 
             if(selection !== null) selection.removeAllRanges();

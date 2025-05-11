@@ -304,7 +304,7 @@ export class TinyEditorToolbar {
         }
     }
 
-    rgbToHex(color: string) {
+    rgbToHex(color: string): string|null {
         const digits = /(.*?)rgb\((\d+), (\d+), (\d+)\)/.exec(color);
         if (digits !== null && digits.length > 5) {
             const red = parseInt(digits[2]);
@@ -319,9 +319,10 @@ export class TinyEditorToolbar {
             }
             return digits[1] + '#' + color_hex;
         }
+        return null;
     }
 
-    createButton(commandId: string, title: string, child: HTMLElement){
+    createButton(commandId: string, title: string, child: HTMLElement): HTMLButtonElement {
         const button = document.createElement('button');
         button.dataset.commandId = commandId;
         button.className = this.TOOLBAR_ITEM;
@@ -333,7 +334,7 @@ export class TinyEditorToolbar {
         return button;
     }
 
-    createOption(value: string, text: string, selected: boolean) {
+    createOption(value: string, text: string, selected: boolean): HTMLOptionElement {
         const option = document.createElement('option');
         option.innerText = text;
       
@@ -343,7 +344,7 @@ export class TinyEditorToolbar {
         return option;
     }
 
-    createSelect(commandId: string, title: string, options: {text: string, value: string, selected?: boolean}[]) {
+    createSelect(commandId: string, title: string, options: {text: string, value: string, selected?: boolean}[]): HTMLSelectElement {
         const select = document.createElement("select");
         select.dataset.commandId = commandId;
         select.className = this.TOOLBAR_ITEM;
@@ -366,14 +367,14 @@ export class TinyEditorToolbar {
         return select;
     }
     
-    createIcon(className: string) {
+    createIcon(className: string): HTMLElement {
         const icon = document.createElement('i');
         icon.className = className;
     
         return icon;
     }
     
-    createInput(commandId: string, title: string, type: string) {
+    createInput(commandId: string, title: string, type: string): HTMLInputElement {
         const input = document.createElement('input');
         input.dataset.commandId = commandId;
         input.className = this.TOOLBAR_ITEM;
@@ -386,7 +387,7 @@ export class TinyEditorToolbar {
         return input;
     }
     
-    createSeparator() {
+    createSeparator(): HTMLElement {
         const separator = document.createElement('span');
         separator.className = '__toolbar-separator';
       
@@ -425,7 +426,7 @@ export class TinyEditor {
     private toolbar: TinyEditorToolbar;
     callback_onchange: (()=>void)|null = null;
     callback_exec_command_create_image: ExecCommandCreateImageEvent;
-    dialog = new Dialog(document.body);
+    dialog: Dialog = new Dialog(document.body);
 
     createElement(_type: string, _id: string, _class: string): HTMLElement {
         const element = document.createElement(_type);
@@ -596,7 +597,7 @@ export class TinyEditor {
         }
     }
 
-    render_image_div(image_url: string, width: string, height: string) {
+    render_image_div(image_url: string, width: string, height: string): HTMLElement {
         console.log("[TinyEditor] render_image_div");
         const new_element = document.createElement('div');
         new_element.contentEditable = "false";
@@ -806,7 +807,7 @@ export class TinyEditor {
         throw new Error("window.getSelection() is not supported, by this browser.");
     }
     
-    restoreSelection(ranges: Range[]) {
+    restoreSelection(ranges: Range[]): boolean {
         if(ranges) {
             if(window.getSelection) {
                 const current_selection = window.getSelection();
@@ -852,7 +853,7 @@ export class TinyEditor {
         }
     }
 
-    export() {
+    export(): string {
         let content = "";
         this.editor.childNodes.forEach(node => {
             if (node.nodeName === "#text") {
@@ -922,7 +923,7 @@ export class LuxContextMenu {
         
     }
 
-    set_items(items: HTMLElement[]) {
+    set_items(items: HTMLElement[]): LuxContextMenu {
         this.context_menu_items = items;
         for (let i = 0; i < this.context_menu_items.length; i++) {
             this.context_menu_items[i].className = "__context_menu_item";

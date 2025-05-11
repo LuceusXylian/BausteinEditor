@@ -1,0 +1,2811 @@
+var BausteinEditorBundle = (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+  // src/tinyeditor.ts
+  var tinyeditor_exports = {};
+  __export(tinyeditor_exports, {
+    LuxContextMenu: () => LuxContextMenu,
+    TinyEditor: () => TinyEditor,
+    TinyEditorToolbar: () => TinyEditorToolbar
+  });
+
+  // src/dialog.ts
+  var Dialog = class {
+    dialog;
+    dialog_wrapper;
+    dialog_content;
+    dialog_header;
+    dialog_title;
+    dialog_close;
+    dialog_body;
+    dialog_footer;
+    previous_action_close_function = null;
+    constructor(parent) {
+      this.dialog = this.create_element_if_not_exists(parent, "div", "__dialog", { class: "__dialog", style: "display: none;" });
+      this.dialog_wrapper = this.create_element_if_not_exists(this.dialog, "div", "__dialog_wrapper", { class: "__dialog-wrapper" });
+      this.dialog_content = this.create_element_if_not_exists(this.dialog_wrapper, "div", "__dialog_content", { class: "__dialog-content" });
+      this.dialog_header = this.create_element_if_not_exists(this.dialog_content, "div", "__dialog_header", { class: "__dialog-header" });
+      this.dialog_title = this.create_element_if_not_exists(this.dialog_header, "div", "__dialog_title", { class: "__dialog-title" });
+      this.dialog_close = this.create_element_if_not_exists(this.dialog_header, "div", "__dialog_close", { class: "__dialog-close" });
+      this.dialog_body = this.create_element_if_not_exists(this.dialog_content, "div", "__dialog_body", { class: "__dialog-body" });
+      this.dialog_footer = this.create_element_if_not_exists(this.dialog_content, "div", "__dialog_footer", { class: "__dialog-footer" });
+      this.dialog_close.innerHTML = "&times;";
+    }
+    start(title, body_content, action_ok_text, action_fail_text, action_close_text, action_ok = null, action_fail = null, action_close = null) {
+      this.dialog_title.innerHTML = title;
+      if (typeof body_content === "string") {
+        this.dialog_body.innerHTML = body_content;
+      } else {
+        this.dialog_body.innerHTML = "";
+        this.dialog_body.appendChild(body_content);
+      }
+      if (this.previous_action_close_function !== null) this.dialog_close.removeEventListener("click", this.previous_action_close_function);
+      if (action_close === null) action_close = () => this.close();
+      this.previous_action_close_function = action_close;
+      this.dialog_close.addEventListener("click", action_close);
+      this.dialog_footer.innerHTML = "";
+      if (action_ok_text !== null) {
+        const button = this.create_element(this.dialog_footer, "button", { class: "__dialog-btn __dialog-btn-green" });
+        button.type = "button";
+        button.innerHTML = action_ok_text;
+        if (action_ok !== null) button.addEventListener("click", action_ok);
+      }
+      if (action_fail_text !== null) {
+        const button = this.create_element(this.dialog_footer, "button", { class: "__dialog-btn __dialog-btn-red" });
+        button.type = "button";
+        button.innerHTML = action_fail_text;
+        if (action_fail !== null) button.addEventListener("click", action_fail);
+      }
+      if (action_close_text !== null) {
+        const button = this.create_element(this.dialog_footer, "button", { class: "__dialog-btn __dialog-btn-gray" });
+        button.type = "button";
+        button.innerHTML = action_close_text;
+        if (action_close !== null) button.addEventListener("click", action_close);
+      }
+      this.dialog.style.display = "";
+    }
+    close() {
+      this.dialog.style.display = "none";
+    }
+    create_element(parent, tag, attributes) {
+      const element = document.createElement(tag);
+      if (attributes) {
+        for (const key in attributes) {
+          element.setAttribute(key, attributes[key]);
+        }
+      }
+      parent.append(element);
+      return element;
+    }
+    create_element_if_not_exists(parent, tag, _id, attributes) {
+      const find_element = document.getElementById(_id);
+      if (find_element === null) {
+        const element = this.create_element(parent, tag, attributes);
+        element.id = _id;
+        return element;
+      } else {
+        return find_element;
+      }
+    }
+  };
+
+  // src/fontawsome_data.ts
+  var FONTAWSOME_DATA = { name: "Font Awesome Free 6.7.2", icons: [
+    "fa-solid fa-0",
+    "fa-solid fa-1",
+    "fa-solid fa-2",
+    "fa-solid fa-3",
+    "fa-solid fa-4",
+    "fa-solid fa-5",
+    "fa-solid fa-6",
+    "fa-solid fa-7",
+    "fa-solid fa-8",
+    "fa-solid fa-9",
+    "fa-solid fa-fill-drip",
+    "fa-solid fa-arrows-to-circle",
+    "fa-solid fa-circle-chevron-right",
+    "fa-solid fa-chevron-circle-right",
+    "fa-solid fa-at",
+    "fa-solid fa-trash-can",
+    "fa-solid fa-trash-alt",
+    "fa-solid fa-text-height",
+    "fa-solid fa-user-xmark",
+    "fa-solid fa-user-times",
+    "fa-solid fa-stethoscope",
+    "fa-solid fa-message",
+    "fa-solid fa-comment-alt",
+    "fa-solid fa-info",
+    "fa-solid fa-down-left-and-up-right-to-center",
+    "fa-solid fa-compress-alt",
+    "fa-solid fa-explosion",
+    "fa-solid fa-file-lines",
+    "fa-solid fa-file-alt",
+    "fa-solid fa-file-text",
+    "fa-solid fa-wave-square",
+    "fa-solid fa-ring",
+    "fa-solid fa-building-un",
+    "fa-solid fa-dice-three",
+    "fa-solid fa-calendar-days",
+    "fa-solid fa-calendar-alt",
+    "fa-solid fa-anchor-circle-check",
+    "fa-solid fa-building-circle-arrow-right",
+    "fa-solid fa-volleyball",
+    "fa-solid fa-volleyball-ball",
+    "fa-solid fa-arrows-up-to-line",
+    "fa-solid fa-sort-down",
+    "fa-solid fa-sort-desc",
+    "fa-solid fa-circle-minus",
+    "fa-solid fa-minus-circle",
+    "fa-solid fa-door-open",
+    "fa-solid fa-right-from-bracket",
+    "fa-solid fa-sign-out-alt",
+    "fa-solid fa-atom",
+    "fa-solid fa-soap",
+    "fa-solid fa-icons",
+    "fa-solid fa-heart-music-camera-bolt",
+    "fa-solid fa-microphone-lines-slash",
+    "fa-solid fa-microphone-alt-slash",
+    "fa-solid fa-bridge-circle-check",
+    "fa-solid fa-pump-medical",
+    "fa-solid fa-fingerprint",
+    "fa-solid fa-hand-point-right",
+    "fa-solid fa-magnifying-glass-location",
+    "fa-solid fa-search-location",
+    "fa-solid fa-forward-step",
+    "fa-solid fa-step-forward",
+    "fa-solid fa-face-smile-beam",
+    "fa-solid fa-smile-beam",
+    "fa-solid fa-flag-checkered",
+    "fa-solid fa-football",
+    "fa-solid fa-football-ball",
+    "fa-solid fa-school-circle-exclamation",
+    "fa-solid fa-crop",
+    "fa-solid fa-angles-down",
+    "fa-solid fa-angle-double-down",
+    "fa-solid fa-users-rectangle",
+    "fa-solid fa-people-roof",
+    "fa-solid fa-people-line",
+    "fa-solid fa-beer-mug-empty",
+    "fa-solid fa-beer",
+    "fa-solid fa-diagram-predecessor",
+    "fa-solid fa-arrow-up-long",
+    "fa-solid fa-long-arrow-up",
+    "fa-solid fa-fire-flame-simple",
+    "fa-solid fa-burn",
+    "fa-solid fa-person",
+    "fa-solid fa-male",
+    "fa-solid fa-laptop",
+    "fa-solid fa-file-csv",
+    "fa-solid fa-menorah",
+    "fa-solid fa-truck-plane",
+    "fa-solid fa-record-vinyl",
+    "fa-solid fa-face-grin-stars",
+    "fa-solid fa-grin-stars",
+    "fa-solid fa-bong",
+    "fa-solid fa-spaghetti-monster-flying",
+    "fa-solid fa-pastafarianism",
+    "fa-solid fa-arrow-down-up-across-line",
+    "fa-solid fa-spoon",
+    "fa-solid fa-utensil-spoon",
+    "fa-solid fa-jar-wheat",
+    "fa-solid fa-envelopes-bulk",
+    "fa-solid fa-mail-bulk",
+    "fa-solid fa-file-circle-exclamation",
+    "fa-solid fa-circle-h",
+    "fa-solid fa-hospital-symbol",
+    "fa-solid fa-pager",
+    "fa-solid fa-address-book",
+    "fa-solid fa-contact-book",
+    "fa-solid fa-strikethrough",
+    "fa-solid fa-k",
+    "fa-solid fa-landmark-flag",
+    "fa-solid fa-pencil",
+    "fa-solid fa-pencil-alt",
+    "fa-solid fa-backward",
+    "fa-solid fa-caret-right",
+    "fa-solid fa-comments",
+    "fa-solid fa-paste",
+    "fa-solid fa-file-clipboard",
+    "fa-solid fa-code-pull-request",
+    "fa-solid fa-clipboard-list",
+    "fa-solid fa-truck-ramp-box",
+    "fa-solid fa-truck-loading",
+    "fa-solid fa-user-check",
+    "fa-solid fa-vial-virus",
+    "fa-solid fa-sheet-plastic",
+    "fa-solid fa-blog",
+    "fa-solid fa-user-ninja",
+    "fa-solid fa-person-arrow-up-from-line",
+    "fa-solid fa-scroll-torah",
+    "fa-solid fa-torah",
+    "fa-solid fa-broom-ball",
+    "fa-solid fa-quidditch",
+    "fa-solid fa-quidditch-broom-ball",
+    "fa-solid fa-toggle-off",
+    "fa-solid fa-box-archive",
+    "fa-solid fa-archive",
+    "fa-solid fa-person-drowning",
+    "fa-solid fa-arrow-down-9-1",
+    "fa-solid fa-sort-numeric-desc",
+    "fa-solid fa-sort-numeric-down-alt",
+    "fa-solid fa-face-grin-tongue-squint",
+    "fa-solid fa-grin-tongue-squint",
+    "fa-solid fa-spray-can",
+    "fa-solid fa-truck-monster",
+    "fa-solid fa-w",
+    "fa-solid fa-earth-africa",
+    "fa-solid fa-globe-africa",
+    "fa-solid fa-rainbow",
+    "fa-solid fa-circle-notch",
+    "fa-solid fa-tablet-screen-button",
+    "fa-solid fa-tablet-alt",
+    "fa-solid fa-paw",
+    "fa-solid fa-cloud",
+    "fa-solid fa-trowel-bricks",
+    "fa-solid fa-face-flushed",
+    "fa-solid fa-flushed",
+    "fa-solid fa-hospital-user",
+    "fa-solid fa-tent-arrow-left-right",
+    "fa-solid fa-gavel",
+    "fa-solid fa-legal",
+    "fa-solid fa-binoculars",
+    "fa-solid fa-microphone-slash",
+    "fa-solid fa-box-tissue",
+    "fa-solid fa-motorcycle",
+    "fa-solid fa-bell-concierge",
+    "fa-solid fa-concierge-bell",
+    "fa-solid fa-pen-ruler",
+    "fa-solid fa-pencil-ruler",
+    "fa-solid fa-people-arrows",
+    "fa-solid fa-people-arrows-left-right",
+    "fa-solid fa-mars-and-venus-burst",
+    "fa-solid fa-square-caret-right",
+    "fa-solid fa-caret-square-right",
+    "fa-solid fa-scissors",
+    "fa-solid fa-cut",
+    "fa-solid fa-sun-plant-wilt",
+    "fa-solid fa-toilets-portable",
+    "fa-solid fa-hockey-puck",
+    "fa-solid fa-table",
+    "fa-solid fa-magnifying-glass-arrow-right",
+    "fa-solid fa-tachograph-digital",
+    "fa-solid fa-digital-tachograph",
+    "fa-solid fa-users-slash",
+    "fa-solid fa-clover",
+    "fa-solid fa-reply",
+    "fa-solid fa-mail-reply",
+    "fa-solid fa-star-and-crescent",
+    "fa-solid fa-house-fire",
+    "fa-solid fa-square-minus",
+    "fa-solid fa-minus-square",
+    "fa-solid fa-helicopter",
+    "fa-solid fa-compass",
+    "fa-solid fa-square-caret-down",
+    "fa-solid fa-caret-square-down",
+    "fa-solid fa-file-circle-question",
+    "fa-solid fa-laptop-code",
+    "fa-solid fa-swatchbook",
+    "fa-solid fa-prescription-bottle",
+    "fa-solid fa-bars",
+    "fa-solid fa-navicon",
+    "fa-solid fa-people-group",
+    "fa-solid fa-hourglass-end",
+    "fa-solid fa-hourglass-3",
+    "fa-solid fa-heart-crack",
+    "fa-solid fa-heart-broken",
+    "fa-solid fa-square-up-right",
+    "fa-solid fa-external-link-square-alt",
+    "fa-solid fa-face-kiss-beam",
+    "fa-solid fa-kiss-beam",
+    "fa-solid fa-film",
+    "fa-solid fa-ruler-horizontal",
+    "fa-solid fa-people-robbery",
+    "fa-solid fa-lightbulb",
+    "fa-solid fa-caret-left",
+    "fa-solid fa-circle-exclamation",
+    "fa-solid fa-exclamation-circle",
+    "fa-solid fa-school-circle-xmark",
+    "fa-solid fa-arrow-right-from-bracket",
+    "fa-solid fa-sign-out",
+    "fa-solid fa-circle-chevron-down",
+    "fa-solid fa-chevron-circle-down",
+    "fa-solid fa-unlock-keyhole",
+    "fa-solid fa-unlock-alt",
+    "fa-solid fa-cloud-showers-heavy",
+    "fa-solid fa-headphones-simple",
+    "fa-solid fa-headphones-alt",
+    "fa-solid fa-sitemap",
+    "fa-solid fa-circle-dollar-to-slot",
+    "fa-solid fa-donate",
+    "fa-solid fa-memory",
+    "fa-solid fa-road-spikes",
+    "fa-solid fa-fire-burner",
+    "fa-solid fa-flag",
+    "fa-solid fa-hanukiah",
+    "fa-solid fa-feather",
+    "fa-solid fa-volume-low",
+    "fa-solid fa-volume-down",
+    "fa-solid fa-comment-slash",
+    "fa-solid fa-cloud-sun-rain",
+    "fa-solid fa-compress",
+    "fa-solid fa-wheat-awn",
+    "fa-solid fa-wheat-alt",
+    "fa-solid fa-ankh",
+    "fa-solid fa-hands-holding-child",
+    "fa-solid fa-asterisk",
+    "fa-solid fa-square-check",
+    "fa-solid fa-check-square",
+    "fa-solid fa-peseta-sign",
+    "fa-solid fa-heading",
+    "fa-solid fa-header",
+    "fa-solid fa-ghost",
+    "fa-solid fa-list",
+    "fa-solid fa-list-squares",
+    "fa-solid fa-square-phone-flip",
+    "fa-solid fa-phone-square-alt",
+    "fa-solid fa-cart-plus",
+    "fa-solid fa-gamepad",
+    "fa-solid fa-circle-dot",
+    "fa-solid fa-dot-circle",
+    "fa-solid fa-face-dizzy",
+    "fa-solid fa-dizzy",
+    "fa-solid fa-egg",
+    "fa-solid fa-house-medical-circle-xmark",
+    "fa-solid fa-campground",
+    "fa-solid fa-folder-plus",
+    "fa-solid fa-futbol",
+    "fa-solid fa-futbol-ball",
+    "fa-solid fa-soccer-ball",
+    "fa-solid fa-paintbrush",
+    "fa-solid fa-paint-brush",
+    "fa-solid fa-lock",
+    "fa-solid fa-gas-pump",
+    "fa-solid fa-hot-tub-person",
+    "fa-solid fa-hot-tub",
+    "fa-solid fa-map-location",
+    "fa-solid fa-map-marked",
+    "fa-solid fa-house-flood-water",
+    "fa-solid fa-tree",
+    "fa-solid fa-bridge-lock",
+    "fa-solid fa-sack-dollar",
+    "fa-solid fa-pen-to-square",
+    "fa-solid fa-edit",
+    "fa-solid fa-car-side",
+    "fa-solid fa-share-nodes",
+    "fa-solid fa-share-alt",
+    "fa-solid fa-heart-circle-minus",
+    "fa-solid fa-hourglass-half",
+    "fa-solid fa-hourglass-2",
+    "fa-solid fa-microscope",
+    "fa-solid fa-sink",
+    "fa-solid fa-bag-shopping",
+    "fa-solid fa-shopping-bag",
+    "fa-solid fa-arrow-down-z-a",
+    "fa-solid fa-sort-alpha-desc",
+    "fa-solid fa-sort-alpha-down-alt",
+    "fa-solid fa-mitten",
+    "fa-solid fa-person-rays",
+    "fa-solid fa-users",
+    "fa-solid fa-eye-slash",
+    "fa-solid fa-flask-vial",
+    "fa-solid fa-hand",
+    "fa-solid fa-hand-paper",
+    "fa-solid fa-om",
+    "fa-solid fa-worm",
+    "fa-solid fa-house-circle-xmark",
+    "fa-solid fa-plug",
+    "fa-solid fa-chevron-up",
+    "fa-solid fa-hand-spock",
+    "fa-solid fa-stopwatch",
+    "fa-solid fa-face-kiss",
+    "fa-solid fa-kiss",
+    "fa-solid fa-bridge-circle-xmark",
+    "fa-solid fa-face-grin-tongue",
+    "fa-solid fa-grin-tongue",
+    "fa-solid fa-chess-bishop",
+    "fa-solid fa-face-grin-wink",
+    "fa-solid fa-grin-wink",
+    "fa-solid fa-ear-deaf",
+    "fa-solid fa-deaf",
+    "fa-solid fa-deafness",
+    "fa-solid fa-hard-of-hearing",
+    "fa-solid fa-road-circle-check",
+    "fa-solid fa-dice-five",
+    "fa-solid fa-square-rss",
+    "fa-solid fa-rss-square",
+    "fa-solid fa-land-mine-on",
+    "fa-solid fa-i-cursor",
+    "fa-solid fa-stamp",
+    "fa-solid fa-stairs",
+    "fa-solid fa-i",
+    "fa-solid fa-hryvnia-sign",
+    "fa-solid fa-hryvnia",
+    "fa-solid fa-pills",
+    "fa-solid fa-face-grin-wide",
+    "fa-solid fa-grin-alt",
+    "fa-solid fa-tooth",
+    "fa-solid fa-v",
+    "fa-solid fa-bangladeshi-taka-sign",
+    "fa-solid fa-bicycle",
+    "fa-solid fa-staff-snake",
+    "fa-solid fa-rod-asclepius",
+    "fa-solid fa-rod-snake",
+    "fa-solid fa-staff-aesculapius",
+    "fa-solid fa-head-side-cough-slash",
+    "fa-solid fa-truck-medical",
+    "fa-solid fa-ambulance",
+    "fa-solid fa-wheat-awn-circle-exclamation",
+    "fa-solid fa-snowman",
+    "fa-solid fa-mortar-pestle",
+    "fa-solid fa-road-barrier",
+    "fa-solid fa-school",
+    "fa-solid fa-igloo",
+    "fa-solid fa-joint",
+    "fa-solid fa-angle-right",
+    "fa-solid fa-horse",
+    "fa-solid fa-q",
+    "fa-solid fa-g",
+    "fa-solid fa-notes-medical",
+    "fa-solid fa-temperature-half",
+    "fa-solid fa-temperature-2",
+    "fa-solid fa-thermometer-2",
+    "fa-solid fa-thermometer-half",
+    "fa-solid fa-dong-sign",
+    "fa-solid fa-capsules",
+    "fa-solid fa-poo-storm",
+    "fa-solid fa-poo-bolt",
+    "fa-solid fa-face-frown-open",
+    "fa-solid fa-frown-open",
+    "fa-solid fa-hand-point-up",
+    "fa-solid fa-money-bill",
+    "fa-solid fa-bookmark",
+    "fa-solid fa-align-justify",
+    "fa-solid fa-umbrella-beach",
+    "fa-solid fa-helmet-un",
+    "fa-solid fa-bullseye",
+    "fa-solid fa-bacon",
+    "fa-solid fa-hand-point-down",
+    "fa-solid fa-arrow-up-from-bracket",
+    "fa-solid fa-folder",
+    "fa-solid fa-folder-blank",
+    "fa-solid fa-file-waveform",
+    "fa-solid fa-file-medical-alt",
+    "fa-solid fa-radiation",
+    "fa-solid fa-chart-simple",
+    "fa-solid fa-mars-stroke",
+    "fa-solid fa-vial",
+    "fa-solid fa-gauge",
+    "fa-solid fa-dashboard",
+    "fa-solid fa-gauge-med",
+    "fa-solid fa-tachometer-alt-average",
+    "fa-solid fa-wand-magic-sparkles",
+    "fa-solid fa-magic-wand-sparkles",
+    "fa-solid fa-e",
+    "fa-solid fa-pen-clip",
+    "fa-solid fa-pen-alt",
+    "fa-solid fa-bridge-circle-exclamation",
+    "fa-solid fa-user",
+    "fa-solid fa-school-circle-check",
+    "fa-solid fa-dumpster",
+    "fa-solid fa-van-shuttle",
+    "fa-solid fa-shuttle-van",
+    "fa-solid fa-building-user",
+    "fa-solid fa-square-caret-left",
+    "fa-solid fa-caret-square-left",
+    "fa-solid fa-highlighter",
+    "fa-solid fa-key",
+    "fa-solid fa-bullhorn",
+    "fa-solid fa-globe",
+    "fa-solid fa-synagogue",
+    "fa-solid fa-person-half-dress",
+    "fa-solid fa-road-bridge",
+    "fa-solid fa-location-arrow",
+    "fa-solid fa-c",
+    "fa-solid fa-tablet-button",
+    "fa-solid fa-building-lock",
+    "fa-solid fa-pizza-slice",
+    "fa-solid fa-money-bill-wave",
+    "fa-solid fa-chart-area",
+    "fa-solid fa-area-chart",
+    "fa-solid fa-house-flag",
+    "fa-solid fa-person-circle-minus",
+    "fa-solid fa-ban",
+    "fa-solid fa-cancel",
+    "fa-solid fa-camera-rotate",
+    "fa-solid fa-spray-can-sparkles",
+    "fa-solid fa-air-freshener",
+    "fa-solid fa-star",
+    "fa-solid fa-repeat",
+    "fa-solid fa-cross",
+    "fa-solid fa-box",
+    "fa-solid fa-venus-mars",
+    "fa-solid fa-arrow-pointer",
+    "fa-solid fa-mouse-pointer",
+    "fa-solid fa-maximize",
+    "fa-solid fa-expand-arrows-alt",
+    "fa-solid fa-charging-station",
+    "fa-solid fa-shapes",
+    "fa-solid fa-triangle-circle-square",
+    "fa-solid fa-shuffle",
+    "fa-solid fa-random",
+    "fa-solid fa-person-running",
+    "fa-solid fa-running",
+    "fa-solid fa-mobile-retro",
+    "fa-solid fa-grip-lines-vertical",
+    "fa-solid fa-spider",
+    "fa-solid fa-hands-bound",
+    "fa-solid fa-file-invoice-dollar",
+    "fa-solid fa-plane-circle-exclamation",
+    "fa-solid fa-x-ray",
+    "fa-solid fa-spell-check",
+    "fa-solid fa-slash",
+    "fa-solid fa-computer-mouse",
+    "fa-solid fa-mouse",
+    "fa-solid fa-arrow-right-to-bracket",
+    "fa-solid fa-sign-in",
+    "fa-solid fa-shop-slash",
+    "fa-solid fa-store-alt-slash",
+    "fa-solid fa-server",
+    "fa-solid fa-virus-covid-slash",
+    "fa-solid fa-shop-lock",
+    "fa-solid fa-hourglass-start",
+    "fa-solid fa-hourglass-1",
+    "fa-solid fa-blender-phone",
+    "fa-solid fa-building-wheat",
+    "fa-solid fa-person-breastfeeding",
+    "fa-solid fa-right-to-bracket",
+    "fa-solid fa-sign-in-alt",
+    "fa-solid fa-venus",
+    "fa-solid fa-passport",
+    "fa-solid fa-thumbtack-slash",
+    "fa-solid fa-thumb-tack-slash",
+    "fa-solid fa-heart-pulse",
+    "fa-solid fa-heartbeat",
+    "fa-solid fa-people-carry-box",
+    "fa-solid fa-people-carry",
+    "fa-solid fa-temperature-high",
+    "fa-solid fa-microchip",
+    "fa-solid fa-crown",
+    "fa-solid fa-weight-hanging",
+    "fa-solid fa-xmarks-lines",
+    "fa-solid fa-file-prescription",
+    "fa-solid fa-weight-scale",
+    "fa-solid fa-weight",
+    "fa-solid fa-user-group",
+    "fa-solid fa-user-friends",
+    "fa-solid fa-arrow-up-a-z",
+    "fa-solid fa-sort-alpha-up",
+    "fa-solid fa-chess-knight",
+    "fa-solid fa-face-laugh-squint",
+    "fa-solid fa-laugh-squint",
+    "fa-solid fa-wheelchair",
+    "fa-solid fa-circle-arrow-up",
+    "fa-solid fa-arrow-circle-up",
+    "fa-solid fa-toggle-on",
+    "fa-solid fa-person-walking",
+    "fa-solid fa-walking",
+    "fa-solid fa-l",
+    "fa-solid fa-fire",
+    "fa-solid fa-bed-pulse",
+    "fa-solid fa-procedures",
+    "fa-solid fa-shuttle-space",
+    "fa-solid fa-space-shuttle",
+    "fa-solid fa-face-laugh",
+    "fa-solid fa-laugh",
+    "fa-solid fa-folder-open",
+    "fa-solid fa-heart-circle-plus",
+    "fa-solid fa-code-fork",
+    "fa-solid fa-city",
+    "fa-solid fa-microphone-lines",
+    "fa-solid fa-microphone-alt",
+    "fa-solid fa-pepper-hot",
+    "fa-solid fa-unlock",
+    "fa-solid fa-colon-sign",
+    "fa-solid fa-headset",
+    "fa-solid fa-store-slash",
+    "fa-solid fa-road-circle-xmark",
+    "fa-solid fa-user-minus",
+    "fa-solid fa-mars-stroke-up",
+    "fa-solid fa-mars-stroke-v",
+    "fa-solid fa-champagne-glasses",
+    "fa-solid fa-glass-cheers",
+    "fa-solid fa-clipboard",
+    "fa-solid fa-house-circle-exclamation",
+    "fa-solid fa-file-arrow-up",
+    "fa-solid fa-file-upload",
+    "fa-solid fa-wifi",
+    "fa-solid fa-wifi-3",
+    "fa-solid fa-wifi-strong",
+    "fa-solid fa-bath",
+    "fa-solid fa-bathtub",
+    "fa-solid fa-underline",
+    "fa-solid fa-user-pen",
+    "fa-solid fa-user-edit",
+    "fa-solid fa-signature",
+    "fa-solid fa-stroopwafel",
+    "fa-solid fa-bold",
+    "fa-solid fa-anchor-lock",
+    "fa-solid fa-building-ngo",
+    "fa-solid fa-manat-sign",
+    "fa-solid fa-not-equal",
+    "fa-solid fa-border-top-left",
+    "fa-solid fa-border-style",
+    "fa-solid fa-map-location-dot",
+    "fa-solid fa-map-marked-alt",
+    "fa-solid fa-jedi",
+    "fa-solid fa-square-poll-vertical",
+    "fa-solid fa-poll",
+    "fa-solid fa-mug-hot",
+    "fa-solid fa-car-battery",
+    "fa-solid fa-battery-car",
+    "fa-solid fa-gift",
+    "fa-solid fa-dice-two",
+    "fa-solid fa-chess-queen",
+    "fa-solid fa-glasses",
+    "fa-solid fa-chess-board",
+    "fa-solid fa-building-circle-check",
+    "fa-solid fa-person-chalkboard",
+    "fa-solid fa-mars-stroke-right",
+    "fa-solid fa-mars-stroke-h",
+    "fa-solid fa-hand-back-fist",
+    "fa-solid fa-hand-rock",
+    "fa-solid fa-square-caret-up",
+    "fa-solid fa-caret-square-up",
+    "fa-solid fa-cloud-showers-water",
+    "fa-solid fa-chart-bar",
+    "fa-solid fa-bar-chart",
+    "fa-solid fa-hands-bubbles",
+    "fa-solid fa-hands-wash",
+    "fa-solid fa-less-than-equal",
+    "fa-solid fa-train",
+    "fa-solid fa-eye-low-vision",
+    "fa-solid fa-low-vision",
+    "fa-solid fa-crow",
+    "fa-solid fa-sailboat",
+    "fa-solid fa-window-restore",
+    "fa-solid fa-square-plus",
+    "fa-solid fa-plus-square",
+    "fa-solid fa-torii-gate",
+    "fa-solid fa-frog",
+    "fa-solid fa-bucket",
+    "fa-solid fa-image",
+    "fa-solid fa-microphone",
+    "fa-solid fa-cow",
+    "fa-solid fa-caret-up",
+    "fa-solid fa-screwdriver",
+    "fa-solid fa-folder-closed",
+    "fa-solid fa-house-tsunami",
+    "fa-solid fa-square-nfi",
+    "fa-solid fa-arrow-up-from-ground-water",
+    "fa-solid fa-martini-glass",
+    "fa-solid fa-glass-martini-alt",
+    "fa-solid fa-square-binary",
+    "fa-solid fa-rotate-left",
+    "fa-solid fa-rotate-back",
+    "fa-solid fa-rotate-backward",
+    "fa-solid fa-undo-alt",
+    "fa-solid fa-table-columns",
+    "fa-solid fa-columns",
+    "fa-solid fa-lemon",
+    "fa-solid fa-head-side-mask",
+    "fa-solid fa-handshake",
+    "fa-solid fa-gem",
+    "fa-solid fa-dolly",
+    "fa-solid fa-dolly-box",
+    "fa-solid fa-smoking",
+    "fa-solid fa-minimize",
+    "fa-solid fa-compress-arrows-alt",
+    "fa-solid fa-monument",
+    "fa-solid fa-snowplow",
+    "fa-solid fa-angles-right",
+    "fa-solid fa-angle-double-right",
+    "fa-solid fa-cannabis",
+    "fa-solid fa-circle-play",
+    "fa-solid fa-play-circle",
+    "fa-solid fa-tablets",
+    "fa-solid fa-ethernet",
+    "fa-solid fa-euro-sign",
+    "fa-solid fa-eur",
+    "fa-solid fa-euro",
+    "fa-solid fa-chair",
+    "fa-solid fa-circle-check",
+    "fa-solid fa-check-circle",
+    "fa-solid fa-circle-stop",
+    "fa-solid fa-stop-circle",
+    "fa-solid fa-compass-drafting",
+    "fa-solid fa-drafting-compass",
+    "fa-solid fa-plate-wheat",
+    "fa-solid fa-icicles",
+    "fa-solid fa-person-shelter",
+    "fa-solid fa-neuter",
+    "fa-solid fa-id-badge",
+    "fa-solid fa-marker",
+    "fa-solid fa-face-laugh-beam",
+    "fa-solid fa-laugh-beam",
+    "fa-solid fa-helicopter-symbol",
+    "fa-solid fa-universal-access",
+    "fa-solid fa-circle-chevron-up",
+    "fa-solid fa-chevron-circle-up",
+    "fa-solid fa-lari-sign",
+    "fa-solid fa-volcano",
+    "fa-solid fa-person-walking-dashed-line-arrow-right",
+    "fa-solid fa-sterling-sign",
+    "fa-solid fa-gbp",
+    "fa-solid fa-pound-sign",
+    "fa-solid fa-viruses",
+    "fa-solid fa-square-person-confined",
+    "fa-solid fa-user-tie",
+    "fa-solid fa-arrow-down-long",
+    "fa-solid fa-long-arrow-down",
+    "fa-solid fa-tent-arrow-down-to-line",
+    "fa-solid fa-certificate",
+    "fa-solid fa-reply-all",
+    "fa-solid fa-mail-reply-all",
+    "fa-solid fa-suitcase",
+    "fa-solid fa-person-skating",
+    "fa-solid fa-skating",
+    "fa-solid fa-filter-circle-dollar",
+    "fa-solid fa-funnel-dollar",
+    "fa-solid fa-camera-retro",
+    "fa-solid fa-circle-arrow-down",
+    "fa-solid fa-arrow-circle-down",
+    "fa-solid fa-file-import",
+    "fa-solid fa-arrow-right-to-file",
+    "fa-solid fa-square-arrow-up-right",
+    "fa-solid fa-external-link-square",
+    "fa-solid fa-box-open",
+    "fa-solid fa-scroll",
+    "fa-solid fa-spa",
+    "fa-solid fa-location-pin-lock",
+    "fa-solid fa-pause",
+    "fa-solid fa-hill-avalanche",
+    "fa-solid fa-temperature-empty",
+    "fa-solid fa-temperature-0",
+    "fa-solid fa-thermometer-0",
+    "fa-solid fa-thermometer-empty",
+    "fa-solid fa-bomb",
+    "fa-solid fa-registered",
+    "fa-solid fa-address-card",
+    "fa-solid fa-contact-card",
+    "fa-solid fa-vcard",
+    "fa-solid fa-scale-unbalanced-flip",
+    "fa-solid fa-balance-scale-right",
+    "fa-solid fa-subscript",
+    "fa-solid fa-diamond-turn-right",
+    "fa-solid fa-directions",
+    "fa-solid fa-burst",
+    "fa-solid fa-house-laptop",
+    "fa-solid fa-laptop-house",
+    "fa-solid fa-face-tired",
+    "fa-solid fa-tired",
+    "fa-solid fa-money-bills",
+    "fa-solid fa-smog",
+    "fa-solid fa-crutch",
+    "fa-solid fa-cloud-arrow-up",
+    "fa-solid fa-cloud-upload",
+    "fa-solid fa-cloud-upload-alt",
+    "fa-solid fa-palette",
+    "fa-solid fa-arrows-turn-right",
+    "fa-solid fa-vest",
+    "fa-solid fa-ferry",
+    "fa-solid fa-arrows-down-to-people",
+    "fa-solid fa-seedling",
+    "fa-solid fa-sprout",
+    "fa-solid fa-left-right",
+    "fa-solid fa-arrows-alt-h",
+    "fa-solid fa-boxes-packing",
+    "fa-solid fa-circle-arrow-left",
+    "fa-solid fa-arrow-circle-left",
+    "fa-solid fa-group-arrows-rotate",
+    "fa-solid fa-bowl-food",
+    "fa-solid fa-candy-cane",
+    "fa-solid fa-arrow-down-wide-short",
+    "fa-solid fa-sort-amount-asc",
+    "fa-solid fa-sort-amount-down",
+    "fa-solid fa-cloud-bolt",
+    "fa-solid fa-thunderstorm",
+    "fa-solid fa-text-slash",
+    "fa-solid fa-remove-format",
+    "fa-solid fa-face-smile-wink",
+    "fa-solid fa-smile-wink",
+    "fa-solid fa-file-word",
+    "fa-solid fa-file-powerpoint",
+    "fa-solid fa-arrows-left-right",
+    "fa-solid fa-arrows-h",
+    "fa-solid fa-house-lock",
+    "fa-solid fa-cloud-arrow-down",
+    "fa-solid fa-cloud-download",
+    "fa-solid fa-cloud-download-alt",
+    "fa-solid fa-children",
+    "fa-solid fa-chalkboard",
+    "fa-solid fa-blackboard",
+    "fa-solid fa-user-large-slash",
+    "fa-solid fa-user-alt-slash",
+    "fa-solid fa-envelope-open",
+    "fa-solid fa-handshake-simple-slash",
+    "fa-solid fa-handshake-alt-slash",
+    "fa-solid fa-mattress-pillow",
+    "fa-solid fa-guarani-sign",
+    "fa-solid fa-arrows-rotate",
+    "fa-solid fa-refresh",
+    "fa-solid fa-sync",
+    "fa-solid fa-fire-extinguisher",
+    "fa-solid fa-cruzeiro-sign",
+    "fa-solid fa-greater-than-equal",
+    "fa-solid fa-shield-halved",
+    "fa-solid fa-shield-alt",
+    "fa-solid fa-book-atlas",
+    "fa-solid fa-atlas",
+    "fa-solid fa-virus",
+    "fa-solid fa-envelope-circle-check",
+    "fa-solid fa-layer-group",
+    "fa-solid fa-arrows-to-dot",
+    "fa-solid fa-archway",
+    "fa-solid fa-heart-circle-check",
+    "fa-solid fa-house-chimney-crack",
+    "fa-solid fa-house-damage",
+    "fa-solid fa-file-zipper",
+    "fa-solid fa-file-archive",
+    "fa-solid fa-square",
+    "fa-solid fa-martini-glass-empty",
+    "fa-solid fa-glass-martini",
+    "fa-solid fa-couch",
+    "fa-solid fa-cedi-sign",
+    "fa-solid fa-italic",
+    "fa-solid fa-table-cells-column-lock",
+    "fa-solid fa-church",
+    "fa-solid fa-comments-dollar",
+    "fa-solid fa-democrat",
+    "fa-solid fa-z",
+    "fa-solid fa-person-skiing",
+    "fa-solid fa-skiing",
+    "fa-solid fa-road-lock",
+    "fa-solid fa-a",
+    "fa-solid fa-temperature-arrow-down",
+    "fa-solid fa-temperature-down",
+    "fa-solid fa-feather-pointed",
+    "fa-solid fa-feather-alt",
+    "fa-solid fa-p",
+    "fa-solid fa-snowflake",
+    "fa-solid fa-newspaper",
+    "fa-solid fa-rectangle-ad",
+    "fa-solid fa-ad",
+    "fa-solid fa-circle-arrow-right",
+    "fa-solid fa-arrow-circle-right",
+    "fa-solid fa-filter-circle-xmark",
+    "fa-solid fa-locust",
+    "fa-solid fa-sort",
+    "fa-solid fa-unsorted",
+    "fa-solid fa-list-ol",
+    "fa-solid fa-list-1-2",
+    "fa-solid fa-list-numeric",
+    "fa-solid fa-person-dress-burst",
+    "fa-solid fa-money-check-dollar",
+    "fa-solid fa-money-check-alt",
+    "fa-solid fa-vector-square",
+    "fa-solid fa-bread-slice",
+    "fa-solid fa-language",
+    "fa-solid fa-face-kiss-wink-heart",
+    "fa-solid fa-kiss-wink-heart",
+    "fa-solid fa-filter",
+    "fa-solid fa-question",
+    "fa-solid fa-file-signature",
+    "fa-solid fa-up-down-left-right",
+    "fa-solid fa-arrows-alt",
+    "fa-solid fa-house-chimney-user",
+    "fa-solid fa-hand-holding-heart",
+    "fa-solid fa-puzzle-piece",
+    "fa-solid fa-money-check",
+    "fa-solid fa-star-half-stroke",
+    "fa-solid fa-star-half-alt",
+    "fa-solid fa-code",
+    "fa-solid fa-whiskey-glass",
+    "fa-solid fa-glass-whiskey",
+    "fa-solid fa-building-circle-exclamation",
+    "fa-solid fa-magnifying-glass-chart",
+    "fa-solid fa-arrow-up-right-from-square",
+    "fa-solid fa-external-link",
+    "fa-solid fa-cubes-stacked",
+    "fa-solid fa-won-sign",
+    "fa-solid fa-krw",
+    "fa-solid fa-won",
+    "fa-solid fa-virus-covid",
+    "fa-solid fa-austral-sign",
+    "fa-solid fa-f",
+    "fa-solid fa-leaf",
+    "fa-solid fa-road",
+    "fa-solid fa-taxi",
+    "fa-solid fa-cab",
+    "fa-solid fa-person-circle-plus",
+    "fa-solid fa-chart-pie",
+    "fa-solid fa-pie-chart",
+    "fa-solid fa-bolt-lightning",
+    "fa-solid fa-sack-xmark",
+    "fa-solid fa-file-excel",
+    "fa-solid fa-file-contract",
+    "fa-solid fa-fish-fins",
+    "fa-solid fa-building-flag",
+    "fa-solid fa-face-grin-beam",
+    "fa-solid fa-grin-beam",
+    "fa-solid fa-object-ungroup",
+    "fa-solid fa-poop",
+    "fa-solid fa-location-pin",
+    "fa-solid fa-map-marker",
+    "fa-solid fa-kaaba",
+    "fa-solid fa-toilet-paper",
+    "fa-solid fa-helmet-safety",
+    "fa-solid fa-hard-hat",
+    "fa-solid fa-hat-hard",
+    "fa-solid fa-eject",
+    "fa-solid fa-circle-right",
+    "fa-solid fa-arrow-alt-circle-right",
+    "fa-solid fa-plane-circle-check",
+    "fa-solid fa-face-rolling-eyes",
+    "fa-solid fa-meh-rolling-eyes",
+    "fa-solid fa-object-group",
+    "fa-solid fa-chart-line",
+    "fa-solid fa-line-chart",
+    "fa-solid fa-mask-ventilator",
+    "fa-solid fa-arrow-right",
+    "fa-solid fa-signs-post",
+    "fa-solid fa-map-signs",
+    "fa-solid fa-cash-register",
+    "fa-solid fa-person-circle-question",
+    "fa-solid fa-h",
+    "fa-solid fa-tarp",
+    "fa-solid fa-screwdriver-wrench",
+    "fa-solid fa-tools",
+    "fa-solid fa-arrows-to-eye",
+    "fa-solid fa-plug-circle-bolt",
+    "fa-solid fa-heart",
+    "fa-solid fa-mars-and-venus",
+    "fa-solid fa-house-user",
+    "fa-solid fa-home-user",
+    "fa-solid fa-dumpster-fire",
+    "fa-solid fa-house-crack",
+    "fa-solid fa-martini-glass-citrus",
+    "fa-solid fa-cocktail",
+    "fa-solid fa-face-surprise",
+    "fa-solid fa-surprise",
+    "fa-solid fa-bottle-water",
+    "fa-solid fa-circle-pause",
+    "fa-solid fa-pause-circle",
+    "fa-solid fa-toilet-paper-slash",
+    "fa-solid fa-apple-whole",
+    "fa-solid fa-apple-alt",
+    "fa-solid fa-kitchen-set",
+    "fa-solid fa-r",
+    "fa-solid fa-temperature-quarter",
+    "fa-solid fa-temperature-1",
+    "fa-solid fa-thermometer-1",
+    "fa-solid fa-thermometer-quarter",
+    "fa-solid fa-cube",
+    "fa-solid fa-bitcoin-sign",
+    "fa-solid fa-shield-dog",
+    "fa-solid fa-solar-panel",
+    "fa-solid fa-lock-open",
+    "fa-solid fa-elevator",
+    "fa-solid fa-money-bill-transfer",
+    "fa-solid fa-money-bill-trend-up",
+    "fa-solid fa-house-flood-water-circle-arrow-right",
+    "fa-solid fa-square-poll-horizontal",
+    "fa-solid fa-poll-h",
+    "fa-solid fa-circle",
+    "fa-solid fa-backward-fast",
+    "fa-solid fa-fast-backward",
+    "fa-solid fa-recycle",
+    "fa-solid fa-user-astronaut",
+    "fa-solid fa-plane-slash",
+    "fa-solid fa-trademark",
+    "fa-solid fa-basketball",
+    "fa-solid fa-basketball-ball",
+    "fa-solid fa-satellite-dish",
+    "fa-solid fa-circle-up",
+    "fa-solid fa-arrow-alt-circle-up",
+    "fa-solid fa-mobile-screen-button",
+    "fa-solid fa-mobile-alt",
+    "fa-solid fa-volume-high",
+    "fa-solid fa-volume-up",
+    "fa-solid fa-users-rays",
+    "fa-solid fa-wallet",
+    "fa-solid fa-clipboard-check",
+    "fa-solid fa-file-audio",
+    "fa-solid fa-burger",
+    "fa-solid fa-hamburger",
+    "fa-solid fa-wrench",
+    "fa-solid fa-bugs",
+    "fa-solid fa-rupee-sign",
+    "fa-solid fa-rupee",
+    "fa-solid fa-file-image",
+    "fa-solid fa-circle-question",
+    "fa-solid fa-question-circle",
+    "fa-solid fa-plane-departure",
+    "fa-solid fa-handshake-slash",
+    "fa-solid fa-book-bookmark",
+    "fa-solid fa-code-branch",
+    "fa-solid fa-hat-cowboy",
+    "fa-solid fa-bridge",
+    "fa-solid fa-phone-flip",
+    "fa-solid fa-phone-alt",
+    "fa-solid fa-truck-front",
+    "fa-solid fa-cat",
+    "fa-solid fa-anchor-circle-exclamation",
+    "fa-solid fa-truck-field",
+    "fa-solid fa-route",
+    "fa-solid fa-clipboard-question",
+    "fa-solid fa-panorama",
+    "fa-solid fa-comment-medical",
+    "fa-solid fa-teeth-open",
+    "fa-solid fa-file-circle-minus",
+    "fa-solid fa-tags",
+    "fa-solid fa-wine-glass",
+    "fa-solid fa-forward-fast",
+    "fa-solid fa-fast-forward",
+    "fa-solid fa-face-meh-blank",
+    "fa-solid fa-meh-blank",
+    "fa-solid fa-square-parking",
+    "fa-solid fa-parking",
+    "fa-solid fa-house-signal",
+    "fa-solid fa-bars-progress",
+    "fa-solid fa-tasks-alt",
+    "fa-solid fa-faucet-drip",
+    "fa-solid fa-cart-flatbed",
+    "fa-solid fa-dolly-flatbed",
+    "fa-solid fa-ban-smoking",
+    "fa-solid fa-smoking-ban",
+    "fa-solid fa-terminal",
+    "fa-solid fa-mobile-button",
+    "fa-solid fa-house-medical-flag",
+    "fa-solid fa-basket-shopping",
+    "fa-solid fa-shopping-basket",
+    "fa-solid fa-tape",
+    "fa-solid fa-bus-simple",
+    "fa-solid fa-bus-alt",
+    "fa-solid fa-eye",
+    "fa-solid fa-face-sad-cry",
+    "fa-solid fa-sad-cry",
+    "fa-solid fa-audio-description",
+    "fa-solid fa-person-military-to-person",
+    "fa-solid fa-file-shield",
+    "fa-solid fa-user-slash",
+    "fa-solid fa-pen",
+    "fa-solid fa-tower-observation",
+    "fa-solid fa-file-code",
+    "fa-solid fa-signal",
+    "fa-solid fa-signal-5",
+    "fa-solid fa-signal-perfect",
+    "fa-solid fa-bus",
+    "fa-solid fa-heart-circle-xmark",
+    "fa-solid fa-house-chimney",
+    "fa-solid fa-home-lg",
+    "fa-solid fa-window-maximize",
+    "fa-solid fa-face-frown",
+    "fa-solid fa-frown",
+    "fa-solid fa-prescription",
+    "fa-solid fa-shop",
+    "fa-solid fa-store-alt",
+    "fa-solid fa-floppy-disk",
+    "fa-solid fa-save",
+    "fa-solid fa-vihara",
+    "fa-solid fa-scale-unbalanced",
+    "fa-solid fa-balance-scale-left",
+    "fa-solid fa-sort-up",
+    "fa-solid fa-sort-asc",
+    "fa-solid fa-comment-dots",
+    "fa-solid fa-commenting",
+    "fa-solid fa-plant-wilt",
+    "fa-solid fa-diamond",
+    "fa-solid fa-face-grin-squint",
+    "fa-solid fa-grin-squint",
+    "fa-solid fa-hand-holding-dollar",
+    "fa-solid fa-hand-holding-usd",
+    "fa-solid fa-chart-diagram",
+    "fa-solid fa-bacterium",
+    "fa-solid fa-hand-pointer",
+    "fa-solid fa-drum-steelpan",
+    "fa-solid fa-hand-scissors",
+    "fa-solid fa-hands-praying",
+    "fa-solid fa-praying-hands",
+    "fa-solid fa-arrow-rotate-right",
+    "fa-solid fa-arrow-right-rotate",
+    "fa-solid fa-arrow-rotate-forward",
+    "fa-solid fa-redo",
+    "fa-solid fa-biohazard",
+    "fa-solid fa-location-crosshairs",
+    "fa-solid fa-location",
+    "fa-solid fa-mars-double",
+    "fa-solid fa-child-dress",
+    "fa-solid fa-users-between-lines",
+    "fa-solid fa-lungs-virus",
+    "fa-solid fa-face-grin-tears",
+    "fa-solid fa-grin-tears",
+    "fa-solid fa-phone",
+    "fa-solid fa-calendar-xmark",
+    "fa-solid fa-calendar-times",
+    "fa-solid fa-child-reaching",
+    "fa-solid fa-head-side-virus",
+    "fa-solid fa-user-gear",
+    "fa-solid fa-user-cog",
+    "fa-solid fa-arrow-up-1-9",
+    "fa-solid fa-sort-numeric-up",
+    "fa-solid fa-door-closed",
+    "fa-solid fa-shield-virus",
+    "fa-solid fa-dice-six",
+    "fa-solid fa-mosquito-net",
+    "fa-solid fa-file-fragment",
+    "fa-solid fa-bridge-water",
+    "fa-solid fa-person-booth",
+    "fa-solid fa-text-width",
+    "fa-solid fa-hat-wizard",
+    "fa-solid fa-pen-fancy",
+    "fa-solid fa-person-digging",
+    "fa-solid fa-digging",
+    "fa-solid fa-trash",
+    "fa-solid fa-gauge-simple",
+    "fa-solid fa-gauge-simple-med",
+    "fa-solid fa-tachometer-average",
+    "fa-solid fa-book-medical",
+    "fa-solid fa-poo",
+    "fa-solid fa-quote-right",
+    "fa-solid fa-quote-right-alt",
+    "fa-solid fa-shirt",
+    "fa-solid fa-t-shirt",
+    "fa-solid fa-tshirt",
+    "fa-solid fa-cubes",
+    "fa-solid fa-divide",
+    "fa-solid fa-tenge-sign",
+    "fa-solid fa-tenge",
+    "fa-solid fa-headphones",
+    "fa-solid fa-hands-holding",
+    "fa-solid fa-hands-clapping",
+    "fa-solid fa-republican",
+    "fa-solid fa-arrow-left",
+    "fa-solid fa-person-circle-xmark",
+    "fa-solid fa-ruler",
+    "fa-solid fa-align-left",
+    "fa-solid fa-dice-d6",
+    "fa-solid fa-restroom",
+    "fa-solid fa-j",
+    "fa-solid fa-users-viewfinder",
+    "fa-solid fa-file-video",
+    "fa-solid fa-up-right-from-square",
+    "fa-solid fa-external-link-alt",
+    "fa-solid fa-table-cells",
+    "fa-solid fa-th",
+    "fa-solid fa-file-pdf",
+    "fa-solid fa-book-bible",
+    "fa-solid fa-bible",
+    "fa-solid fa-o",
+    "fa-solid fa-suitcase-medical",
+    "fa-solid fa-medkit",
+    "fa-solid fa-user-secret",
+    "fa-solid fa-otter",
+    "fa-solid fa-person-dress",
+    "fa-solid fa-female",
+    "fa-solid fa-comment-dollar",
+    "fa-solid fa-business-time",
+    "fa-solid fa-briefcase-clock",
+    "fa-solid fa-table-cells-large",
+    "fa-solid fa-th-large",
+    "fa-solid fa-book-tanakh",
+    "fa-solid fa-tanakh",
+    "fa-solid fa-phone-volume",
+    "fa-solid fa-volume-control-phone",
+    "fa-solid fa-hat-cowboy-side",
+    "fa-solid fa-clipboard-user",
+    "fa-solid fa-child",
+    "fa-solid fa-lira-sign",
+    "fa-solid fa-satellite",
+    "fa-solid fa-plane-lock",
+    "fa-solid fa-tag",
+    "fa-solid fa-comment",
+    "fa-solid fa-cake-candles",
+    "fa-solid fa-birthday-cake",
+    "fa-solid fa-cake",
+    "fa-solid fa-envelope",
+    "fa-solid fa-angles-up",
+    "fa-solid fa-angle-double-up",
+    "fa-solid fa-paperclip",
+    "fa-solid fa-arrow-right-to-city",
+    "fa-solid fa-ribbon",
+    "fa-solid fa-lungs",
+    "fa-solid fa-arrow-up-9-1",
+    "fa-solid fa-sort-numeric-up-alt",
+    "fa-solid fa-litecoin-sign",
+    "fa-solid fa-border-none",
+    "fa-solid fa-circle-nodes",
+    "fa-solid fa-parachute-box",
+    "fa-solid fa-indent",
+    "fa-solid fa-truck-field-un",
+    "fa-solid fa-hourglass",
+    "fa-solid fa-hourglass-empty",
+    "fa-solid fa-mountain",
+    "fa-solid fa-user-doctor",
+    "fa-solid fa-user-md",
+    "fa-solid fa-circle-info",
+    "fa-solid fa-info-circle",
+    "fa-solid fa-cloud-meatball",
+    "fa-solid fa-camera",
+    "fa-solid fa-camera-alt",
+    "fa-solid fa-square-virus",
+    "fa-solid fa-meteor",
+    "fa-solid fa-car-on",
+    "fa-solid fa-sleigh",
+    "fa-solid fa-arrow-down-1-9",
+    "fa-solid fa-sort-numeric-asc",
+    "fa-solid fa-sort-numeric-down",
+    "fa-solid fa-hand-holding-droplet",
+    "fa-solid fa-hand-holding-water",
+    "fa-solid fa-water",
+    "fa-solid fa-calendar-check",
+    "fa-solid fa-braille",
+    "fa-solid fa-prescription-bottle-medical",
+    "fa-solid fa-prescription-bottle-alt",
+    "fa-solid fa-landmark",
+    "fa-solid fa-truck",
+    "fa-solid fa-crosshairs",
+    "fa-solid fa-person-cane",
+    "fa-solid fa-tent",
+    "fa-solid fa-vest-patches",
+    "fa-solid fa-check-double",
+    "fa-solid fa-arrow-down-a-z",
+    "fa-solid fa-sort-alpha-asc",
+    "fa-solid fa-sort-alpha-down",
+    "fa-solid fa-money-bill-wheat",
+    "fa-solid fa-cookie",
+    "fa-solid fa-arrow-rotate-left",
+    "fa-solid fa-arrow-left-rotate",
+    "fa-solid fa-arrow-rotate-back",
+    "fa-solid fa-arrow-rotate-backward",
+    "fa-solid fa-undo",
+    "fa-solid fa-hard-drive",
+    "fa-solid fa-hdd",
+    "fa-solid fa-face-grin-squint-tears",
+    "fa-solid fa-grin-squint-tears",
+    "fa-solid fa-dumbbell",
+    "fa-solid fa-rectangle-list",
+    "fa-solid fa-list-alt",
+    "fa-solid fa-tarp-droplet",
+    "fa-solid fa-house-medical-circle-check",
+    "fa-solid fa-person-skiing-nordic",
+    "fa-solid fa-skiing-nordic",
+    "fa-solid fa-calendar-plus",
+    "fa-solid fa-plane-arrival",
+    "fa-solid fa-circle-left",
+    "fa-solid fa-arrow-alt-circle-left",
+    "fa-solid fa-train-subway",
+    "fa-solid fa-subway",
+    "fa-solid fa-chart-gantt",
+    "fa-solid fa-indian-rupee-sign",
+    "fa-solid fa-indian-rupee",
+    "fa-solid fa-inr",
+    "fa-solid fa-crop-simple",
+    "fa-solid fa-crop-alt",
+    "fa-solid fa-money-bill-1",
+    "fa-solid fa-money-bill-alt",
+    "fa-solid fa-left-long",
+    "fa-solid fa-long-arrow-alt-left",
+    "fa-solid fa-dna",
+    "fa-solid fa-virus-slash",
+    "fa-solid fa-minus",
+    "fa-solid fa-subtract",
+    "fa-solid fa-chess",
+    "fa-solid fa-arrow-left-long",
+    "fa-solid fa-long-arrow-left",
+    "fa-solid fa-plug-circle-check",
+    "fa-solid fa-street-view",
+    "fa-solid fa-franc-sign",
+    "fa-solid fa-volume-off",
+    "fa-solid fa-hands-asl-interpreting",
+    "fa-solid fa-american-sign-language-interpreting",
+    "fa-solid fa-asl-interpreting",
+    "fa-solid fa-hands-american-sign-language-interpreting",
+    "fa-solid fa-gear",
+    "fa-solid fa-cog",
+    "fa-solid fa-droplet-slash",
+    "fa-solid fa-tint-slash",
+    "fa-solid fa-mosque",
+    "fa-solid fa-mosquito",
+    "fa-solid fa-star-of-david",
+    "fa-solid fa-person-military-rifle",
+    "fa-solid fa-cart-shopping",
+    "fa-solid fa-shopping-cart",
+    "fa-solid fa-vials",
+    "fa-solid fa-plug-circle-plus",
+    "fa-solid fa-place-of-worship",
+    "fa-solid fa-grip-vertical",
+    "fa-solid fa-hexagon-nodes",
+    "fa-solid fa-arrow-turn-up",
+    "fa-solid fa-level-up",
+    "fa-solid fa-u",
+    "fa-solid fa-square-root-variable",
+    "fa-solid fa-square-root-alt",
+    "fa-solid fa-clock",
+    "fa-solid fa-clock-four",
+    "fa-solid fa-backward-step",
+    "fa-solid fa-step-backward",
+    "fa-solid fa-pallet",
+    "fa-solid fa-faucet",
+    "fa-solid fa-baseball-bat-ball",
+    "fa-solid fa-s",
+    "fa-solid fa-timeline",
+    "fa-solid fa-keyboard",
+    "fa-solid fa-caret-down",
+    "fa-solid fa-house-chimney-medical",
+    "fa-solid fa-clinic-medical",
+    "fa-solid fa-temperature-three-quarters",
+    "fa-solid fa-temperature-3",
+    "fa-solid fa-thermometer-3",
+    "fa-solid fa-thermometer-three-quarters",
+    "fa-solid fa-mobile-screen",
+    "fa-solid fa-mobile-android-alt",
+    "fa-solid fa-plane-up",
+    "fa-solid fa-piggy-bank",
+    "fa-solid fa-battery-half",
+    "fa-solid fa-battery-3",
+    "fa-solid fa-mountain-city",
+    "fa-solid fa-coins",
+    "fa-solid fa-khanda",
+    "fa-solid fa-sliders",
+    "fa-solid fa-sliders-h",
+    "fa-solid fa-folder-tree",
+    "fa-solid fa-network-wired",
+    "fa-solid fa-map-pin",
+    "fa-solid fa-hamsa",
+    "fa-solid fa-cent-sign",
+    "fa-solid fa-flask",
+    "fa-solid fa-person-pregnant",
+    "fa-solid fa-wand-sparkles",
+    "fa-solid fa-ellipsis-vertical",
+    "fa-solid fa-ellipsis-v",
+    "fa-solid fa-ticket",
+    "fa-solid fa-power-off",
+    "fa-solid fa-right-long",
+    "fa-solid fa-long-arrow-alt-right",
+    "fa-solid fa-flag-usa",
+    "fa-solid fa-laptop-file",
+    "fa-solid fa-tty",
+    "fa-solid fa-teletype",
+    "fa-solid fa-diagram-next",
+    "fa-solid fa-person-rifle",
+    "fa-solid fa-house-medical-circle-exclamation",
+    "fa-solid fa-closed-captioning",
+    "fa-solid fa-person-hiking",
+    "fa-solid fa-hiking",
+    "fa-solid fa-venus-double",
+    "fa-solid fa-images",
+    "fa-solid fa-calculator",
+    "fa-solid fa-people-pulling",
+    "fa-solid fa-n",
+    "fa-solid fa-cable-car",
+    "fa-solid fa-tram",
+    "fa-solid fa-cloud-rain",
+    "fa-solid fa-building-circle-xmark",
+    "fa-solid fa-ship",
+    "fa-solid fa-arrows-down-to-line",
+    "fa-solid fa-download",
+    "fa-solid fa-face-grin",
+    "fa-solid fa-grin",
+    "fa-solid fa-delete-left",
+    "fa-solid fa-backspace",
+    "fa-solid fa-eye-dropper",
+    "fa-solid fa-eye-dropper-empty",
+    "fa-solid fa-eyedropper",
+    "fa-solid fa-file-circle-check",
+    "fa-solid fa-forward",
+    "fa-solid fa-mobile",
+    "fa-solid fa-mobile-android",
+    "fa-solid fa-mobile-phone",
+    "fa-solid fa-face-meh",
+    "fa-solid fa-meh",
+    "fa-solid fa-align-center",
+    "fa-solid fa-book-skull",
+    "fa-solid fa-book-dead",
+    "fa-solid fa-id-card",
+    "fa-solid fa-drivers-license",
+    "fa-solid fa-outdent",
+    "fa-solid fa-dedent",
+    "fa-solid fa-heart-circle-exclamation",
+    "fa-solid fa-house",
+    "fa-solid fa-home",
+    "fa-solid fa-home-alt",
+    "fa-solid fa-home-lg-alt",
+    "fa-solid fa-calendar-week",
+    "fa-solid fa-laptop-medical",
+    "fa-solid fa-b",
+    "fa-solid fa-file-medical",
+    "fa-solid fa-dice-one",
+    "fa-solid fa-kiwi-bird",
+    "fa-solid fa-arrow-right-arrow-left",
+    "fa-solid fa-exchange",
+    "fa-solid fa-rotate-right",
+    "fa-solid fa-redo-alt",
+    "fa-solid fa-rotate-forward",
+    "fa-solid fa-utensils",
+    "fa-solid fa-cutlery",
+    "fa-solid fa-arrow-up-wide-short",
+    "fa-solid fa-sort-amount-up",
+    "fa-solid fa-mill-sign",
+    "fa-solid fa-bowl-rice",
+    "fa-solid fa-skull",
+    "fa-solid fa-tower-broadcast",
+    "fa-solid fa-broadcast-tower",
+    "fa-solid fa-truck-pickup",
+    "fa-solid fa-up-long",
+    "fa-solid fa-long-arrow-alt-up",
+    "fa-solid fa-stop",
+    "fa-solid fa-code-merge",
+    "fa-solid fa-upload",
+    "fa-solid fa-hurricane",
+    "fa-solid fa-mound",
+    "fa-solid fa-toilet-portable",
+    "fa-solid fa-compact-disc",
+    "fa-solid fa-file-arrow-down",
+    "fa-solid fa-file-download",
+    "fa-solid fa-caravan",
+    "fa-solid fa-shield-cat",
+    "fa-solid fa-bolt",
+    "fa-solid fa-zap",
+    "fa-solid fa-glass-water",
+    "fa-solid fa-oil-well",
+    "fa-solid fa-vault",
+    "fa-solid fa-mars",
+    "fa-solid fa-toilet",
+    "fa-solid fa-plane-circle-xmark",
+    "fa-solid fa-yen-sign",
+    "fa-solid fa-cny",
+    "fa-solid fa-jpy",
+    "fa-solid fa-rmb",
+    "fa-solid fa-yen",
+    "fa-solid fa-ruble-sign",
+    "fa-solid fa-rouble",
+    "fa-solid fa-rub",
+    "fa-solid fa-ruble",
+    "fa-solid fa-sun",
+    "fa-solid fa-guitar",
+    "fa-solid fa-face-laugh-wink",
+    "fa-solid fa-laugh-wink",
+    "fa-solid fa-horse-head",
+    "fa-solid fa-bore-hole",
+    "fa-solid fa-industry",
+    "fa-solid fa-circle-down",
+    "fa-solid fa-arrow-alt-circle-down",
+    "fa-solid fa-arrows-turn-to-dots",
+    "fa-solid fa-florin-sign",
+    "fa-solid fa-arrow-down-short-wide",
+    "fa-solid fa-sort-amount-desc",
+    "fa-solid fa-sort-amount-down-alt",
+    "fa-solid fa-less-than",
+    "fa-solid fa-angle-down",
+    "fa-solid fa-car-tunnel",
+    "fa-solid fa-head-side-cough",
+    "fa-solid fa-grip-lines",
+    "fa-solid fa-thumbs-down",
+    "fa-solid fa-user-lock",
+    "fa-solid fa-arrow-right-long",
+    "fa-solid fa-long-arrow-right",
+    "fa-solid fa-anchor-circle-xmark",
+    "fa-solid fa-ellipsis",
+    "fa-solid fa-ellipsis-h",
+    "fa-solid fa-chess-pawn",
+    "fa-solid fa-kit-medical",
+    "fa-solid fa-first-aid",
+    "fa-solid fa-person-through-window",
+    "fa-solid fa-toolbox",
+    "fa-solid fa-hands-holding-circle",
+    "fa-solid fa-bug",
+    "fa-solid fa-credit-card",
+    "fa-solid fa-credit-card-alt",
+    "fa-solid fa-car",
+    "fa-solid fa-automobile",
+    "fa-solid fa-hand-holding-hand",
+    "fa-solid fa-book-open-reader",
+    "fa-solid fa-book-reader",
+    "fa-solid fa-mountain-sun",
+    "fa-solid fa-arrows-left-right-to-line",
+    "fa-solid fa-dice-d20",
+    "fa-solid fa-truck-droplet",
+    "fa-solid fa-file-circle-xmark",
+    "fa-solid fa-temperature-arrow-up",
+    "fa-solid fa-temperature-up",
+    "fa-solid fa-medal",
+    "fa-solid fa-bed",
+    "fa-solid fa-square-h",
+    "fa-solid fa-h-square",
+    "fa-solid fa-podcast",
+    "fa-solid fa-temperature-full",
+    "fa-solid fa-temperature-4",
+    "fa-solid fa-thermometer-4",
+    "fa-solid fa-thermometer-full",
+    "fa-solid fa-bell",
+    "fa-solid fa-superscript",
+    "fa-solid fa-plug-circle-xmark",
+    "fa-solid fa-star-of-life",
+    "fa-solid fa-phone-slash",
+    "fa-solid fa-paint-roller",
+    "fa-solid fa-handshake-angle",
+    "fa-solid fa-hands-helping",
+    "fa-solid fa-location-dot",
+    "fa-solid fa-map-marker-alt",
+    "fa-solid fa-file",
+    "fa-solid fa-greater-than",
+    "fa-solid fa-person-swimming",
+    "fa-solid fa-swimmer",
+    "fa-solid fa-arrow-down",
+    "fa-solid fa-droplet",
+    "fa-solid fa-tint",
+    "fa-solid fa-eraser",
+    "fa-solid fa-earth-americas",
+    "fa-solid fa-earth",
+    "fa-solid fa-earth-america",
+    "fa-solid fa-globe-americas",
+    "fa-solid fa-person-burst",
+    "fa-solid fa-dove",
+    "fa-solid fa-battery-empty",
+    "fa-solid fa-battery-0",
+    "fa-solid fa-socks",
+    "fa-solid fa-inbox",
+    "fa-solid fa-section",
+    "fa-solid fa-gauge-high",
+    "fa-solid fa-tachometer-alt",
+    "fa-solid fa-tachometer-alt-fast",
+    "fa-solid fa-envelope-open-text",
+    "fa-solid fa-hospital",
+    "fa-solid fa-hospital-alt",
+    "fa-solid fa-hospital-wide",
+    "fa-solid fa-wine-bottle",
+    "fa-solid fa-chess-rook",
+    "fa-solid fa-bars-staggered",
+    "fa-solid fa-reorder",
+    "fa-solid fa-stream",
+    "fa-solid fa-dharmachakra",
+    "fa-solid fa-hotdog",
+    "fa-solid fa-person-walking-with-cane",
+    "fa-solid fa-blind",
+    "fa-solid fa-drum",
+    "fa-solid fa-ice-cream",
+    "fa-solid fa-heart-circle-bolt",
+    "fa-solid fa-fax",
+    "fa-solid fa-paragraph",
+    "fa-solid fa-check-to-slot",
+    "fa-solid fa-vote-yea",
+    "fa-solid fa-star-half",
+    "fa-solid fa-boxes-stacked",
+    "fa-solid fa-boxes",
+    "fa-solid fa-boxes-alt",
+    "fa-solid fa-link",
+    "fa-solid fa-chain",
+    "fa-solid fa-ear-listen",
+    "fa-solid fa-assistive-listening-systems",
+    "fa-solid fa-tree-city",
+    "fa-solid fa-play",
+    "fa-solid fa-font",
+    "fa-solid fa-table-cells-row-lock",
+    "fa-solid fa-rupiah-sign",
+    "fa-solid fa-magnifying-glass",
+    "fa-solid fa-search",
+    "fa-solid fa-table-tennis-paddle-ball",
+    "fa-solid fa-ping-pong-paddle-ball",
+    "fa-solid fa-table-tennis",
+    "fa-solid fa-person-dots-from-line",
+    "fa-solid fa-diagnoses",
+    "fa-solid fa-trash-can-arrow-up",
+    "fa-solid fa-trash-restore-alt",
+    "fa-solid fa-naira-sign",
+    "fa-solid fa-cart-arrow-down",
+    "fa-solid fa-walkie-talkie",
+    "fa-solid fa-file-pen",
+    "fa-solid fa-file-edit",
+    "fa-solid fa-receipt",
+    "fa-solid fa-square-pen",
+    "fa-solid fa-pen-square",
+    "fa-solid fa-pencil-square",
+    "fa-solid fa-suitcase-rolling",
+    "fa-solid fa-person-circle-exclamation",
+    "fa-solid fa-chevron-down",
+    "fa-solid fa-battery-full",
+    "fa-solid fa-battery",
+    "fa-solid fa-battery-5",
+    "fa-solid fa-skull-crossbones",
+    "fa-solid fa-code-compare",
+    "fa-solid fa-list-ul",
+    "fa-solid fa-list-dots",
+    "fa-solid fa-school-lock",
+    "fa-solid fa-tower-cell",
+    "fa-solid fa-down-long",
+    "fa-solid fa-long-arrow-alt-down",
+    "fa-solid fa-ranking-star",
+    "fa-solid fa-chess-king",
+    "fa-solid fa-person-harassing",
+    "fa-solid fa-brazilian-real-sign",
+    "fa-solid fa-landmark-dome",
+    "fa-solid fa-landmark-alt",
+    "fa-solid fa-arrow-up",
+    "fa-solid fa-tv",
+    "fa-solid fa-television",
+    "fa-solid fa-tv-alt",
+    "fa-solid fa-shrimp",
+    "fa-solid fa-list-check",
+    "fa-solid fa-tasks",
+    "fa-solid fa-jug-detergent",
+    "fa-solid fa-circle-user",
+    "fa-solid fa-user-circle",
+    "fa-solid fa-user-shield",
+    "fa-solid fa-wind",
+    "fa-solid fa-car-burst",
+    "fa-solid fa-car-crash",
+    "fa-solid fa-y",
+    "fa-solid fa-person-snowboarding",
+    "fa-solid fa-snowboarding",
+    "fa-solid fa-truck-fast",
+    "fa-solid fa-shipping-fast",
+    "fa-solid fa-fish",
+    "fa-solid fa-user-graduate",
+    "fa-solid fa-circle-half-stroke",
+    "fa-solid fa-adjust",
+    "fa-solid fa-clapperboard",
+    "fa-solid fa-circle-radiation",
+    "fa-solid fa-radiation-alt",
+    "fa-solid fa-baseball",
+    "fa-solid fa-baseball-ball",
+    "fa-solid fa-jet-fighter-up",
+    "fa-solid fa-diagram-project",
+    "fa-solid fa-project-diagram",
+    "fa-solid fa-copy",
+    "fa-solid fa-volume-xmark",
+    "fa-solid fa-volume-mute",
+    "fa-solid fa-volume-times",
+    "fa-solid fa-hand-sparkles",
+    "fa-solid fa-grip",
+    "fa-solid fa-grip-horizontal",
+    "fa-solid fa-share-from-square",
+    "fa-solid fa-share-square",
+    "fa-solid fa-child-combatant",
+    "fa-solid fa-child-rifle",
+    "fa-solid fa-gun",
+    "fa-solid fa-square-phone",
+    "fa-solid fa-phone-square",
+    "fa-solid fa-plus",
+    "fa-solid fa-add",
+    "fa-solid fa-expand",
+    "fa-solid fa-computer",
+    "fa-solid fa-xmark",
+    "fa-solid fa-close",
+    "fa-solid fa-multiply",
+    "fa-solid fa-remove",
+    "fa-solid fa-times",
+    "fa-solid fa-arrows-up-down-left-right",
+    "fa-solid fa-arrows",
+    "fa-solid fa-chalkboard-user",
+    "fa-solid fa-chalkboard-teacher",
+    "fa-solid fa-peso-sign",
+    "fa-solid fa-building-shield",
+    "fa-solid fa-baby",
+    "fa-solid fa-users-line",
+    "fa-solid fa-quote-left",
+    "fa-solid fa-quote-left-alt",
+    "fa-solid fa-tractor",
+    "fa-solid fa-trash-arrow-up",
+    "fa-solid fa-trash-restore",
+    "fa-solid fa-arrow-down-up-lock",
+    "fa-solid fa-lines-leaning",
+    "fa-solid fa-ruler-combined",
+    "fa-solid fa-copyright",
+    "fa-solid fa-equals",
+    "fa-solid fa-blender",
+    "fa-solid fa-teeth",
+    "fa-solid fa-shekel-sign",
+    "fa-solid fa-ils",
+    "fa-solid fa-shekel",
+    "fa-solid fa-sheqel",
+    "fa-solid fa-sheqel-sign",
+    "fa-solid fa-map",
+    "fa-solid fa-rocket",
+    "fa-solid fa-photo-film",
+    "fa-solid fa-photo-video",
+    "fa-solid fa-folder-minus",
+    "fa-solid fa-hexagon-nodes-bolt",
+    "fa-solid fa-store",
+    "fa-solid fa-arrow-trend-up",
+    "fa-solid fa-plug-circle-minus",
+    "fa-solid fa-sign-hanging",
+    "fa-solid fa-sign",
+    "fa-solid fa-bezier-curve",
+    "fa-solid fa-bell-slash",
+    "fa-solid fa-tablet",
+    "fa-solid fa-tablet-android",
+    "fa-solid fa-school-flag",
+    "fa-solid fa-fill",
+    "fa-solid fa-angle-up",
+    "fa-solid fa-drumstick-bite",
+    "fa-solid fa-holly-berry",
+    "fa-solid fa-chevron-left",
+    "fa-solid fa-bacteria",
+    "fa-solid fa-hand-lizard",
+    "fa-solid fa-notdef",
+    "fa-solid fa-disease",
+    "fa-solid fa-briefcase-medical",
+    "fa-solid fa-genderless",
+    "fa-solid fa-chevron-right",
+    "fa-solid fa-retweet",
+    "fa-solid fa-car-rear",
+    "fa-solid fa-car-alt",
+    "fa-solid fa-pump-soap",
+    "fa-solid fa-video-slash",
+    "fa-solid fa-battery-quarter",
+    "fa-solid fa-battery-2",
+    "fa-solid fa-radio",
+    "fa-solid fa-baby-carriage",
+    "fa-solid fa-carriage-baby",
+    "fa-solid fa-traffic-light",
+    "fa-solid fa-thermometer",
+    "fa-solid fa-vr-cardboard",
+    "fa-solid fa-hand-middle-finger",
+    "fa-solid fa-percent",
+    "fa-solid fa-percentage",
+    "fa-solid fa-truck-moving",
+    "fa-solid fa-glass-water-droplet",
+    "fa-solid fa-display",
+    "fa-solid fa-face-smile",
+    "fa-solid fa-smile",
+    "fa-solid fa-thumbtack",
+    "fa-solid fa-thumb-tack",
+    "fa-solid fa-trophy",
+    "fa-solid fa-person-praying",
+    "fa-solid fa-pray",
+    "fa-solid fa-hammer",
+    "fa-solid fa-hand-peace",
+    "fa-solid fa-rotate",
+    "fa-solid fa-sync-alt",
+    "fa-solid fa-spinner",
+    "fa-solid fa-robot",
+    "fa-solid fa-peace",
+    "fa-solid fa-gears",
+    "fa-solid fa-cogs",
+    "fa-solid fa-warehouse",
+    "fa-solid fa-arrow-up-right-dots",
+    "fa-solid fa-splotch",
+    "fa-solid fa-face-grin-hearts",
+    "fa-solid fa-grin-hearts",
+    "fa-solid fa-dice-four",
+    "fa-solid fa-sim-card",
+    "fa-solid fa-transgender",
+    "fa-solid fa-transgender-alt",
+    "fa-solid fa-mercury",
+    "fa-solid fa-arrow-turn-down",
+    "fa-solid fa-level-down",
+    "fa-solid fa-person-falling-burst",
+    "fa-solid fa-award",
+    "fa-solid fa-ticket-simple",
+    "fa-solid fa-ticket-alt",
+    "fa-solid fa-building",
+    "fa-solid fa-angles-left",
+    "fa-solid fa-angle-double-left",
+    "fa-solid fa-qrcode",
+    "fa-solid fa-clock-rotate-left",
+    "fa-solid fa-history",
+    "fa-solid fa-face-grin-beam-sweat",
+    "fa-solid fa-grin-beam-sweat",
+    "fa-solid fa-file-export",
+    "fa-solid fa-arrow-right-from-file",
+    "fa-solid fa-shield",
+    "fa-solid fa-shield-blank",
+    "fa-solid fa-arrow-up-short-wide",
+    "fa-solid fa-sort-amount-up-alt",
+    "fa-solid fa-comment-nodes",
+    "fa-solid fa-house-medical",
+    "fa-solid fa-golf-ball-tee",
+    "fa-solid fa-golf-ball",
+    "fa-solid fa-circle-chevron-left",
+    "fa-solid fa-chevron-circle-left",
+    "fa-solid fa-house-chimney-window",
+    "fa-solid fa-pen-nib",
+    "fa-solid fa-tent-arrow-turn-left",
+    "fa-solid fa-tents",
+    "fa-solid fa-wand-magic",
+    "fa-solid fa-magic",
+    "fa-solid fa-dog",
+    "fa-solid fa-carrot",
+    "fa-solid fa-moon",
+    "fa-solid fa-wine-glass-empty",
+    "fa-solid fa-wine-glass-alt",
+    "fa-solid fa-cheese",
+    "fa-solid fa-yin-yang",
+    "fa-solid fa-music",
+    "fa-solid fa-code-commit",
+    "fa-solid fa-temperature-low",
+    "fa-solid fa-person-biking",
+    "fa-solid fa-biking",
+    "fa-solid fa-broom",
+    "fa-solid fa-shield-heart",
+    "fa-solid fa-gopuram",
+    "fa-solid fa-earth-oceania",
+    "fa-solid fa-globe-oceania",
+    "fa-solid fa-square-xmark",
+    "fa-solid fa-times-square",
+    "fa-solid fa-xmark-square",
+    "fa-solid fa-hashtag",
+    "fa-solid fa-up-right-and-down-left-from-center",
+    "fa-solid fa-expand-alt",
+    "fa-solid fa-oil-can",
+    "fa-solid fa-t",
+    "fa-solid fa-hippo",
+    "fa-solid fa-chart-column",
+    "fa-solid fa-infinity",
+    "fa-solid fa-vial-circle-check",
+    "fa-solid fa-person-arrow-down-to-line",
+    "fa-solid fa-voicemail",
+    "fa-solid fa-fan",
+    "fa-solid fa-person-walking-luggage",
+    "fa-solid fa-up-down",
+    "fa-solid fa-arrows-alt-v",
+    "fa-solid fa-cloud-moon-rain",
+    "fa-solid fa-calendar",
+    "fa-solid fa-trailer",
+    "fa-solid fa-bahai",
+    "fa-solid fa-haykal",
+    "fa-solid fa-sd-card",
+    "fa-solid fa-dragon",
+    "fa-solid fa-shoe-prints",
+    "fa-solid fa-circle-plus",
+    "fa-solid fa-plus-circle",
+    "fa-solid fa-face-grin-tongue-wink",
+    "fa-solid fa-grin-tongue-wink",
+    "fa-solid fa-hand-holding",
+    "fa-solid fa-plug-circle-exclamation",
+    "fa-solid fa-link-slash",
+    "fa-solid fa-chain-broken",
+    "fa-solid fa-chain-slash",
+    "fa-solid fa-unlink",
+    "fa-solid fa-clone",
+    "fa-solid fa-person-walking-arrow-loop-left",
+    "fa-solid fa-arrow-up-z-a",
+    "fa-solid fa-sort-alpha-up-alt",
+    "fa-solid fa-fire-flame-curved",
+    "fa-solid fa-fire-alt",
+    "fa-solid fa-tornado",
+    "fa-solid fa-file-circle-plus",
+    "fa-solid fa-book-quran",
+    "fa-solid fa-quran",
+    "fa-solid fa-anchor",
+    "fa-solid fa-border-all",
+    "fa-solid fa-face-angry",
+    "fa-solid fa-angry",
+    "fa-solid fa-cookie-bite",
+    "fa-solid fa-arrow-trend-down",
+    "fa-solid fa-rss",
+    "fa-solid fa-feed",
+    "fa-solid fa-draw-polygon",
+    "fa-solid fa-scale-balanced",
+    "fa-solid fa-balance-scale",
+    "fa-solid fa-gauge-simple-high",
+    "fa-solid fa-tachometer",
+    "fa-solid fa-tachometer-fast",
+    "fa-solid fa-shower",
+    "fa-solid fa-desktop",
+    "fa-solid fa-desktop-alt",
+    "fa-solid fa-m",
+    "fa-solid fa-table-list",
+    "fa-solid fa-th-list",
+    "fa-solid fa-comment-sms",
+    "fa-solid fa-sms",
+    "fa-solid fa-book",
+    "fa-solid fa-user-plus",
+    "fa-solid fa-check",
+    "fa-solid fa-battery-three-quarters",
+    "fa-solid fa-battery-4",
+    "fa-solid fa-house-circle-check",
+    "fa-solid fa-angle-left",
+    "fa-solid fa-diagram-successor",
+    "fa-solid fa-truck-arrow-right",
+    "fa-solid fa-arrows-split-up-and-left",
+    "fa-solid fa-hand-fist",
+    "fa-solid fa-fist-raised",
+    "fa-solid fa-cloud-moon",
+    "fa-solid fa-briefcase",
+    "fa-solid fa-person-falling",
+    "fa-solid fa-image-portrait",
+    "fa-solid fa-portrait",
+    "fa-solid fa-user-tag",
+    "fa-solid fa-rug",
+    "fa-solid fa-earth-europe",
+    "fa-solid fa-globe-europe",
+    "fa-solid fa-cart-flatbed-suitcase",
+    "fa-solid fa-luggage-cart",
+    "fa-solid fa-rectangle-xmark",
+    "fa-solid fa-rectangle-times",
+    "fa-solid fa-times-rectangle",
+    "fa-solid fa-window-close",
+    "fa-solid fa-baht-sign",
+    "fa-solid fa-book-open",
+    "fa-solid fa-book-journal-whills",
+    "fa-solid fa-journal-whills",
+    "fa-solid fa-handcuffs",
+    "fa-solid fa-triangle-exclamation",
+    "fa-solid fa-exclamation-triangle",
+    "fa-solid fa-warning",
+    "fa-solid fa-database",
+    "fa-solid fa-share",
+    "fa-solid fa-mail-forward",
+    "fa-solid fa-bottle-droplet",
+    "fa-solid fa-mask-face",
+    "fa-solid fa-hill-rockslide",
+    "fa-solid fa-right-left",
+    "fa-solid fa-exchange-alt",
+    "fa-solid fa-paper-plane",
+    "fa-solid fa-road-circle-exclamation",
+    "fa-solid fa-dungeon",
+    "fa-solid fa-align-right",
+    "fa-solid fa-money-bill-1-wave",
+    "fa-solid fa-money-bill-wave-alt",
+    "fa-solid fa-life-ring",
+    "fa-solid fa-hands",
+    "fa-solid fa-sign-language",
+    "fa-solid fa-signing",
+    "fa-solid fa-calendar-day",
+    "fa-solid fa-water-ladder",
+    "fa-solid fa-ladder-water",
+    "fa-solid fa-swimming-pool",
+    "fa-solid fa-arrows-up-down",
+    "fa-solid fa-arrows-v",
+    "fa-solid fa-face-grimace",
+    "fa-solid fa-grimace",
+    "fa-solid fa-wheelchair-move",
+    "fa-solid fa-wheelchair-alt",
+    "fa-solid fa-turn-down",
+    "fa-solid fa-level-down-alt",
+    "fa-solid fa-person-walking-arrow-right",
+    "fa-solid fa-square-envelope",
+    "fa-solid fa-envelope-square",
+    "fa-solid fa-dice",
+    "fa-solid fa-bowling-ball",
+    "fa-solid fa-brain",
+    "fa-solid fa-bandage",
+    "fa-solid fa-band-aid",
+    "fa-solid fa-calendar-minus",
+    "fa-solid fa-circle-xmark",
+    "fa-solid fa-times-circle",
+    "fa-solid fa-xmark-circle",
+    "fa-solid fa-gifts",
+    "fa-solid fa-hotel",
+    "fa-solid fa-earth-asia",
+    "fa-solid fa-globe-asia",
+    "fa-solid fa-id-card-clip",
+    "fa-solid fa-id-card-alt",
+    "fa-solid fa-magnifying-glass-plus",
+    "fa-solid fa-search-plus",
+    "fa-solid fa-thumbs-up",
+    "fa-solid fa-user-clock",
+    "fa-solid fa-hand-dots",
+    "fa-solid fa-allergies",
+    "fa-solid fa-file-invoice",
+    "fa-solid fa-window-minimize",
+    "fa-solid fa-mug-saucer",
+    "fa-solid fa-coffee",
+    "fa-solid fa-brush",
+    "fa-solid fa-file-half-dashed",
+    "fa-solid fa-mask",
+    "fa-solid fa-magnifying-glass-minus",
+    "fa-solid fa-search-minus",
+    "fa-solid fa-ruler-vertical",
+    "fa-solid fa-user-large",
+    "fa-solid fa-user-alt",
+    "fa-solid fa-train-tram",
+    "fa-solid fa-user-nurse",
+    "fa-solid fa-syringe",
+    "fa-solid fa-cloud-sun",
+    "fa-solid fa-stopwatch-20",
+    "fa-solid fa-square-full",
+    "fa-solid fa-magnet",
+    "fa-solid fa-jar",
+    "fa-solid fa-note-sticky",
+    "fa-solid fa-sticky-note",
+    "fa-solid fa-bug-slash",
+    "fa-solid fa-arrow-up-from-water-pump",
+    "fa-solid fa-bone",
+    "fa-solid fa-table-cells-row-unlock",
+    "fa-solid fa-user-injured",
+    "fa-solid fa-face-sad-tear",
+    "fa-solid fa-sad-tear",
+    "fa-solid fa-plane",
+    "fa-solid fa-tent-arrows-down",
+    "fa-solid fa-exclamation",
+    "fa-solid fa-arrows-spin",
+    "fa-solid fa-print",
+    "fa-solid fa-turkish-lira-sign",
+    "fa-solid fa-try",
+    "fa-solid fa-turkish-lira",
+    "fa-solid fa-dollar-sign",
+    "fa-solid fa-dollar",
+    "fa-solid fa-usd",
+    "fa-solid fa-x",
+    "fa-solid fa-magnifying-glass-dollar",
+    "fa-solid fa-search-dollar",
+    "fa-solid fa-users-gear",
+    "fa-solid fa-users-cog",
+    "fa-solid fa-person-military-pointing",
+    "fa-solid fa-building-columns",
+    "fa-solid fa-bank",
+    "fa-solid fa-institution",
+    "fa-solid fa-museum",
+    "fa-solid fa-university",
+    "fa-solid fa-umbrella",
+    "fa-solid fa-trowel",
+    "fa-solid fa-d",
+    "fa-solid fa-stapler",
+    "fa-solid fa-masks-theater",
+    "fa-solid fa-theater-masks",
+    "fa-solid fa-kip-sign",
+    "fa-solid fa-hand-point-left",
+    "fa-solid fa-handshake-simple",
+    "fa-solid fa-handshake-alt",
+    "fa-solid fa-jet-fighter",
+    "fa-solid fa-fighter-jet",
+    "fa-solid fa-square-share-nodes",
+    "fa-solid fa-share-alt-square",
+    "fa-solid fa-barcode",
+    "fa-solid fa-plus-minus",
+    "fa-solid fa-video",
+    "fa-solid fa-video-camera",
+    "fa-solid fa-graduation-cap",
+    "fa-solid fa-mortar-board",
+    "fa-solid fa-hand-holding-medical",
+    "fa-solid fa-person-circle-check",
+    "fa-solid fa-turn-up",
+    "fa-solid fa-level-up-alt"
+  ] };
+
+  // src/tinyeditor.ts
+  var TinyEditorToolbar = class {
+    TOOLBAR_ITEM = "__toolbar-item";
+    toolbar_dom;
+    toolbar_dom_items = [];
+    selected_editor = null;
+    icon_selector_modal_is_shown = false;
+    icon_selector_modal_dom;
+    icon_selector_modal_dom_close;
+    icon_selector_modal_dom_search;
+    icon_selector_modal_dom_content;
+    icon_selector_modal_dom_resolve = null;
+    icon_selector_modal_close() {
+      this.icon_selector_modal_is_shown = false;
+      this.icon_selector_modal_dom.style.display = "none";
+      this.icon_selector_modal_dom_resolve = null;
+    }
+    icon_selector_modal_render() {
+      this.icon_selector_modal_dom_content.innerHTML = "";
+      const search_text = this.icon_selector_modal_dom_search.value;
+      for (let i = 0; i < FONTAWSOME_DATA.icons.length; i++) {
+        const icon_class = FONTAWSOME_DATA.icons[i];
+        if (search_text === "" || icon_class.indexOf(search_text) !== -1) {
+          const icon = this.icon_selector_modal_dom_content.appendChild(document.createElement("i"));
+          icon.className = icon_class;
+          icon.title = icon_class;
+          icon.addEventListener("click", () => {
+            if (this.icon_selector_modal_dom_resolve === null) {
+              console.error("this.icon_selector_modal_dom_resolve is null");
+            } else {
+              this.icon_selector_modal_dom_resolve(icon.className);
+            }
+            this.icon_selector_modal_close();
+          });
+        }
+      }
+    }
+    icon_selector_modal() {
+      return new Promise((resolve) => {
+        if (this.icon_selector_modal_is_shown) {
+          this.icon_selector_modal_close();
+        } else {
+          this.icon_selector_modal_is_shown = true;
+          this.icon_selector_modal_dom.style.display = "";
+          this.icon_selector_modal_dom_resolve = resolve;
+          this.icon_selector_modal_dom.style.display = "";
+          this.icon_selector_modal_render();
+          this.icon_selector_modal_dom.style.display = "";
+        }
+      });
+    }
+    constructor(targetElement, options) {
+      this.toolbar_dom = targetElement;
+      this.toolbar_dom.classList.add("__toolbar");
+      this.icon_selector_modal_dom = this.toolbar_dom.appendChild(document.createElement("div"));
+      this.icon_selector_modal_dom.id = targetElement.id + "__icon-selector";
+      this.icon_selector_modal_dom.className = "__icon-selector";
+      this.icon_selector_modal_dom.style.display = "none";
+      this.icon_selector_modal_dom_search = this.icon_selector_modal_dom.appendChild(document.createElement("input"));
+      this.icon_selector_modal_dom_search.placeholder = "Icon..";
+      this.icon_selector_modal_dom_search.className = "__icon-selector-search be-form-control";
+      this.icon_selector_modal_dom_search.addEventListener("input", () => {
+        this.icon_selector_modal_render();
+      });
+      this.icon_selector_modal_dom_close = this.icon_selector_modal_dom.appendChild(document.createElement("div"));
+      this.icon_selector_modal_dom_close.className = "__icon-selector-close";
+      this.icon_selector_modal_dom_close.innerHTML = '<i class="fa-solid fa-times" title="fa-solid fa-times"></i>';
+      this.icon_selector_modal_dom_close.addEventListener("click", () => this.icon_selector_modal_close());
+      this.icon_selector_modal_dom_content = this.icon_selector_modal_dom.appendChild(document.createElement("div"));
+      this.icon_selector_modal_dom_content.className = "__icon-selector-content";
+      if (options.formatblock === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createSelect(
+            "formatblock",
+            "Styles",
+            [
+              { value: "h1", text: "Title 1" },
+              { value: "h2", text: "Title 2" },
+              { value: "h3", text: "Title 3" },
+              { value: "h4", text: "Title 4" },
+              { value: "h5", text: "Title 5" },
+              { value: "h6", text: "Title 6" },
+              { value: "p", text: "Paragraph", selected: true },
+              { value: "pre", text: "Preformatted" }
+            ]
+          )
+        );
+      }
+      if (options.fontname === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createSelect(
+            "fontname",
+            "Font",
+            [
+              { value: "serif", text: "Serif", selected: true },
+              { value: "sans-serif", text: "Sans Serif" },
+              { value: "monospace", text: "Monospace" },
+              { value: "cursive", text: "Cursive" },
+              { value: "fantasy", text: "Fantasy" }
+            ]
+          )
+        );
+      }
+      if (options.bold === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("bold", "Bold", this.createIcon("fa-solid fa-bold"))
+        );
+      }
+      if (options.italic === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("italic", "Italic", this.createIcon("fa-solid fa-italic"))
+        );
+      }
+      if (options.underline === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("underline", "Underline", this.createIcon("fa-solid fa-underline"))
+        );
+      }
+      if (options.textcolor === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createInput("forecolor", "Text color", "color")
+        );
+      }
+      if (options.textleft === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("justifyleft", "Left align", this.createIcon("fa-solid fa-align-left"))
+        );
+      }
+      if (options.textcenter === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("justifycenter", "Center align", this.createIcon("fa-solid fa-align-center"))
+        );
+      }
+      if (options.textright === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("justifyright", "Right align", this.createIcon("fa-solid fa-align-right"))
+        );
+      }
+      if (options.insertorderedlist === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("insertorderedlist", "Numbered list", this.createIcon("fa-solid fa-list-ol"))
+        );
+      }
+      if (options.insertunorderedlist === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("insertunorderedlist", "Bulleted list", this.createIcon("fa-solid fa-list-ul"))
+        );
+      }
+      if (options.outdent === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("outdent", "Decrease indent", this.createIcon("fa-solid fa-indent fa-flip-horizontal"))
+        );
+      }
+      if (options.indent === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("indent", "Increase indent", this.createIcon("fa-solid fa-indent"))
+        );
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(this.createSeparator());
+      }
+      if (options.removeFormat === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("removeFormat", "Clear formatting", this.createIcon("fa-solid fa-eraser"))
+        );
+      }
+      if (options.image === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton(
+            "createImage",
+            "Create Image",
+            this.createIcon("fa-solid fa-image")
+          )
+        );
+      }
+      if (options.image === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton(
+            "createIcon",
+            "Create Icon",
+            this.createIcon("fa-solid fa-flag")
+          )
+        );
+      }
+      if (options.hyperlink === true) {
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("createLink", "Create Hyperlink", this.createIcon("fa-solid fa-link"))
+        );
+        this.toolbar_dom_items[this.toolbar_dom_items.length] = this.toolbar_dom.appendChild(
+          this.createButton("removeLink", "remove Hyperlink", this.createIcon("fa-solid fa-unlink"))
+        );
+      }
+      this.toolbar_dom.addEventListener("click", () => this.updateActiveState());
+    }
+    updateActiveState() {
+      const toolbarSelects = this.toolbar_dom.querySelectorAll("select[data-command-id]");
+      for (let i = 0; i < toolbarSelects.length; i++) {
+        const select = toolbarSelects[i];
+        const value = document.queryCommandValue(select.dataset.commandId);
+        const option = Array.from(select.options).find(
+          (_option) => {
+            const option2 = _option;
+            return option2.value === value;
+          }
+        );
+        select.selectedIndex = option ? option.index : -1;
+      }
+      const toolbarButtons = this.toolbar_dom.querySelectorAll("button[data-command-id]");
+      for (let i = 0; i < toolbarButtons.length; i++) {
+        const button = toolbarButtons[i];
+        const active = document.queryCommandState(button.dataset.commandId);
+        button.classList.toggle("active", active);
+      }
+      const inputButtons = this.toolbar_dom.querySelectorAll("input[data-command-id]");
+      for (let i = 0; i < inputButtons.length; i++) {
+        const input = inputButtons[i];
+        const value = document.queryCommandValue(input.dataset.commandId);
+        const converted_value = this.rgbToHex(value);
+        if (converted_value) input.value = converted_value;
+      }
+    }
+    rgbToHex(color) {
+      const digits = /(.*?)rgb\((\d+), (\d+), (\d+)\)/.exec(color);
+      if (digits !== null && digits.length > 5) {
+        const red = parseInt(digits[2]);
+        const green = parseInt(digits[3]);
+        const blue = parseInt(digits[4]);
+        const rgb = blue | green << 8 | red << 16;
+        let color_hex = rgb.toString(16);
+        const to = 6 - color_hex.length;
+        for (let i = 0; i < to; i++) {
+          color_hex = "0" + color_hex;
+        }
+        return digits[1] + "#" + color_hex;
+      }
+    }
+    createButton(commandId, title, child) {
+      const button = document.createElement("button");
+      button.dataset.commandId = commandId;
+      button.className = this.TOOLBAR_ITEM;
+      button.title = title;
+      button.type = "button";
+      button.appendChild(child);
+      button.addEventListener("click", () => {
+        if (this.selected_editor !== null) this.selected_editor.execCommand(commandId, "");
+      });
+      return button;
+    }
+    createOption(value, text, selected) {
+      const option = document.createElement("option");
+      option.innerText = text;
+      if (value) option.setAttribute("value", value);
+      if (selected) option.selected = true;
+      return option;
+    }
+    createSelect(commandId, title, options) {
+      const select = document.createElement("select");
+      select.dataset.commandId = commandId;
+      select.className = this.TOOLBAR_ITEM;
+      select.title = title;
+      select.addEventListener("change", (e) => {
+        if (e.target === null) {
+          return;
+        } else {
+          const target = e.target;
+          if (this.selected_editor !== null) return this.selected_editor.execCommand(commandId, target.options[target.selectedIndex].value);
+        }
+      });
+      for (const option of options) {
+        select.appendChild(
+          this.createOption(option.value, option.text, option.selected === true)
+        );
+      }
+      return select;
+    }
+    createIcon(className) {
+      const icon = document.createElement("i");
+      icon.className = className;
+      return icon;
+    }
+    createInput(commandId, title, type) {
+      const input = document.createElement("input");
+      input.dataset.commandId = commandId;
+      input.className = this.TOOLBAR_ITEM;
+      input.title = title;
+      input.type = type;
+      input.addEventListener("change", () => {
+        if (this.selected_editor !== null) return this.selected_editor.execCommand(commandId, input.value);
+      });
+      return input;
+    }
+    createSeparator() {
+      const separator = document.createElement("span");
+      separator.className = "__toolbar-separator";
+      return separator;
+    }
+    showAllItems() {
+      for (let i = 0; i < this.toolbar_dom_items.length; i++) {
+        this.toolbar_dom_items[i].style.display = "";
+      }
+    }
+    hideAllItems() {
+      for (let i = 0; i < this.toolbar_dom_items.length; i++) {
+        this.toolbar_dom_items[i].style.display = "none";
+      }
+    }
+    showTheseItems(commandIds) {
+      for (let a = 0; a < this.toolbar_dom_items.length; a++) {
+        const item = this.toolbar_dom_items[a];
+        item.style.display = "none";
+        for (let b = 0; b < commandIds.length; b++) {
+          const commandId = commandIds[b];
+          if (item.getAttribute("data-command-id") === commandId) {
+            item.style.display = "";
+            break;
+          }
+        }
+      }
+    }
+  };
+  var TinyEditor = class {
+    editor;
+    toolbar;
+    callback_onchange = null;
+    callback_exec_command_create_image;
+    dialog = new Dialog(document.body);
+    createElement(_type, _id, _class) {
+      const element = document.createElement(_type);
+      if (_id !== "") element.id = _id;
+      if (_class !== "") element.className = _class;
+      return element;
+    }
+    constructor(editor, options) {
+      this.editor = editor;
+      editor.classList.add("__editor");
+      editor.setAttribute("contentEditable", "true");
+      if (typeof options.onchange === "function") this.callback_onchange = options.onchange;
+      this.callback_exec_command_create_image = options.exec_command_create_image;
+      if (options.toolbar === null) {
+        const toolbar_dom = this.editor.appendChild(document.createElement("div"));
+        this.toolbar = new TinyEditorToolbar(toolbar_dom, options.tinyeditor_toolbar_options);
+        this.toolbar.selected_editor = this;
+      } else {
+        this.toolbar = options.toolbar;
+      }
+      this.callback_onchange = options.onchange;
+      editor.addEventListener("focusin", () => {
+        this.toolbar.selected_editor = this;
+      });
+      editor.addEventListener("keydown", () => this.toolbar.updateActiveState());
+      editor.addEventListener("keyup", () => this.toolbar.updateActiveState());
+      editor.addEventListener("click", () => this.toolbar.updateActiveState());
+      document.addEventListener("selectionchange", () => {
+        const selection = window.getSelection();
+        if (selection !== null && selection.anchorNode !== null && !editor.contains(selection.anchorNode.parentNode)) return false;
+      });
+      editor.addEventListener("paste", (e) => {
+        e.preventDefault();
+        console.log("[TinyEditor] Paste event", e.clipboardData);
+        if (e.clipboardData !== null) {
+          let text = e.clipboardData.getData("text/plain");
+          text = text.replace(/<html[^>]*>/gi, "");
+          text = text.replace(/<\/html>/gi, "");
+          text = text.replace(/<head[^>]*>/gi, "");
+          text = text.replace(/<\/head>/gi, "");
+          text = text.replace(/<body[^>]*>/gi, "");
+          text = text.replace(/<\/body>/gi, "");
+          text = text.replace(/<img[^>]*>/gi, "");
+          document.execCommand("insertHTML", false, text);
+          if (this.callback_onchange !== null) this.callback_onchange();
+        }
+      });
+      editor.addEventListener("keypress", (e) => {
+        if ((e.keyCode || e.which) === 13) {
+          const selection = window.getSelection();
+          if (selection !== null) {
+            const selection_element = selection.anchorNode.parentNode;
+            if (selection_element.tagName === "LI") return;
+          }
+          document.execCommand("formatBlock", false, "p");
+        }
+      });
+      if (this.callback_onchange !== null) {
+        editor.addEventListener("keyup", () => {
+          if (this.callback_onchange !== null) this.callback_onchange();
+        });
+      }
+    }
+    execCommand(commandId, value) {
+      switch (commandId) {
+        case "createImage":
+          this.execCommand_createImage();
+          break;
+        case "createIcon":
+          this.execCommand_createIcon();
+          break;
+        case "createLink":
+          this.execCommand_createLink();
+          break;
+        case "removeLink":
+          this.execCommand_removeLink();
+          break;
+        default:
+          document.execCommand(commandId, false, value);
+          if (this.callback_onchange !== null) this.callback_onchange();
+          break;
+      }
+      this.editor.focus();
+    }
+    execCommand_createImage() {
+      let selection_ranges = this.saveSelection();
+      if (selection_ranges.length === 0) {
+        console.log("[TinyEditor] User tried to create a image without selecting text");
+      } else {
+        if (!this.editor.contains(selection_ranges[0].startContainer.parentNode) && selection_ranges[0].startContainer.parentNode === null || this.editor !== selection_ranges[0].startContainer.parentNode) {
+          console.log("[TinyEditor] User tried to create a image without selecting text");
+          this.editor.focus();
+          selection_ranges = this.saveSelection();
+        }
+        const selected_element = this.getElementFromSelection(selection_ranges[0]);
+        this.callback_exec_command_create_image().then((image_url) => {
+          if (selected_element === null) {
+            if (selection_ranges !== null) this.restoreSelection(selection_ranges);
+            const newSelection = window.getSelection();
+            if (newSelection !== null) {
+              const new_element = this.render_image_div(image_url, "200px", "200px");
+              newSelection.getRangeAt(0).insertNode(new_element);
+              setTimeout(() => new_element.focus(), 100);
+            }
+          } else {
+            selected_element.style.backgroundImage = "url('" + image_url + "')";
+          }
+          if (this.callback_onchange !== null) this.callback_onchange();
+        });
+      }
+    }
+    execCommand_createIcon() {
+      let selection_ranges = this.saveSelection();
+      if (selection_ranges.length === 0) {
+        console.info("[TinyEditor] User tried to create a icon without selecting text");
+      } else {
+        if (!this.editor.contains(selection_ranges[0].startContainer.parentNode) && selection_ranges[0].startContainer.parentNode === null || this.editor !== selection_ranges[0].startContainer.parentNode) {
+          console.info("[TinyEditor] User tried to create a icon without selecting text");
+          this.editor.focus();
+          selection_ranges = this.saveSelection();
+        }
+        this.toolbar.icon_selector_modal().then((className) => {
+          if (selection_ranges !== null) this.restoreSelection(selection_ranges);
+          const newSelection = window.getSelection();
+          if (newSelection !== null) {
+            const new_element = document.createElement("i");
+            new_element.className = className;
+            newSelection.getRangeAt(0).insertNode(new_element);
+            setTimeout(() => new_element.focus(), 100);
+          }
+          if (this.callback_onchange !== null) this.callback_onchange();
+        });
+      }
+    }
+    render_image_div(image_url, width, height) {
+      console.log("[TinyEditor] render_image_div");
+      const new_element = document.createElement("div");
+      new_element.contentEditable = "false";
+      new_element.className = "image";
+      new_element.style.maxWidth = "100%";
+      new_element.style.width = width;
+      new_element.style.height = height;
+      new_element.style.resize = "both";
+      new_element.style.overflow = "hidden";
+      new_element.style.backgroundRepeat = "no-repeat";
+      new_element.style.backgroundSize = "contain";
+      new_element.style.backgroundImage = "url('" + image_url + "')";
+      const img = new Image();
+      img.src = image_url;
+      img.onload = () => {
+        new_element.dataset.width = img.naturalWidth.toString();
+        new_element.dataset.height = img.naturalHeight.toString();
+        new_element.style.height = new_element.clientWidth * (img.naturalHeight / img.naturalWidth) + "px";
+        const ratio = img.naturalHeight / img.naturalWidth;
+        if (!ratio) {
+          console.error("[TinyEditor] Image has no ratio");
+        } else {
+          new_element.onmousemove = () => {
+            setTimeout(() => {
+              new_element.style.height = new_element.clientWidth * ratio + "px";
+            }, 1);
+          };
+          new_element.onmouseup = () => {
+            if (this.callback_onchange !== null) this.callback_onchange();
+          };
+        }
+      };
+      const lux_context_menu = new LuxContextMenu(new_element);
+      const context_menu_items = [];
+      const item1 = document.createElement("div");
+      item1.innerHTML = "Kein Textumlauf";
+      item1.addEventListener("click", () => {
+        new_element.style.float = "";
+        lux_context_menu.close();
+        if (this.callback_onchange !== null) this.callback_onchange();
+      });
+      context_menu_items.push(item1);
+      const item2 = document.createElement("div");
+      item2.innerHTML = "Textumlauf, Bild links";
+      item2.addEventListener("click", () => {
+        new_element.style.float = "left";
+        lux_context_menu.close();
+        if (this.callback_onchange !== null) this.callback_onchange();
+      });
+      context_menu_items.push(item2);
+      const item3 = document.createElement("div");
+      item3.innerHTML = "Textumlauf, Bild rechts";
+      item3.addEventListener("click", () => {
+        new_element.style.float = "right";
+        lux_context_menu.close();
+        if (this.callback_onchange !== null) this.callback_onchange();
+      });
+      context_menu_items.push(item3);
+      lux_context_menu.set_items(context_menu_items);
+      return new_element;
+    }
+    execCommand_createLink() {
+      const selection_ranges = this.saveSelection();
+      if (selection_ranges.length === 0) {
+        console.log("[TinyEditor] User tried to create a link without selecting text");
+      } else {
+        const dialog_content = document.createElement("div");
+        const row1 = dialog_content.appendChild(document.createElement("div"));
+        row1.style.marginBottom = "10px";
+        const link_input = row1.appendChild(document.createElement("input"));
+        link_input.id = "link_input";
+        link_input.type = "text";
+        link_input.className = "be-form-control";
+        link_input.placeholder = "Link eingeben.. z.B.: http://example.com";
+        const row2 = dialog_content.appendChild(document.createElement("div"));
+        row2.style.marginBottom = "10px";
+        const link_new_tab_input = row2.appendChild(document.createElement("input"));
+        link_new_tab_input.id = "link_new_tab_input";
+        link_new_tab_input.type = "checkbox";
+        link_new_tab_input.style.marginRight = "4px";
+        const link_new_tab_input_label = row2.appendChild(document.createElement("label"));
+        link_new_tab_input_label.setAttribute("for", "link_new_tab_input");
+        link_new_tab_input_label.innerHTML = "neuer Tab";
+        link_new_tab_input_label.style.userSelect = "none";
+        link_new_tab_input_label.style.cursor = "pointer";
+        const row3 = dialog_content.appendChild(document.createElement("div"));
+        row3.style.marginBottom = "10px";
+        const link_marker_input = row3.appendChild(document.createElement("input"));
+        link_marker_input.id = "link_marker_input";
+        link_marker_input.type = "checkbox";
+        link_marker_input.style.marginRight = "4px";
+        const link_marker_input_label = row3.appendChild(document.createElement("label"));
+        link_marker_input_label.setAttribute("for", "link_marker_input");
+        link_marker_input_label.innerHTML = "Link-Marker";
+        link_marker_input_label.className = "link-marker";
+        link_marker_input_label.style.userSelect = "none";
+        link_marker_input_label.style.cursor = "pointer";
+        const row4 = dialog_content.appendChild(document.createElement("div"));
+        const class_input = row4.appendChild(document.createElement("input"));
+        class_input.id = "class_input";
+        class_input.type = "text";
+        class_input.className = "be-form-control";
+        class_input.placeholder = "Class eingeben.. z.B.: link-marker";
+        const selected_element = this.getElementFromSelection(selection_ranges[0]);
+        if (selected_element !== null) {
+          link_input.value = selected_element.href;
+          link_new_tab_input.checked = selected_element.target === "_blank";
+          link_marker_input.checked = selected_element.className.includes("link-marker");
+          class_input.value = selected_element.className;
+        }
+        link_marker_input.addEventListener("change", () => {
+          const class_value_split = class_input.value.split(" ");
+          if (link_marker_input.checked) {
+            if (!class_value_split.includes("link-marker")) class_value_split.push("link-marker");
+          } else {
+            class_value_split.splice(class_value_split.indexOf("link-marker"), 1);
+          }
+          class_input.value = class_value_split.join(" ");
+        });
+        class_input.addEventListener("change", () => {
+          const class_value_split = class_input.value.split(" ");
+          link_marker_input.checked = class_value_split.includes("link-marker");
+        });
+        this.dialog.start("Link eingeben", dialog_content, "Link setzen", null, null, () => {
+          const linkValue = link_input.value;
+          const newTab = link_new_tab_input.checked;
+          if (selection_ranges !== null) this.restoreSelection(selection_ranges);
+          const newSelection = window.getSelection();
+          if (newSelection !== null && newSelection.toString()) {
+            const new_a_element = document.createElement("a");
+            new_a_element.href = linkValue;
+            new_a_element.className = class_input.value;
+            if (newTab) new_a_element.target = "_blank";
+            newSelection.getRangeAt(0).surroundContents(new_a_element);
+          }
+          this.dialog.close();
+          if (this.callback_onchange !== null) this.callback_onchange();
+        });
+        setTimeout(() => {
+          link_input.focus();
+        }, 100);
+      }
+    }
+    execCommand_removeLink() {
+      const selection_ranges = this.saveSelection();
+      if (selection_ranges.length === 0) {
+        console.log("[TinyEditor] User tried to create a link without selecting text");
+      } else {
+        const selected_element = this.getElementFromSelection(selection_ranges[0]);
+        if (selected_element === null) {
+          console.log("[TinyEditor] User tried to remove a link without selecting text");
+        } else if (selected_element.tagName !== "A") {
+          console.log("[TinyEditor] User tried to remove a link without selecting an anchor element");
+        } else {
+          selected_element.outerHTML = selected_element.innerHTML;
+        }
+      }
+    }
+    saveSelection() {
+      if (window.getSelection) {
+        const selection = window.getSelection();
+        if (selection !== null && selection.getRangeAt && selection.rangeCount) {
+          const ranges = [];
+          for (let i = 0, len = selection.rangeCount; i < len; ++i) {
+            ranges.push(selection.getRangeAt(i));
+          }
+          return ranges;
+        }
+      }
+      throw new Error("window.getSelection() is not supported, by this browser.");
+    }
+    restoreSelection(ranges) {
+      if (ranges) {
+        if (window.getSelection) {
+          const current_selection = window.getSelection();
+          if (current_selection !== null) {
+            current_selection.removeAllRanges();
+            for (let i = 0, len = ranges.length; i < len; ++i) {
+              current_selection.addRange(ranges[i]);
+            }
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    getElementFromSelection(selection_range) {
+      const selected_element = selection_range.startContainer;
+      console.log("selection_range", selection_range);
+      console.log("selected_element", selected_element);
+      if (selected_element.parentElement !== null && selected_element.parentElement.tagName === "A") {
+        return selected_element.parentElement;
+      } else if (selected_element.nodeName !== "#text") {
+        if (selected_element.classList.contains("__editor")) {
+          const link_elements = selected_element.querySelectorAll("a");
+          if (link_elements.length === 1) {
+            return link_elements[0];
+          }
+        }
+      }
+      return null;
+    }
+    import(content) {
+      this.editor.innerHTML = content;
+      const images = this.editor.getElementsByTagName("img");
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        const image_url = image.src;
+        image.replaceWith(this.render_image_div(image_url, image.style.width, image.style.height));
+      }
+    }
+    export() {
+      let content = "";
+      this.editor.childNodes.forEach((node) => {
+        if (node.nodeName === "#text") {
+          content += node.textContent;
+        } else {
+          const html_element = node;
+          if (html_element.className === "image") {
+            const image_url = html_element.style.backgroundImage.replace("url(", "").replace(")", "").replace('"', "").replace('"', "");
+            let style = "max-width: 100%; height: auto; width: " + html_element.clientWidth + "px;";
+            if (html_element.style.float) style += " float: " + html_element.style.float + ";";
+            content += '<img src="' + image_url + '" class="image" style="' + style + '">';
+          } else if (html_element.tagName === "A") {
+            content += html_element.outerHTML;
+            console.log("html_element.outerHTML", html_element.outerHTML);
+          } else {
+            content += html_element.outerHTML;
+          }
+        }
+      });
+      return content;
+    }
+  };
+  var LuxContextMenu = class {
+    target;
+    context_menu;
+    context_menu_items = [];
+    constructor(target) {
+      this.target = target;
+      let context_menu = document.getElementById("lux-context-menu");
+      if (context_menu === null) {
+        context_menu = document.body.appendChild(document.createElement("div"));
+        context_menu.id = "lux-context-menu";
+        context_menu.className = "__context_menu";
+        context_menu.style.display = "none";
+        document.addEventListener("click", (e) => {
+          if (e.target !== this.context_menu) {
+            this.context_menu.style.display = "none";
+          }
+        });
+      }
+      this.context_menu = context_menu;
+      this.target.oncontextmenu = (e) => {
+        e.preventDefault();
+        this.context_menu.innerHTML = "";
+        for (let i = 0; i < this.context_menu_items.length; i++) {
+          this.context_menu.appendChild(this.context_menu_items[i]);
+        }
+        this.context_menu.style.top = e.clientY + "px";
+        this.context_menu.style.left = e.clientX + "px";
+        this.context_menu.style.display = "block";
+      };
+    }
+    set_items(items) {
+      this.context_menu_items = items;
+      for (let i = 0; i < this.context_menu_items.length; i++) {
+        this.context_menu_items[i].className = "__context_menu_item";
+      }
+      return this;
+    }
+    close() {
+      this.context_menu.style.display = "none";
+    }
+  };
+  return __toCommonJS(tinyeditor_exports);
+})();
+//# sourceMappingURL=tinyeditor.js.map

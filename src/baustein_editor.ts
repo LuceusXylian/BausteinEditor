@@ -24,7 +24,7 @@ const bausteinRenderType = {
     shortcode: 13,
     static_undeletable: 14,
 
-    isParentType: function (renderType: number) {
+    isParentType: function (renderType: number): boolean {
         return renderType === this.container || renderType === this.layout || renderType === this.table || renderType === this.tableRow || renderType === this.spoiler;
     }   
 };
@@ -164,7 +164,7 @@ class BausteinTemplate {
         }
     }
 
-    getAttribute(name: string) {
+    getAttribute(name: string): string|null {
         for (let i = 0; i < this.attributes.length; i++) {
             if (this.attributes[i].name === name) {
                 return this.attributes[i].value;
@@ -187,7 +187,7 @@ class BausteinTemplate {
         return bausteinRenderType.isParentType(this.renderType);
     }
 
-    getStyle(name: string) {
+    getStyle(name: string): BausteinStyle|null {
         for (let i = 0; i < this.style.length; i++) {
             if (this.style[i].property.name === name) {
                 return this.style[i];
@@ -196,7 +196,7 @@ class BausteinTemplate {
         return null;
     }
 
-    getStyleValue(name: string, def: string) {
+    getStyleValue(name: string, def: string): string {
         const style = this.getStyle(name);
         if (style) {
             return style.value;
@@ -282,6 +282,37 @@ export class BausteinEditor {
     };
     tinyeditor_toolbar: TinyEditorToolbar;
     
+    /**
+     * A collection of style properties used in the Baustein Editor.
+     * Each property is represented as an instance of `BausteinStyleProperty`,
+     * which defines the CSS property name, input type, available units, 
+     * selectable options, and additional configuration flags.
+     *
+     * Properties:
+     * - `font_size`: Controls the font size with predefined options like "small", "medium", "large", etc.
+     * - `font_weight`: Controls the font weight with options like "normal", "bold", "bolder", etc.
+     * - `text_decoration`: Controls the text decoration with options like "underline" and "dotted".
+     * - `font_style`: Controls the font style with options like "italic" and "oblique".
+     * - `text_align`: Controls the text alignment with options like "left", "center", and "right".
+     * - `color`: Sets the text color using a color picker.
+     * - `background_color`: Sets the background color using a color picker.
+     * - `background_image`: Sets the background image using an image selector.
+     * - `width`: Sets the width with units like "px" or "%", and an option for "auto".
+     * - `height`: Sets the height with units like "px" or "%", and an option for "auto".
+     * - `max_width`: Sets the maximum width with units like "px" or "%", and an option for "auto".
+     * - `max_height`: Sets the maximum height with units like "px" or "%", and an option for "auto".
+     * - `margin_top`, `margin_right`, `margin_bottom`, `margin_left`: Controls the margin for each side with "px" units and an option for "auto".
+     * - `border_width_top`, `border_width_right`, `border_width_bottom`, `border_width_left`: Controls the border width for each side with "px" units.
+     * - `padding_top`, `padding_right`, `padding_bottom`, `padding_left`: Controls the padding for each side with "px" units.
+     *
+     * Each property includes:
+     * - `name`: The CSS property name.
+     * - `type`: The input type (e.g., "select", "color", "number").
+     * - `units`: An array of valid units (e.g., "px", "%").
+     * - `options`: An array of selectable options with `locale_key` and `value`.
+     * - `is_inherited`: A boolean indicating if the property can inherit values.
+     * - `is_editable`: A boolean indicating if the property is editable.
+     */
 	public styleProperties = {
         font_size: new BausteinStyleProperty("font-size", "select", [], [
             { locale_key: "normal", value: "" },
@@ -1187,7 +1218,7 @@ export class BausteinEditor {
         }
     }
 
-    moveBaustein(baustein_id: number, position_new: Position) {
+    moveBaustein(baustein_id: number, position_new: Position): boolean {
         const baustein = this.getBaustein(baustein_id);
         console.log("moveBaustein old position.sort", baustein.position.sort, "new position.sort", position_new.sort);
 
@@ -2079,7 +2110,7 @@ export class BausteinEditor {
     }
 
     /// helper funktion for creating a forminput of layout devtool. Position values: null = do not set, empty = center, non-empty = normal 
-    layout_fc(baustein: Baustein, styleName: string, default_value: string, top: string | null, right: string | null, bottom: string | null, left: string | null) {
+    layout_fc(baustein: Baustein, styleName: string, default_value: string, top: string | null, right: string | null, bottom: string | null, left: string | null): HTMLInputElement {
         const bausteinStyleProperty = this.getStylePropertyByName(styleName);
         const bausteinStyleValue = baustein.getStyleValue(styleName, default_value);
         
@@ -2842,7 +2873,7 @@ export class BausteinEditor {
         @param baustein : Baustein          // Baustein to render to HTML
         @param tag_override : tag_override  // Tag Overide; used to override the tag of the baustein. Currently only used for the "text" baustein type
     */
-    export_createBausteinElement(baustein: Baustein, tag_override: string | null = null) {
+    export_createBausteinElement(baustein: Baustein, tag_override: string | null = null): HTMLElement | Text {
         console.log("export_createBausteinElement", baustein, tag_override);
         if (baustein.tag === "") {
             // IS text node
@@ -2959,7 +2990,7 @@ export class BausteinEditor {
         }
     }
 
-    export() {
+    export(): {data: BausteinEditorData;html: string;} {
         const export_html_dom = this.createElement("div", "", "be-article");
 
         const bausteine = this.getBausteineChildren(null);
