@@ -1,28 +1,28 @@
 # Baustein Editor
 
-Baustein Editor is a block-based editor designed for creating, editing, and managing content in a modular way. It provides a user-friendly interface for importing, editing, moving, deleting, adding, and exporting blocks of content. This library is ideal for building customizable and dynamic content editors for web applications.
+Baustein Editor is a powerful block-based editor designed for creating, editing, and managing content in a modular way. It provides a user-friendly interface for importing, editing, moving, deleting, adding, and exporting blocks of content. This library is ideal for building customizable and dynamic content editors for web applications.
 
 ## Features
 
-- **Block Management**: Add, delete, move, and edit blocks with ease.
-- **Localization**: Supports multiple languages (e.g., English and German).
-- **Drag-and-Drop**: Intuitive drag-and-drop functionality for rearranging blocks.
-- **Customizable Toolbar**: Includes a toolbar for text formatting and other actions.
-- **Responsive Design**: Works seamlessly across different screen sizes.
+- **Block Management**: Effortlessly add, delete, move, and edit blocks.
+- **Localization Support**: Built-in support for multiple languages, including English and German.
+- **Drag-and-Drop Functionality**: Intuitive drag-and-drop for rearranging blocks.
+- **Customizable Toolbar**: Includes a rich toolbar for text formatting and other actions.
+- **Responsive Design**: Optimized for seamless performance across various screen sizes.
 
-## Usage
+## Getting Started
 
 ### Importing the Library
 
-Import the required modules from the [JavaScript Registry (JSR)](https://jsr.io):
+Import the required modules from the [JavaScript Registry (JSR)](https://jsr.io) by adding this line:
 
 ```typescript
 import { BausteinEditor } from '@xylian/bausteineditor';
 ```
 
-### Example
+### Basic Usage
 
-Here is a basic example of how to initialize and use the Baustein Editor:
+Here is a simple example of how to initialize and use the Baustein Editor:
 
 ```typescript
 const editor = new BausteinEditor({
@@ -33,15 +33,13 @@ const editor = new BausteinEditor({
 
 ## Localization
 
-Baustein Editor supports multiple languages. You can switch between locales using the `select_locale` method:
-
-```typescript
-LOCALES.select_locale('de'); // Switch to German
-```
+Baustein Editor supports multiple languages. You can specify the desired locale before initializing the editor. Currently, "en" (English) and "de" (German) are supported. To add custom locales, extend the `LOCALES` object and submit a merge request for general usage.
 
 ## Development
 
 ### Prerequisites
+
+Ensure you have the following installed:
 
 - [Deno](https://deno.land/) (latest version)
 
@@ -55,8 +53,7 @@ Run the build script to compile the project:
 
 ### Running the Demo
 
-Open the `index.html` file in your browser to see the editor in action.  
-Or open in Github Page: https://luceusxylian.github.io/BausteinEditor/
+To see the editor in action, open the `index.html` file in your browser. Alternatively, visit the [GitHub Pages Demo](https://luceusxylian.github.io/BausteinEditor/).
 
 ## Contributing
 
