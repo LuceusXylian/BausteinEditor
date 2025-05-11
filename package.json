@@ -1,6 +1,6 @@
 {
   "name": "baustein-editor",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Editor in Blocks: Import, Edit, Move, Delete, Add, Export",
   "scripts": {
     "build": "./build.sh"
@@ -36,7 +36,7 @@
   "style": "scss/index.scss",
   "sass": "scss/index.scss",
   "files": [
-    "dist",
+    "src",
     "scss"
   ],
   "peerDependencies": {
@@ -52,5 +52,6 @@
   "homepage": "https://github.com/LuceusXylian/bausteineditor#readme",
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "type": "module"
 }
